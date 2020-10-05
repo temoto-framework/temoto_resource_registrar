@@ -1,0 +1,1 @@
+# temoto_resource_registrar
