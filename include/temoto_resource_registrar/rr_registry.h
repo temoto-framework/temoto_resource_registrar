@@ -21,13 +21,14 @@
 
 namespace temoto_resource_registrar
 {
-typedef std::shared_ptr<RrRegistry> RrRegistryPtr;
 
 class RrRegistry
 {
 public:
   RrRegistry() = default;
 };
+
+typedef std::shared_ptr<RrRegistry> RrRegistryPtr;
 
 } // namespace temoto_resource_registrar
 
