@@ -17,7 +17,7 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 
-#include "temoto_resource_registrar/rr_registry.h"
+#include "rr_registry.h"
 
 namespace temoto_resource_registrar
 {

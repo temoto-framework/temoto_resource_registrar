@@ -18,9 +18,9 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
 #include <vector>
-#include "temoto_resource_registrar/rr_server_base.h"
-#include "temoto_resource_registrar/rr_client_base.h"
-#include "temoto_resource_registrar/rr_registry.h"
+#include "rr_server_base.h"
+#include "rr_client_base.h"
+#include "rr_registry.h"
 
 namespace temoto_resource_registrar
 {
