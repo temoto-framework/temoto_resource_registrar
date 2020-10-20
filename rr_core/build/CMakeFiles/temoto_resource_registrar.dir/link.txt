@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC   -shared -Wl,-soname,libtemoto_resource_registrar.so.0.0.1 -o libtemoto_resource_registrar.so.0.0.1 CMakeFiles/temoto_resource_registrar.dir/src/rr_test.cpp.o 

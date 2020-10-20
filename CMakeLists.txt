@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(ros_temoto_registrar)
+project(temoto_resource_registrar)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -105,7 +105,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ros_temoto_registrar
+#  LIBRARIES temoto_resource_registrar
 #  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -123,7 +123,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ros_temoto_registrar.cpp
+#   src/${PROJECT_NAME}/temoto_resource_registrar.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -134,7 +134,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/ros_temoto_registrar_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/temoto_resource_registrar_node.cpp)
 
 
 
@@ -154,7 +154,7 @@ find_package(temoto_resource_registrar REQUIRED)
 
 add_executable(temoto_rr src/rr_wrapper.cpp)
 target_link_libraries(temoto_rr ${catkin_LIBRARIES} temoto_resource_registrar)
-add_dependencies(temoto_rr ros_temoto_registrar_gencpp)
+add_dependencies(temoto_rr temoto_resource_registrar_gencpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -218,7 +218,7 @@ add_dependencies(temoto_rr ros_temoto_registrar_gencpp)
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_temoto_registrar.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_temoto_resource_registrar.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
