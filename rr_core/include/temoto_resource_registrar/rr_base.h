@@ -43,7 +43,7 @@ public:
 
 private:
   std::vector<RrServerBase> rr_servers_;
-  std::vector<RrServerBase> rr_clients_;
+  std::vector<RrClientBase> rr_clients_;
   RrRegistryPtr rr_registry_;
 };
 
