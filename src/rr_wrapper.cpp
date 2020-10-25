@@ -1,27 +1,35 @@
 #include "ros/ros.h"
 #include <temoto_resource_registrar/rr_base.h>
+#include "rr_server_derivate.cpp"
 
-class ResourceRegistrarWrapper 
-{
-    public:
-        ResourceRegistrarWrapper() 
-        {
-            //temoto_resource_registrar::RrBase resource_registrar;
-        }
+void myLoadCallback(){
+    ROS_INFO("Load callback");
 };
 
-bool init_rr(){
-    ResourceRegistrarWrapper();
-    return true;
-}
+void myUnLoadCallback(){
+    ROS_INFO("UnLoad callback");
+};
+
 
 int main(int argc, char **argv) {
+
+    
 
     ros::init(argc, argv, "temoto_rr");
     ros::NodeHandle nh;
 
-    init_rr();
+    temoto_resource_registrar::RrBase rr;
+
+    rr.addServer(std::make_unique<temoto_resource_registrar::RrServerBase>());
+
+    rr.addServer(std::make_unique<ServerDerivedRos<std::string>>("pipe server", &myLoadCallback, &myUnLoadCallback));
+
+
+    
+
     ROS_INFO("ready for RR to do things");
+
+    rr.print();
 
     ros::spin();
     return 0;

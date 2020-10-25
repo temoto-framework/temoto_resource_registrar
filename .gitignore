@@ -1,2 +1,4 @@
 /build
 /doc
+/catkin_ws
+/CMakeFiles

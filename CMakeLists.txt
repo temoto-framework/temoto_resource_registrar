@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(temoto_resource_registrar)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -137,15 +137,6 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/temoto_resource_registrar_node.cpp)
 
 
-
-
-
-#LINK_DIRECTORIES(/home/allan/Desktop/ros\ repo/temoto_resource_registrar)
-#LINK_DIRECTORIES(~/Desktop/ROS-tutorials/cmake-example-library/_install/lib)
-#add_library( temoto_resource_registrar SHARED IMPORTED )
-#set_target_properties( temoto_resource_registrar PROPERTIES IMPORTED_LOCATION /home/allan/Desktop/ros\ repo/temoto_resource_registrar/libtemoto_resource_registrar.so )
-#TARGET_LINK_LIBRARIES(temoto_rr temoto_resource_registrar)
-#find_library(TEMOTO_RR temoto_resource_registrar)
 find_package(temoto_resource_registrar REQUIRED)
 
 
@@ -155,6 +146,11 @@ find_package(temoto_resource_registrar REQUIRED)
 add_executable(temoto_rr src/rr_wrapper.cpp)
 target_link_libraries(temoto_rr ${catkin_LIBRARIES} temoto_resource_registrar)
 add_dependencies(temoto_rr temoto_resource_registrar_gencpp)
+
+
+
+
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

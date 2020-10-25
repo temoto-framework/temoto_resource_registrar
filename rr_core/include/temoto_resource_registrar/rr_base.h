@@ -27,23 +27,19 @@ namespace temoto_resource_registrar
 class RrBase
 {
 public:
-  RrBase()
-  : rr_registry_(std::make_shared<RrRegistry>())
-  {}
+  RrBase();
+  
+  void addServer(std::unique_ptr<RrServerBase> base_server);
 
-  void addServer()
-  {
-    rr_servers_.emplace_back(rr_registry_);
-  }
+  bool exists(std::unique_ptr<RrServerBase> server);
 
-  void call()
-  {
-    rr_clients_.emplace_back(rr_registry_);
-  }
+  void call();
+
+  void print();
 
 private:
-  std::vector<RrServerBase> rr_servers_;
-  std::vector<RrClientBase> rr_clients_;
+  std::vector<std::unique_ptr<RrServerBase>> rr_servers_;
+  std::vector<std::unique_ptr<RrClientBase>> rr_clients_;
   RrRegistryPtr rr_registry_;
 };
 

@@ -19,20 +19,53 @@
 
 #include "rr_registry.h"
 #include "rr_query_base.h"
+#include <boost/crc.hpp>
 
 namespace temoto_resource_registrar
 {
+
+enum class State : int
+{
+  UNINITIALIZED = 0,
+  INITIALIZED = 1
+};
+
 class RrServerBase
 {
+
 public:
-  RrServerBase(RrRegistryPtr rr_registry)
-  : rr_registry_(rr_registry)
-  {}
+
+  RrServerBase();
+
+  RrServerBase(RrRegistryPtr rr_registry);
+
+  RrServerBase(const std::string& name, const std::string& class_name);
+
+  RrServerBase(const std::string& name, const std::string& class_name, RrRegistryPtr rr_registry);
+
+  void state(const State& state);
+
+  State state();
 
   void wrappedCallback();
 
-private:
+  virtual void print();
+
+  virtual long id();
+
+protected:
+
   RrRegistryPtr rr_registry_;
+  //keeping debug values, just in case for dev
+  std::string name_;
+  std::string class_name_;
+  State state_ = State::UNINITIALIZED;
+
+  virtual boost::crc_32_type& crc();
+
+private:
+  boost::crc_32_type crc32;
+  
 };
 
 } // namespace temoto_resource_registrar
