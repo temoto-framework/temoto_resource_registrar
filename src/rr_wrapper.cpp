@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include <temoto_resource_registrar/rr_base.h>
 #include "rr_server_derivate.cpp"
+#include "temoto_resource_registrar/TestSrv.h"
 
 void myLoadCallback(){
     ROS_INFO("Load callback");
@@ -22,7 +23,7 @@ int main(int argc, char **argv) {
 
     rr.addServer(std::make_unique<temoto_resource_registrar::RrServerBase>());
 
-    rr.addServer(std::make_unique<ServerDerivedRos<std::string>>("pipe server", &myLoadCallback, &myUnLoadCallback));
+    rr.addServer(std::make_unique<ServerDerivedRos<temoto_resource_registrar::TestSrv>>("pipe_server", &myLoadCallback, &myUnLoadCallback));
 
 
     

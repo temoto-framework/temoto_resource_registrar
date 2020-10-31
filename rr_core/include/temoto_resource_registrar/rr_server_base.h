@@ -51,7 +51,7 @@ public:
 
   virtual void print();
 
-  virtual long id();
+  virtual unsigned int id();
 
 protected:
 
@@ -59,13 +59,12 @@ protected:
   //keeping debug values, just in case for dev
   std::string name_;
   std::string class_name_;
-  State state_ = State::UNINITIALIZED;
-
-  virtual boost::crc_32_type& crc();
+  State state_ = State::UNINITIALIZED; 
 
 private:
-  boost::crc_32_type crc32;
-  
+  unsigned int id_;
+  unsigned int calculateId();
+
 };
 
 } // namespace temoto_resource_registrar

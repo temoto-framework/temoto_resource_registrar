@@ -8,6 +8,7 @@ namespace temoto_resource_registrar
     RrServerBase::RrServerBase()
         :name_("NONAME")
         , class_name_(__func__)
+        , id_(calculateId())
     {}
 
     RrServerBase::RrServerBase(RrRegistryPtr rr_registry)
@@ -18,6 +19,7 @@ namespace temoto_resource_registrar
     RrServerBase::RrServerBase(const std::string& name, const std::string& class_name)
         : name_(name)
         , class_name_(class_name)
+        , id_(calculateId())
     {}
 
     RrServerBase::RrServerBase(const std::string& name, const std::string& class_name, RrRegistryPtr rr_registry)
@@ -25,6 +27,7 @@ namespace temoto_resource_registrar
         , class_name_(class_name)
         , rr_registry_(rr_registry)
         , state_(State::INITIALIZED)
+        , id_(calculateId())
     {}
 
     void RrServerBase::print()
@@ -44,16 +47,16 @@ namespace temoto_resource_registrar
         return state_;
     }
 
-    long RrServerBase::id()
+    unsigned int RrServerBase::id()
     {
-        return crc().checksum();
+        return id_;
     }
 
-    boost::crc_32_type& RrServerBase::crc() {
-        crc32.reset();
+    unsigned int RrServerBase::calculateId()
+    {
+        boost::crc_32_type crc32;
         crc32.process_bytes(name_.data(), name_.length());
         crc32.process_bytes(class_name_.data(), class_name_.length());
-
-        return crc32;
+        return crc32.checksum();
     }
 }
