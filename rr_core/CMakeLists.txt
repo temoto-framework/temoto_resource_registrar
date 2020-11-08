@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+
 file(GLOB HEADERS
     "include/*.h"
 )
@@ -37,6 +39,32 @@ include(GNUInstallDirs)
 set(SOURCE_FILES ${SOURCES})
 
 configure_file(${LIBRARY_NAME}.pc.in ${LIBRARY_NAME}.pc @ONLY)
+
+#############
+# test flag
+#############
+option(test "Build all tests." OFF)
+
+
+#############
+# test config
+#############
+if (test)
+    add_subdirectory(lib/googletest)
+
+    enable_testing()
+    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+
+    add_executable(rr_test test/rr_test.cpp)
+    target_link_libraries(rr_test gtest gtest_main)
+
+    target_link_libraries(rr_test ${LIBRARY_NAME})
+
+    add_test(NAME ResourceRegistrarTest COMMAND rr_test)
+endif()
+#############
+
+
 
 target_include_directories(${LIBRARY_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
