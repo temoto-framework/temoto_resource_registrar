@@ -22,13 +22,13 @@
 namespace temoto_resource_registrar
 {
 
-class RrRegistry
-{
-public:
-  RrRegistry() = default;
-};
+  class RrRegistry
+  {
+  public:
+    RrRegistry() = default;
+  };
 
-typedef std::shared_ptr<RrRegistry> RrRegistryPtr;
+  typedef std::shared_ptr<RrRegistry> RrRegistryPtr;
 
 } // namespace temoto_resource_registrar
 

@@ -21,18 +21,20 @@
 
 namespace temoto_resource_registrar
 {
-class RrClientBase
-{
-public:
-  RrClientBase(RrRegistryPtr rr_registry)
-  : rr_registry_(rr_registry)
-  {}
-  
-  void wrappedCallback();
+  class RrClientBase
+  {
+  public:
+    RrClientBase(const std::string &name, RrRegistryPtr rr_registry)
+        : rr_registry_(rr_registry)
+    {
+    }
 
-private:
-  RrRegistryPtr rr_registry_;
-};
+    void wrappedCallback();
+
+  private:
+    RrRegistryPtr rr_registry_;
+    std::string name_;
+  };
 
 } // namespace temoto_resource_registrar
 

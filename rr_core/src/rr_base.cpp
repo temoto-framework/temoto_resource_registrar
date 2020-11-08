@@ -3,38 +3,31 @@
 
 namespace temoto_resource_registrar
 {
-    RrBase::RrBase()
-        : rr_registry_(std::make_shared<RrRegistry>())
-    {}
+  RrBase::RrBase()
+      : rr_registry_(std::make_shared<RrRegistry>())
+  {
+  }
 
-    void RrBase::addServer(std::unique_ptr<RrServerBase> base_server)
+  void RrBase::addServer(std::unique_ptr<RrServerBase> base_server)
+  {
+    rr_servers_.insert({base_server->id(), std::move(base_server)});
+  }
+
+  bool RrBase::exists(std::unique_ptr<RrServerBase> server)
+  {
+    return rr_servers_.count(server->id()) > 0;
+  }
+
+  void RrBase::call()
+  {
+  }
+
+  void RrBase::print()
+  {
+    for (const auto &server : rr_servers_)
     {
-        rr_servers_.push_back(std::move(base_server));
+      server.second->print();
     }
+  }
 
-    bool RrBase::exists(std::unique_ptr<RrServerBase> server)
-    {
-        for (const auto& value : rr_servers_) 
-        {
-            if (value -> id() == server -> id())
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    void RrBase::call()
-    {
-    }
-
-    void RrBase::print() {
-        for (const auto& server : rr_servers_)
-	    {
-	      server->print();
-	    }
-    }
-
-}
-
+} // namespace temoto_resource_registrar
