@@ -38,7 +38,7 @@ set(SOURCE_FILES ${SOURCES})
 
 configure_file(${LIBRARY_NAME}.pc.in ${LIBRARY_NAME}.pc @ONLY)
 
-find_package (Boost 1.55.0 REQUIRED COMPONENTS system filesystem)
+find_package (Boost 1.65.1 REQUIRED COMPONENTS system filesystem)
 if (Boost_FOUND)
     include_directories (SYSTEM ${Boost_INCLUDE_DIR})
 endif ()
