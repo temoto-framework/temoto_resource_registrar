@@ -88,7 +88,7 @@ if (test)
   enable_testing()
 
   add_executable(rr_test test/rr_test.cpp)
-  target_link_libraries(rr_test libgtest libgmock gtest_main)
+  target_link_libraries(rr_test libgtest libgmock)
 
   target_link_libraries(rr_test ${LIBRARY_NAME})
 
