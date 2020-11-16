@@ -17,35 +17,31 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
-#include <vector>
-#include "temoto_resource_registrar/rr_server_base.h"
-#include "temoto_resource_registrar/rr_client_base.h"
-#include "temoto_resource_registrar/rr_registry.h"
+#include "rr_client_base.h"
+#include "rr_registry.h"
+#include "rr_server_base.h"
+#include <map>
 
 namespace temoto_resource_registrar
 {
-class RrBase
-{
-public:
-  RrBase()
-  : rr_registry_(std::make_shared<RrRegistry>())
-  {}
-
-  void addServer()
+  class RrBase
   {
-    rr_servers_.emplace_back(rr_registry_);
-  }
+  public:
+    RrBase();
 
-  void call()
-  {
-    rr_clients_.emplace_back(rr_registry_);
-  }
+    void addServer(std::unique_ptr<RrServerBase> base_server);
 
-private:
-  std::vector<RrServerBase> rr_servers_;
-  std::vector<RrClientBase> rr_clients_;
-  RrRegistryPtr rr_registry_;
-};
+    bool exists(std::unique_ptr<RrServerBase> server);
+
+    void call();
+
+    void print();
+
+  private:
+    std::map<int, std::unique_ptr<RrServerBase>> rr_servers_;
+    std::map<int, std::unique_ptr<RrClientBase>> rr_clients_;
+    RrRegistryPtr rr_registry_;
+  };
 
 } // namespace temoto_resource_registrar
 

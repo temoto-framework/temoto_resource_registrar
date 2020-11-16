@@ -17,23 +17,36 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 
-#include "temoto_resource_registrar/rr_registry.h"
-#include "temoto_resource_registrar/rr_query_base.h"
+#include "rr_query_base.h"
+#include "rr_registry.h"
+#include <boost/crc.hpp>
 
 namespace temoto_resource_registrar
 {
-class RrServerBase
-{
-public:
-  RrServerBase(RrRegistryPtr rr_registry)
-  : rr_registry_(rr_registry)
-  {}
+  class RrServerBase
+  {
 
-  void wrappedCallback();
+  public:
+    RrServerBase(const std::string &name, const std::string &class_name);
 
-private:
-  RrRegistryPtr rr_registry_;
-};
+    RrServerBase(const std::string &name, const std::string &class_name, RrRegistryPtr rr_registry);
+
+    void wrappedCallback();
+
+    virtual void print();
+
+    virtual unsigned int id();
+
+  protected:
+    RrRegistryPtr rr_registry_;
+    //keeping debug values, just in case for dev
+    std::string name_;
+    std::string class_name_;
+
+  private:
+    unsigned int id_;
+    unsigned int calculateId();
+  };
 
 } // namespace temoto_resource_registrar
 

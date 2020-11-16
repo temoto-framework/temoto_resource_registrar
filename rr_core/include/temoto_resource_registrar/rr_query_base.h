@@ -19,9 +19,9 @@
 
 namespace temoto_resource_registrar
 {
-class RrQueryBase
-{
-};
+  class RrQueryBase
+  {
+  };
 
 } // namespace temoto_resource_registrar
 

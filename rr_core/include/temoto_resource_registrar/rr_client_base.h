@@ -17,22 +17,24 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 
-#include "temoto_resource_registrar/rr_registry.h"
+#include "rr_registry.h"
 
 namespace temoto_resource_registrar
 {
-class RrClientBase
-{
-public:
-  RrClientBase(RrRegistryPtr rr_registry)
-  : rr_registry_(rr_registry)
-  {}
-  
-  void wrappedCallback();
+  class RrClientBase
+  {
+  public:
+    RrClientBase(const std::string &name, RrRegistryPtr rr_registry)
+        : rr_registry_(rr_registry)
+    {
+    }
 
-private:
-  RrRegistryPtr rr_registry_;
-};
+    void wrappedCallback();
+
+  private:
+    RrRegistryPtr rr_registry_;
+    std::string name_;
+  };
 
 } // namespace temoto_resource_registrar
 

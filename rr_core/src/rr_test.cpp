@@ -1,7 +1,7 @@
-#include <iostream>
 #include "temoto_resource_registrar/rr_base.h"
+#include <iostream>
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   /*
    * In order to test all the required features the RR must posess, we need at least 3 RR objects 
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
    * 
    *  - load callbacks have to be defined, where loadCallbackRtM1 makes a client call to rr_m2.
    *  - in order to test this contraption, rr_m0 must make a client call to rr_m1
-   */ 
+   */
 
   temoto_resource_registrar::RrBase rr_m0;
   temoto_resource_registrar::RrBase rr_m1;
