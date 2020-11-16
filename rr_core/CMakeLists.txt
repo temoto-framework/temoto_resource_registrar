@@ -4,8 +4,6 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
-
 file(GLOB HEADERS
     "include/*.h"
 )
@@ -50,17 +48,46 @@ option(test "Build all tests." OFF)
 # test config
 #############
 if (test)
-    add_subdirectory(lib/googletest)
+  include(ExternalProject)
 
-    enable_testing()
-    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+  find_package(Threads REQUIRED)
 
-    add_executable(rr_test test/rr_test.cpp)
-    target_link_libraries(rr_test gtest gtest_main)
+  ExternalProject_Add(
+    gtest
+    URL https://github.com/google/googletest/archive/master.zip
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest
+    INSTALL_COMMAND ""
+  )
 
-    target_link_libraries(rr_test ${LIBRARY_NAME})
+  ExternalProject_Get_Property(gtest source_dir binary_dir)
 
-    add_test(NAME ResourceRegistrarTest COMMAND rr_test)
+  add_library(libgtest IMPORTED STATIC GLOBAL)
+  add_dependencies(libgtest gtest)
+
+  set_target_properties(libgtest PROPERTIES
+    "IMPORTED_LOCATION" "${binary_dir}/lib/libgtest.a"
+    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+  )
+
+  add_library(libgmock IMPORTED STATIC GLOBAL)
+  add_dependencies(libgmock gtest)
+
+  set_target_properties(libgmock PROPERTIES
+    "IMPORTED_LOCATION" "${binary_dir}/lib/libgmock.a"
+    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+  )
+  
+  include_directories("${source_dir}/googletest/include"
+                    "${source_dir}/googlemock/include")
+
+  enable_testing()
+
+  add_executable(rr_test test/rr_test.cpp)
+  target_link_libraries(rr_test libgtest libgmock gtest_main)
+
+  target_link_libraries(rr_test ${LIBRARY_NAME})
+
+  add_test(NAME ResourceRegistrarTest COMMAND rr_test)
 endif()
 #############
 
