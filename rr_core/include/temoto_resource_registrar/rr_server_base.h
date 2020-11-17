@@ -27,9 +27,9 @@ namespace temoto_resource_registrar
   {
 
   public:
-    RrServerBase(const std::string &name, const std::string &class_name);
+    RrServerBase(const std::string &name, void (*loadCallback)(), void (*unLoadCallback)());
 
-    RrServerBase(const std::string &name, const std::string &class_name, RrRegistryPtr rr_registry);
+    RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(), void (*unLoadCallback)());
 
     void wrappedCallback();
 
@@ -46,6 +46,8 @@ namespace temoto_resource_registrar
   private:
     unsigned int id_;
     unsigned int calculateId();
+    void (*load_callback_ptr_)();
+    void (*unload_callback_ptr_)();
   };
 
 } // namespace temoto_resource_registrar
