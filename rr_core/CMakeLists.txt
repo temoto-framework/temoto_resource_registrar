@@ -104,8 +104,8 @@ if (test)
   include_directories("${binary_dir}"
                       "${source_dir}/src")
 
-  #enable_testing()
-  #find_package(GTest)
+  enable_testing()
+  find_package(GTest)
 
   set(TEST_BINARY ${CMAKE_PROJECT_NAME}_test)
   file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false test/*.h test/*.cpp)
@@ -113,9 +113,9 @@ if (test)
   add_executable(${TEST_BINARY} ${TEST_SOURCES})
   target_link_libraries(${TEST_BINARY} libgtest libgmock libglog ${LIBRARY_NAME})
 
-  #gtest_discover_tests(${TEST_BINARY}
-  #  WORKING_DIRECTORY ${PROJECT_DIR}
-  #)
+  gtest_discover_tests(${TEST_BINARY}
+    WORKING_DIRECTORY ${PROJECT_DIR}
+  )
   
 endif()
 #############
