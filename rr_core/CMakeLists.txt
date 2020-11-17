@@ -85,8 +85,6 @@ if (test)
   include_directories("${source_dir}/googletest/include"
                     "${source_dir}/googlemock/include")
 
-
-
   ExternalProject_Add(
     glog
     URL https://github.com/google/glog/archive/master.zip
@@ -107,8 +105,8 @@ if (test)
                       "${source_dir}/src")
 
 
-  find_package(GTest)
-  enable_testing()
+  #find_package(GTest)
+  #enable_testing()
 
 
   set(TEST_BINARY ${CMAKE_PROJECT_NAME}_test)
@@ -117,9 +115,9 @@ if (test)
   add_executable(${TEST_BINARY} ${TEST_SOURCES})
   target_link_libraries(${TEST_BINARY} libgtest libgmock libglog gtest_main ${LIBRARY_NAME})
 
-  gtest_discover_tests(${TEST_BINARY}
-    WORKING_DIRECTORY ${PROJECT_DIR}
-  )
+  #gtest_discover_tests(${TEST_BINARY}
+  #  WORKING_DIRECTORY ${PROJECT_DIR}
+  #)
   
 endif()
 #############
