@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "temoto_resource_registrar/rr_base.h"
+#include "temoto_resource_registrar/rr_client_base.h"
 #include "temoto_resource_registrar/rr_server_base.h"
 
 #include <unistd.h>
@@ -31,6 +32,7 @@ class RrBaseTest : public ::testing::Test
 protected:
   RrBaseTest()
   {
+    //rr_m0_client = temoto_resource_registrar::RrClientBase("rr_m0_client", rr_m0 << rr_registry_);
   }
 
   virtual ~RrBaseTest()
@@ -48,6 +50,12 @@ protected:
   temoto_resource_registrar::RrBase rr_m0;
   temoto_resource_registrar::RrBase rr_m1;
   temoto_resource_registrar::RrBase rr_m2;
+
+  /*
+  temoto_resource_registrar::RrClientBase rr_m0_client;
+  temoto_resource_registrar::RrClientBase rr_m1_client;
+  temoto_resource_registrar::RrClientBase rr_m2_client;
+  */
 };
 
 template <class serverClass>

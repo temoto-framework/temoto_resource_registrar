@@ -17,23 +17,28 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 
+#include "rr_identifiable.h"
 #include "rr_registry.h"
+#include <boost/crc.hpp>
 
 namespace temoto_resource_registrar
 {
-  class RrClientBase
+  class RrClientBase : public Identifiable
   {
   public:
-    RrClientBase(const std::string &name, RrRegistryPtr rr_registry)
-        : rr_registry_(rr_registry)
-    {
-    }
+    RrClientBase(const std::string &name, RrRegistryPtr rr_registry);
 
-    void wrappedCallback();
+    virtual void wrappedCallback();
 
-  private:
+    virtual unsigned int id();
+
+  protected:
     RrRegistryPtr rr_registry_;
     std::string name_;
+
+  private:
+    unsigned int calculateId();
+    unsigned int id_;
   };
 
 } // namespace temoto_resource_registrar

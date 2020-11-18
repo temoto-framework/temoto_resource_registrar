@@ -29,7 +29,9 @@ namespace temoto_resource_registrar
   public:
     RrBase();
 
-    void addServer(std::unique_ptr<RrServerBase> base_server);
+    void addServer(std::unique_ptr<RrServerBase> baseServer);
+
+    void addClient(std::unique_ptr<RrClientBase> baseClient);
 
     bool exists(std::unique_ptr<RrServerBase> server);
 
