@@ -58,21 +58,87 @@ public:
       : RrServerBase(name, __func__, loadCallback, unLoadCallback)
   {
   }
+  void print()
+  {
+    LOG(INFO) << "I am '" << name_ << "' (" << class_name_ << "). "
+              << "My resource class: "
+              << typeid(serverClass).name() << " ."
+              << "My ID: " << id() << std::endl;
+  }
 };
 
-class RtM1
+class SimpleResource
 {
+public:
+  SimpleResource() : res_name_(__func__), open_(false), operation_counter_(0) {}
+
+  SimpleResource(const std::string &className) : open_(false), operation_counter_(0)
+  {
+    res_name_ = className;
+  }
+
+  bool openResource()
+  {
+    if (!open_)
+      open_ = true;
+    else
+      throw "Already open";
+    return true;
+  }
+
+  bool closeResource()
+  {
+    if (open_)
+      open_ = false;
+    else
+      throw "Already closed";
+    return true;
+  }
+
+  int executeResource()
+  {
+    return operation_counter_++;
+  }
+
+private:
+  std::string res_name_;
+  bool open_;
+  int operation_counter_;
 };
 
-class RtM2
+class Resource1 : public SimpleResource
 {
+public:
+  Resource1() : SimpleResource(__func__)
+  {
+  }
 };
 
-void RtM1LoadCB(){};
-void RtM1UnloadCB(){};
+class Resource2 : public SimpleResource
+{
+public:
+  Resource2() : SimpleResource(__func__)
+  {
+  }
+};
 
-void RtM2LoadCB(){};
-void RtM2UnloadCB(){};
+void RtM1LoadCB()
+{
+  LOG(INFO) << "RtM1LoadCB called";
+};
+void RtM1UnloadCB()
+{
+  LOG(INFO) << "RtM1UnloadCB called";
+};
+
+void RtM2LoadCB()
+{
+  LOG(INFO) << "RtM2LoadCB called";
+};
+void RtM2UnloadCB()
+{
+  LOG(INFO) << "RtM2UnloadCB called";
+};
 
 TEST_F(RrBaseTest, ResourceRegistrarTest)
 {
@@ -83,7 +149,15 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
    *   b) resource reference count in rr_m1 is equal to the nr of requests by rr_m0
    */
 
-  auto resource1 = std::make_unique<ServerDerivate<RtM1>>("RtM1 resource", &RtM1LoadCB, &RtM1UnloadCB);
-  auto resource2 = std::make_unique<ServerDerivate<RtM2>>("RtM2 resource", &RtM2LoadCB, &RtM2UnloadCB);
-  rr_m0.print();
+  LOG(INFO) << "adding resource servers to rr_m1 and rr_m2";
+  rr_m1.addServer(std::make_unique<ServerDerivate<Resource1>>("Resource1 resource", &RtM1LoadCB, &RtM1UnloadCB));
+  rr_m2.addServer(std::make_unique<ServerDerivate<Resource2>>("Resource2 resource", &RtM2LoadCB, &RtM2UnloadCB));
+  LOG(INFO) << "adding resource done";
+
+  LOG(INFO) << "rr_m1 servers:";
+  rr_m1.print();
+  LOG(INFO) << "rr_m2 servers:";
+  rr_m2.print();
+
+  //rr_m0.call();
 }

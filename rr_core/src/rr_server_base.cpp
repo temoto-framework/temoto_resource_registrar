@@ -4,10 +4,8 @@
 namespace temoto_resource_registrar
 {
   RrServerBase::RrServerBase(const std::string &name, void (*loadCallback)(), void (*unLoadCallback)())
-      : name_(name), load_callback_ptr_(loadCallback), unload_callback_ptr_(unLoadCallback)
+      : name_(name), load_callback_ptr_(loadCallback), unload_callback_ptr_(unLoadCallback), class_name_(__func__), id_(calculateId())
   {
-    id_ = calculateId();
-    class_name_ = __func__;
   }
 
   RrServerBase::RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(), void (*unLoadCallback)())
