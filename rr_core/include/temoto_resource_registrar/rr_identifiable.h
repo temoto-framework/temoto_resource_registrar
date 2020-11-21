@@ -1,6 +1,8 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
 
+#include "string"
+
 namespace temoto_resource_registrar
 {
   class Identifiable
@@ -8,7 +10,7 @@ namespace temoto_resource_registrar
   public:
     virtual ~Identifiable(){};
 
-    virtual unsigned int id() = 0;
+    virtual std::string id() = 0;
   };
 } // namespace temoto_resource_registrar
 

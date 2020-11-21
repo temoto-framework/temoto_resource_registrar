@@ -4,9 +4,12 @@
 
 #include "temoto_resource_registrar/rr_base.h"
 #include "temoto_resource_registrar/rr_client_base.h"
+#include "temoto_resource_registrar/rr_query_base.h"
+#include "temoto_resource_registrar/rr_resource.h"
 #include "temoto_resource_registrar/rr_server_base.h"
 
 #include <unistd.h>
+using namespace temoto_resource_registrar;
 
 /*
    * In order to test all the required features the RR must posess, we need at least 3 RR objects 
@@ -47,9 +50,9 @@ protected:
   {
   }
 
-  temoto_resource_registrar::RrBase rr_m0;
-  temoto_resource_registrar::RrBase rr_m1;
-  temoto_resource_registrar::RrBase rr_m2;
+  RrBase rr_m0 = RrBase("rr_m0");
+  RrBase rr_m1 = RrBase("rr_m1");
+  RrBase rr_m2 = RrBase("rr_m2");
 
   /*
   temoto_resource_registrar::RrClientBase rr_m0_client;
@@ -75,43 +78,23 @@ public:
   }
 };
 
-class SimpleResource
+class SimpleResource : public RrResource
 {
 public:
-  SimpleResource() : res_name_(__func__), open_(false), operation_counter_(0) {}
+  SimpleResource() : res_name_(__func__) {}
 
-  SimpleResource(const std::string &className) : open_(false), operation_counter_(0)
+  SimpleResource(const std::string &className)
   {
     res_name_ = className;
   }
 
-  bool openResource()
+  std::string name()
   {
-    if (!open_)
-      open_ = true;
-    else
-      throw "Already open";
-    return true;
-  }
-
-  bool closeResource()
-  {
-    if (open_)
-      open_ = false;
-    else
-      throw "Already closed";
-    return true;
-  }
-
-  int executeResource()
-  {
-    return operation_counter_++;
+    return res_name_;
   }
 
 private:
   std::string res_name_;
-  bool open_;
-  int operation_counter_;
 };
 
 class Resource1 : public SimpleResource
@@ -158,6 +141,7 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
    */
 
   LOG(INFO) << "adding resource servers to rr_m1 and rr_m2";
+
   rr_m1.addServer(std::make_unique<ServerDerivate<Resource1>>("Resource1 resource", &RtM1LoadCB, &RtM1UnloadCB));
   rr_m2.addServer(std::make_unique<ServerDerivate<Resource2>>("Resource2 resource", &RtM2LoadCB, &RtM2UnloadCB));
   LOG(INFO) << "adding resource done";
@@ -166,6 +150,12 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   rr_m1.print();
   LOG(INFO) << "rr_m2 servers:";
   rr_m2.print();
+
+  //rQueryBase<queryType> query, RrBase registry;
+
+  RrQueryBase query = RrQueryBase("Resource1 resource");
+
+  rr_m0.call(query, rr_m1);
 
   //rr_m0.call();
 }

@@ -20,9 +20,9 @@ namespace temoto_resource_registrar
               << "My ID: " << id() << std::endl;
   }
 
-  unsigned int RrServerBase::id()
+  std::string RrServerBase::id()
   {
-    return id_;
+    return name_;
   }
 
   unsigned int RrServerBase::calculateId()

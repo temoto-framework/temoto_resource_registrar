@@ -17,10 +17,32 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_BASE_H
 
+#include <string>
+
 namespace temoto_resource_registrar
 {
   class RrQueryBase
   {
+  public:
+    RrQueryBase(const std::string targetServer)
+        : target_server_(targetServer){
+
+          };
+    std::string target()
+    {
+      return target_server_;
+    };
+
+    void request(){
+
+    };
+
+    void response(){
+
+    };
+
+  private:
+    std::string target_server_;
   };
 
 } // namespace temoto_resource_registrar

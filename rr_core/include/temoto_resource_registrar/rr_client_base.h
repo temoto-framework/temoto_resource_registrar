@@ -30,7 +30,7 @@ namespace temoto_resource_registrar
 
     virtual void wrappedCallback();
 
-    virtual unsigned int id();
+    virtual std::string id();
 
   protected:
     RrRegistryPtr rr_registry_;

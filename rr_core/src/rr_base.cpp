@@ -1,4 +1,4 @@
-#include "temoto_resource_registrar/rr_base.h"
+/*#include "temoto_resource_registrar/rr_base.h"
 #include <iostream>
 
 namespace temoto_resource_registrar
@@ -18,10 +18,6 @@ namespace temoto_resource_registrar
     return rr_servers_.count(server->id()) > 0;
   }
 
-  void RrBase::call()
-  {
-  }
-
   void RrBase::print()
   {
     for (const auto &server : rr_servers_)
@@ -31,3 +27,4 @@ namespace temoto_resource_registrar
   }
 
 } // namespace temoto_resource_registrar
+*/

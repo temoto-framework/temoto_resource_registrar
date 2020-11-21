@@ -7,9 +7,9 @@ namespace temoto_resource_registrar
   {
   }
 
-  unsigned int RrClientBase::id()
+  std::string RrClientBase::id()
   {
-    return id_;
+    return name_;
   }
 
   unsigned int RrClientBase::calculateId()
