@@ -23,61 +23,32 @@
 #include "rr_resource.h"
 #include "rr_server_base.h"
 #include <iostream>
-#include <map>
+#include <unordered_map>
 
 namespace temoto_resource_registrar
 {
   class RrBase
   {
   public:
-    RrBase(std::string name)
-        : rr_registry_(std::make_shared<RrRegistry>()), name_(name){};
+    RrBase(std::string name);
 
-    void addServer(std::unique_ptr<RrServerBase> base_server)
-    {
-      rr_servers_.insert({base_server->id(), std::move(base_server)});
-    };
+    void addServer(std::unique_ptr<RrServerBase> base_server);
 
-    void addClient(std::unique_ptr<RrClientBase> baseClient){};
+    void addClient(std::unique_ptr<RrClientBase> baseClient);
 
-    bool exists(std::string serverId)
-    {
-      return rr_servers_.count(serverId) > 0;
-    };
+    bool exists(std::string serverId);
 
-    void call(RrQueryBase &resource, RrBase &base)
-    {
+    void call(RrQueryBase &resource, RrBase &base);
 
-      std::cout << typeid(resource).name() << " - " << resource.target() << std::endl;
+    RrServerBase *fetchServer(std::string serverId);
 
-      if (base.exists(resource.target()))
-      {
-        LOG(INFO) << "Server with ID '" << resource.target() << "' found! "
-                  << "Found in: " << base.id();
-      }
-      else
-      {
-        LOG(INFO) << "Server with ID '" << resource.target() << "' NOT found!"
-                  << " searched in: " << base.id();
-      }
-    };
+    void print();
 
-    void print()
-    {
-      for (const auto &server : rr_servers_)
-      {
-        server.second->print();
-      }
-    };
-
-    std::string id()
-    {
-      return name_;
-    }
+    const std::string id();
 
   private:
-    std::map<std::string, std::unique_ptr<RrServerBase>> rr_servers_;
-    std::map<std::string, std::unique_ptr<RrClientBase>> rr_clients_;
+    std::unordered_map<std::string, std::unique_ptr<RrServerBase>> rr_servers_;
+    std::unordered_map<std::string, std::unique_ptr<RrClientBase>> rr_clients_;
     RrRegistryPtr rr_registry_;
     std::string name_;
   };

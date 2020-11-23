@@ -30,6 +30,10 @@ using namespace temoto_resource_registrar;
    *  - in order to test this contraption, rr_m0 must make a client call to rr_m1
    */
 
+RrBase rr_m0 = RrBase("rr_m0");
+RrBase rr_m1 = RrBase("rr_m1");
+RrBase rr_m2 = RrBase("rr_m2");
+
 class RrBaseTest : public ::testing::Test
 {
 protected:
@@ -49,16 +53,6 @@ protected:
   virtual void TearDown()
   {
   }
-
-  RrBase rr_m0 = RrBase("rr_m0");
-  RrBase rr_m1 = RrBase("rr_m1");
-  RrBase rr_m2 = RrBase("rr_m2");
-
-  /*
-  temoto_resource_registrar::RrClientBase rr_m0_client;
-  temoto_resource_registrar::RrClientBase rr_m1_client;
-  temoto_resource_registrar::RrClientBase rr_m2_client;
-  */
 };
 
 template <class serverClass>
@@ -116,17 +110,22 @@ public:
 void RtM1LoadCB()
 {
   LOG(INFO) << "RtM1LoadCB called";
+  RrQueryBase query = RrQueryBase("Resource2 resource");
+
+  rr_m1.call(query, rr_m2);
 };
-void RtM1UnloadCB()
+
+static void RtM1UnloadCB()
 {
   LOG(INFO) << "RtM1UnloadCB called";
 };
 
-void RtM2LoadCB()
+static void RtM2LoadCB()
 {
   LOG(INFO) << "RtM2LoadCB called";
 };
-void RtM2UnloadCB()
+
+static void RtM2UnloadCB()
 {
   LOG(INFO) << "RtM2UnloadCB called";
 };
@@ -151,11 +150,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "rr_m2 servers:";
   rr_m2.print();
 
-  //rQueryBase<queryType> query, RrBase registry;
-
+  LOG(INFO) << "executing call to rr_m0";
   RrQueryBase query = RrQueryBase("Resource1 resource");
 
   rr_m0.call(query, rr_m1);
-
-  //rr_m0.call();
 }

@@ -17,10 +17,12 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 
+#include "rr_client_base.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
 #include "rr_registry.h"
-#include <boost/crc.hpp>
+
+#include <iostream>
 
 namespace temoto_resource_registrar
 {
@@ -36,7 +38,11 @@ namespace temoto_resource_registrar
 
     virtual void print();
 
-    virtual std::string id();
+    std::string id();
+
+    //RrClientBase buildClient();
+
+    void loadResource();
 
   protected:
     RrRegistryPtr rr_registry_;
@@ -46,7 +52,6 @@ namespace temoto_resource_registrar
 
   private:
     unsigned int id_;
-    unsigned int calculateId();
     void (*load_callback_ptr_)();
     void (*unload_callback_ptr_)();
   };
