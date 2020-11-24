@@ -20,7 +20,7 @@
 #include "rr_client_base.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
-#include "rr_registry.h"
+//#include "rr_registry.h"
 
 #include <iostream>
 
@@ -40,12 +40,12 @@ namespace temoto_resource_registrar
 
     std::string id();
 
-    //RrClientBase buildClient();
+    //RrClientBase buildClient(const std::string &clientName);
 
     void loadResource();
 
   protected:
-    RrRegistryPtr rr_registry_;
+    //RrRegistryPtr rr_registry_;
     //keeping debug values, just in case for dev
     std::string name_;
     std::string class_name_;

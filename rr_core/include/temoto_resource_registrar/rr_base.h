@@ -47,8 +47,6 @@ namespace temoto_resource_registrar
     const std::string id();
 
   private:
-    std::unordered_map<std::string, std::unique_ptr<RrServerBase>> rr_servers_;
-    std::unordered_map<std::string, std::unique_ptr<RrClientBase>> rr_clients_;
     RrRegistryPtr rr_registry_;
     std::string name_;
   };
