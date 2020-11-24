@@ -23,7 +23,12 @@ namespace temoto_resource_registrar
 
   bool RrServerRepository::exists(const std::string &id)
   {
-    return rr_servers_.count(id) > 0;
+    auto it = rr_servers_.find(id);
+    if (it != rr_servers_.end())
+    {
+      return true;
+    }
+    return false;
   };
 
   RrServerBase *RrServerRepository::get(const std::string &id)

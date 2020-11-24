@@ -24,14 +24,16 @@ namespace temoto_resource_registrar
   {
     if (rr.exists(resource.target()))
     {
+
       RrServerBase *server = rr.fetchServer(resource.target());
+
       server->loadResource();
     }
   };
 
   RrServerBase *RrBase::fetchServer(std::string serverId)
   {
-    return fetchServer(serverId);
+    return rr_registry_->fetchServer(serverId);
   };
 
   void RrBase::print()

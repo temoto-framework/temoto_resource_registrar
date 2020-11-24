@@ -145,6 +145,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   rr_m2.addServer(std::make_unique<ServerDerivate<Resource2>>("Resource2 resource", &RtM2LoadCB, &RtM2UnloadCB));
   LOG(INFO) << "adding resource done";
 
+  LOG(INFO) << "rr_m0 servers:";
+  rr_m0.print();
   LOG(INFO) << "rr_m1 servers:";
   rr_m1.print();
   LOG(INFO) << "rr_m2 servers:";
@@ -152,6 +154,6 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   LOG(INFO) << "executing call to rr_m0";
   RrQueryBase query = RrQueryBase("Resource1 resource");
-
+  LOG(INFO) << "calling...";
   rr_m0.call(query, rr_m1);
 }
