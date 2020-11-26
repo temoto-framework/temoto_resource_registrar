@@ -20,7 +20,9 @@
 #include "rr_client_base.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
-//#include "rr_registry.h"
+
+#include "rr_query_request.h"
+#include "rr_query_response.h"
 
 #include <iostream>
 
@@ -43,6 +45,10 @@ namespace temoto_resource_registrar
     //RrClientBase buildClient(const std::string &clientName);
 
     void loadResource();
+
+    virtual RrQueryResponse processRequest(RrQueryRequest req);
+
+#include "rr_query_response.h"
 
   protected:
     //RrRegistryPtr rr_registry_;

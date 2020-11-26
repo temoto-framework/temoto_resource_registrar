@@ -18,12 +18,15 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
 #include "rr_client_base.h"
+#include "rr_message_registry.h"
 #include "rr_query_base.h"
 #include "rr_registry.h"
 #include "rr_resource.h"
 #include "rr_server_base.h"
 #include <iostream>
 #include <unordered_map>
+
+#include "glog/logging.h"
 
 namespace temoto_resource_registrar
 {
@@ -32,22 +35,18 @@ namespace temoto_resource_registrar
   public:
     RrBase(std::string name);
 
-    void addServer(std::unique_ptr<RrServerBase> base_server);
-
+    void addServer(std::unique_ptr<RrServerBase> baseServer);
     void addClient(std::unique_ptr<RrClientBase> baseClient);
-
     bool exists(std::string serverId);
-
     void call(RrQueryBase &resource, RrBase &base);
-
+    void call(RrQueryBase &resource);
     RrServerBase *fetchServer(std::string serverId);
-
     void print();
-
     const std::string id();
 
   private:
     RrRegistryPtr rr_registry_;
+    RrMessageRegistryPtr rr_message_registry_;
     std::string name_;
   };
 

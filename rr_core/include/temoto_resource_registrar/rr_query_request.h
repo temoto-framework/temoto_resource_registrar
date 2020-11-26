@@ -14,19 +14,32 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_REQUEST_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_REQUEST_H
 
-#include "string"
+#include <string>
+
+#include "glog/logging.h"
 
 namespace temoto_resource_registrar
 {
-  class Identifiable
+  class RrQueryRequest
   {
   public:
-    virtual ~Identifiable(){};
+    std::string message_;
 
-    virtual std::string id() = 0;
+    RrQueryRequest(const std::string &message)
+        : message_(message){};
+
+    RrQueryRequest(const RrQueryRequest &query)
+        : message_(query.message_){};
+
+    bool operator==(const RrQueryRequest &other) const
+    {
+      return message_ == other.message_;
+    }
+
+  private:
   };
 } // namespace temoto_resource_registrar
 

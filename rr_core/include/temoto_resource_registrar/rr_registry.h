@@ -70,10 +70,11 @@ namespace temoto_resource_registrar
     bool add(std::unique_ptr<RrClientBase> client);
     bool remove(const std::string &id);
     bool exists(const std::string &id);
-    void registerStatusCallback(const std::string &id, std::function<void(RrClientBase)> rrStatusCallback);
+    void registerStatusCallback(std::function<void(RrClientBase)> rrStatusCallback);
 
   private:
     std::unordered_map<std::string, std::unique_ptr<RrClientRepostioryEntry>> rr_clients_;
+    std::vector<std::function<void(RrClientBase)>> client_status_callbacks_;
   };
 
   class RrRegistry

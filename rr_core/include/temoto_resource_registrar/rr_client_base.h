@@ -18,7 +18,10 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 
 #include "rr_identifiable.h"
+//#include "rr_registry.h"
+
 #include <string>
+
 namespace temoto_resource_registrar
 {
   class RrClientBase : public Identifiable
@@ -31,11 +34,11 @@ namespace temoto_resource_registrar
     virtual std::string id();
 
   protected:
-    //RrRegistryPtr rr_registry_;
     std::string name_;
 
   private:
     std::string id_;
+    //RrRegistryPtr rr_registry_;
   };
 
 } // namespace temoto_resource_registrar

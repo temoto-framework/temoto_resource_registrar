@@ -14,20 +14,27 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_RESPONSE_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_RESPONSE_H
 
-#include "string"
+#include <string>
 
 namespace temoto_resource_registrar
 {
-  class Identifiable
+  class RrQueryResponse
   {
   public:
-    virtual ~Identifiable(){};
+    RrQueryResponse(){};
 
-    virtual std::string id() = 0;
+    RrQueryResponse(const std::string &resp)
+        : response_(resp){};
+
+    RrQueryResponse(const RrQueryResponse &resp)
+        : response_(resp.response_){};
+
+    std::string response_;
+
+  private:
   };
 } // namespace temoto_resource_registrar
-
 #endif

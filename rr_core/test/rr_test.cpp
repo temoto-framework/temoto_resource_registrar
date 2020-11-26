@@ -70,6 +70,13 @@ public:
               << typeid(serverClass).name() << " ."
               << "My ID: " << id() << std::endl;
   }
+
+  RrQueryResponse processRequest(RrQueryRequest req)
+  {
+
+    LOG(INFO) << "processing req from derivate server: " << name_;
+    return RrQueryResponse("Processed data from " + name_);
+  }
 };
 
 class SimpleResource : public RrResource
@@ -110,8 +117,9 @@ public:
 void RtM1LoadCB()
 {
   LOG(INFO) << "RtM1LoadCB called";
-  RrQueryBase query = RrQueryBase("Resource2 resource");
 
+  RrQueryRequest req("request resource 2 messsage");
+  RrQueryBase query = RrQueryBase("Resource2 resource", req);
   rr_m1.call(query, rr_m2);
 };
 
@@ -128,6 +136,35 @@ static void RtM2LoadCB()
 static void RtM2UnloadCB()
 {
   LOG(INFO) << "RtM2UnloadCB called";
+};
+
+struct Person
+{
+  std::string first, last; // First and last names
+
+  Person(std::string f, std::string l)
+  {
+    first = f;
+    last = l;
+  }
+
+  // Match both first and last names in case
+  // of collisions.
+  bool operator==(const Person &p) const
+  {
+    return first == p.first && last == p.last;
+  }
+};
+
+class MyHashFunction
+{
+public:
+  // Use sum of lengths of first and last names
+  // as hash function.
+  std::size_t operator()(const Person &p) const
+  {
+    return p.first.length() + p.last.length();
+  }
 };
 
 TEST_F(RrBaseTest, ResourceRegistrarTest)
@@ -153,7 +190,28 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   rr_m2.print();
 
   LOG(INFO) << "executing call to rr_m0";
-  RrQueryBase query = RrQueryBase("Resource1 resource");
+  RrQueryRequest req("request resource 1 messsage");
+  RrQueryBase query("Resource1 resource", req);
   LOG(INFO) << "calling...";
   rr_m0.call(query, rr_m1);
+
+  //-------
+  std::unordered_map<Person, Person, MyHashFunction>
+      um;
+  Person p1("kartik", "kapoor");
+  Person p2("Ram", "Singh");
+  Person p3("Laxman", "Prasad");
+
+  //um[p1] = 100;
+  //um[p2] = 200;
+  //um[p3] = 100;
+
+  LOG(INFO) << um.count(p1);
+
+  for (auto e : um)
+  {
+    std::cout << "[" << e.first.first << ", "
+              << e.first.last
+              << "] = > " << '\n';
+  }
 }

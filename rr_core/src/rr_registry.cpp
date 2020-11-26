@@ -1,3 +1,19 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Copyright 2020 TeMoto Telerobotics
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include "temoto_resource_registrar/rr_registry.h"
 
 namespace temoto_resource_registrar
@@ -5,9 +21,7 @@ namespace temoto_resource_registrar
 
   /**
  * 
- * 
  * RrServerRepository
- * 
  * 
  */
 
@@ -17,8 +31,9 @@ namespace temoto_resource_registrar
     return ret.second;
   };
 
-  bool RrServerRepository::remove(const std::string &id){
-      //TODO: fill out
+  bool RrServerRepository::remove(const std::string &id)
+  {
+    return rr_servers_.erase(id) > 0;
   };
 
   bool RrServerRepository::exists(const std::string &id)
@@ -53,9 +68,7 @@ namespace temoto_resource_registrar
 
   /**
  * 
- * 
  * RrClientRepository
- * 
  * 
  */
 
@@ -65,8 +78,9 @@ namespace temoto_resource_registrar
     return ret.second;
   };
 
-  bool RrClientRepository::remove(const std::string &id){
-      //TODO: fill out
+  bool RrClientRepository::remove(const std::string &id)
+  {
+    return rr_clients_.erase(id) > 0;
   };
 
   bool RrClientRepository::exists(const std::string &id)
@@ -74,21 +88,23 @@ namespace temoto_resource_registrar
     return rr_clients_.count(id) > 0;
   };
 
-  void RrClientRepository::registerStatusCallback(const std::string &id, std::function<void(RrClientBase)> rrStatusCallback){};
+  void RrClientRepository::registerStatusCallback(std::function<void(RrClientBase)> rrStatusCallback)
+  {
+    client_status_callbacks_.push_back(rrStatusCallback);
+  };
 
   /**
  * 
- * 
  * RrClientRepostioryEntry
- * 
  * 
  */
 
   RrClientRepostioryEntry::RrClientRepostioryEntry(std::unique_ptr<RrClientBase> client)
       : client_pointer_(std::move(client)){};
 
-  std::string RrClientRepostioryEntry::id(){
-
+  std::string RrClientRepostioryEntry::id()
+  {
+    return client_pointer_->id();
   };
 
   void RrClientRepostioryEntry::executeStatusCallback(){
@@ -97,9 +113,7 @@ namespace temoto_resource_registrar
 
   /**
  * 
- * 
  * RrRegistry
- * 
  * 
  */
 
@@ -111,6 +125,11 @@ namespace temoto_resource_registrar
   bool RrRegistry::addClient(std::unique_ptr<RrClientBase> client)
   {
     client_repository_.add(std::move(client));
+  };
+
+  void RrRegistry::registerStatusCallback(std::function<void(RrClientBase)> rrStatusCallback)
+  {
+    client_repository_.registerStatusCallback(rrStatusCallback);
   };
 
   bool RrRegistry::hasClient(std::string const &id)
