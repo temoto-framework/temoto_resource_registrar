@@ -21,8 +21,6 @@
 #include "rr_query_request.h"
 #include "rr_query_response.h"
 
-#include "glog/logging.h"
-
 #include <algorithm>
 #include <boost/functional/hash.hpp>
 #include <map>
@@ -49,7 +47,6 @@ namespace temoto_resource_registrar
     bool storeResponse(RrQueryRequest req, RrQueryResponse res);
 
   private:
-    void printMapContent();
     std::unordered_map<RrQueryRequest, RrQueryResponse, HashFn> request_response_map_;
   };
 

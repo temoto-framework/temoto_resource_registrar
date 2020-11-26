@@ -43,23 +43,8 @@ namespace temoto_resource_registrar
 
   bool RrMessageRegistry::storeResponse(RrQueryRequest req, RrQueryResponse res)
   {
-    LOG(INFO) << "Storing request and response";
-    printMapContent();
     auto ret = request_response_map_.insert(std::make_pair(req, res));
-    printMapContent();
     return ret.second;
-  };
-
-  void RrMessageRegistry::printMapContent()
-  {
-    LOG(INFO) << "PRINTING MESSAGE HISTORY MAP:";
-    for (auto elem : request_response_map_)
-    {
-      LOG(INFO) << "["
-                << "key: " << elem.first.message_
-                << "value: " << elem.second.response_
-                << "]";
-    }
   };
 
   std::size_t HashFn::operator()(const RrQueryRequest &r) const

@@ -19,8 +19,6 @@
 
 #include <string>
 
-#include "glog/logging.h"
-
 namespace temoto_resource_registrar
 {
   class RrQueryRequest

@@ -36,57 +36,18 @@ namespace temoto_resource_registrar
     return rr_registry_->hasServer(serverId);
   };
 
-  // rrBase vajab funktsiooni RrQueryBase ära handliks
-
-  //handleQuery(RrQueryBase &resource)
-  /**
-   * serveri leidmine
-   * query unikaalsuse kontroll, vaadatakse kas teha load või mitte
-   * skip esialgu - binditakse status callback
-   * KUI unikaalne:
-   *  jooksutatakse load callback
-   *  vormistatakse response, et misiganes response-i tuleb
-   *  talletakse rr_registry
-   *  void, RrQueryBase sees on response
-   * ELSE
-   *  rr_registry võa väärtus ja tehtud
-   */
-
   void RrBase::call(RrQueryBase &resource, RrBase &rr)
   {
-
     if (rr.exists(resource.target()))
     {
       rr.call(resource);
-      /*if (rr_message_registry_->hasResponse(resource))
-      {
-        LOG(INFO) << "has response";
-        resource.updateResponse(rr_message_registry_->response(resource));
-      }
-      else
-      {
-        LOG(INFO) << "No response found. Fetching it";
-        rr.fetchServer(resource.target())->loadResource();
-        resource.updateResponse(rr.fetchServer(resource.target())->processRequest(resource.request()));
-      }
-
-      rr_message_registry_*/
-    }
-    else
-    {
-      LOG(INFO) << "nothing to do";
     }
   };
 
   void RrBase::call(RrQueryBase &resource)
   {
-    if (rr_message_registry_->hasResponse(resource))
+    if (!(rr_message_registry_->hasResponse(resource)))
     {
-      LOG(INFO) << "has response";
-    }
-    else
-    {
-      LOG(INFO) << "No response found. Fetching it";
       RrServerBase *server = rr_registry_->fetchServer(resource.target());
       server->loadResource();
       resource.updateResponse(server->processRequest(resource.request()));

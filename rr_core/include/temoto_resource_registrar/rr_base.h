@@ -26,8 +26,6 @@
 #include <iostream>
 #include <unordered_map>
 
-#include "glog/logging.h"
-
 namespace temoto_resource_registrar
 {
   class RrBase

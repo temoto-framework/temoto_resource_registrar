@@ -18,7 +18,6 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 
 #include "rr_identifiable.h"
-//#include "rr_registry.h"
 
 #include <string>
 
