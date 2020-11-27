@@ -42,6 +42,8 @@ namespace temoto_resource_registrar
     void print();
     const std::string id();
 
+    int serverCount();
+
   private:
     RrRegistryPtr rr_registry_;
     RrMessageRegistryPtr rr_message_registry_;

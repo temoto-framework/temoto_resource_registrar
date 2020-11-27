@@ -74,4 +74,9 @@ namespace temoto_resource_registrar
     return name_;
   };
 
+  int RrBase::serverCount()
+  {
+    return rr_registry_->registeredServers().size();
+  };
+
 } // namespace temoto_resource_registrar

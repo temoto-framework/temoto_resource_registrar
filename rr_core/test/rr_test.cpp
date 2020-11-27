@@ -34,6 +34,10 @@ RrBase rr_m0 = RrBase("rr_m0");
 RrBase rr_m1 = RrBase("rr_m1");
 RrBase rr_m2 = RrBase("rr_m2");
 
+int loadCalls = 0;
+int r1LoadCalls = 0;
+int r2LoadCalls = 0;
+
 class RrBaseTest : public ::testing::Test
 {
 protected:
@@ -116,6 +120,8 @@ public:
 
 void RtM1LoadCB()
 {
+  loadCalls++;
+  r1LoadCalls++;
   LOG(INFO) << "RtM1LoadCB called";
 
   RrQueryRequest req("request resource 2 messsage");
@@ -130,6 +136,8 @@ static void RtM1UnloadCB()
 
 static void RtM2LoadCB()
 {
+  loadCalls++;
+  r2LoadCalls++;
   LOG(INFO) << "RtM2LoadCB called";
 };
 
@@ -147,11 +155,21 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
    *   b) resource reference count in rr_m1 is equal to the nr of requests by rr_m0
    */
 
+  //check that counts for servers are 0
+  EXPECT_EQ(rr_m0.serverCount(), 0);
+  EXPECT_EQ(rr_m1.serverCount(), 0);
+  EXPECT_EQ(rr_m2.serverCount(), 0);
+
   LOG(INFO) << "adding resource servers to rr_m1 and rr_m2";
 
   rr_m1.addServer(std::make_unique<ServerDerivate<Resource1>>("Resource1 resource", &RtM1LoadCB, &RtM1UnloadCB));
   rr_m2.addServer(std::make_unique<ServerDerivate<Resource2>>("Resource2 resource", &RtM2LoadCB, &RtM2UnloadCB));
   LOG(INFO) << "adding resource done";
+
+  // check that servers registered correctly
+  EXPECT_EQ(rr_m0.serverCount(), 0);
+  EXPECT_EQ(rr_m1.serverCount(), 1);
+  EXPECT_EQ(rr_m2.serverCount(), 1);
 
   LOG(INFO) << "rr_m0 servers:";
   rr_m0.print();
@@ -160,9 +178,43 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "rr_m2 servers:";
   rr_m2.print();
 
+  // check call counters are 0
+  EXPECT_EQ(loadCalls, 0);
+  EXPECT_EQ(r1LoadCalls, 0);
+  EXPECT_EQ(r2LoadCalls, 0);
+
   LOG(INFO) << "executing call to rr_m0";
   RrQueryRequest req("request resource 1 messsage");
   RrQueryBase query("Resource1 resource", req);
+
+  EXPECT_EQ(query.response().response_, "");
+
   LOG(INFO) << "calling...";
   rr_m0.call(query, rr_m1);
+
+  EXPECT_EQ(loadCalls, 2);
+  EXPECT_EQ(r1LoadCalls, 1);
+  EXPECT_EQ(r2LoadCalls, 1);
+
+  // check that message is expected
+  EXPECT_EQ(query.response().response_, "Processed data from Resource1 resource");
+
+  // execute query again and check that reload is not done
+  LOG(INFO)
+      << "executing call to rr_m0";
+  LOG(INFO) << "calling...";
+
+  req = RrQueryRequest("request resource 1 messsage");
+  query = RrQueryBase("Resource1 resource", req);
+
+  EXPECT_EQ(query.response().response_, "");
+
+  rr_m0.call(query, rr_m1);
+
+  EXPECT_EQ(loadCalls, 2);
+  EXPECT_EQ(r1LoadCalls, 1);
+  EXPECT_EQ(r2LoadCalls, 1);
+
+  // check that message is expected
+  EXPECT_EQ(query.response().response_, "Processed data from Resource1 resource");
 }
