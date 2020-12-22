@@ -27,14 +27,14 @@ namespace temoto_resource_registrar
   void RrBase::addServer(std::unique_ptr<RrServerBase> baseServer)
   {
     rr_registry_->addServer(std::move(baseServer));
-  };
+  }
 
   void RrBase::addClient(std::unique_ptr<RrClientBase> baseClient){};
 
   bool RrBase::exists(std::string serverId)
   {
     return rr_registry_->hasServer(serverId);
-  };
+  }
 
   void RrBase::call(RrQueryBase &resource, RrBase &rr)
   {
@@ -42,7 +42,17 @@ namespace temoto_resource_registrar
     {
       rr.call(resource);
     }
-  };
+  }
+
+  bool RrBase::hasResponse(RrQueryBase &resource)
+  {
+    return rr_message_registry_->hasResponse(resource);
+  }
+
+  void RrBase::registerResponse(RrQueryBase &resource)
+  {
+    rr_message_registry_->response(resource);
+  }
 
   void RrBase::call(RrQueryBase &resource)
   {
@@ -54,12 +64,12 @@ namespace temoto_resource_registrar
     }
     //enriching response
     rr_message_registry_->response(resource);
-  };
+  }
 
   RrServerBase *RrBase::fetchServer(std::string serverId)
   {
     return rr_registry_->fetchServer(serverId);
-  };
+  }
 
   void RrBase::print()
   {
@@ -67,16 +77,16 @@ namespace temoto_resource_registrar
     {
       rr_registry_->fetchServer(server)->print();
     }
-  };
+  }
 
   const std::string RrBase::id()
   {
     return name_;
-  };
+  }
 
   int RrBase::serverCount()
   {
     return rr_registry_->registeredServers().size();
-  };
+  }
 
 } // namespace temoto_resource_registrar

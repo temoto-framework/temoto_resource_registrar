@@ -44,6 +44,9 @@ namespace temoto_resource_registrar
 
     int serverCount();
 
+    bool hasResponse(RrQueryBase &resource);
+    void registerResponse(RrQueryBase &resource);
+
   private:
     RrRegistryPtr rr_registry_;
     RrMessageRegistryPtr rr_message_registry_;
