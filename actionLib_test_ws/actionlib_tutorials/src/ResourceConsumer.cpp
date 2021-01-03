@@ -1,14 +1,40 @@
-#include "ResourceRegistrar.cpp"
+//#include "ResourceRegistrar.cpp"
+#include "RRServerBased.cpp"
 
-#include "std_msgs/String.h"
+#include <actionlib_tutorials/Resource1Action.h>
+#include <actionlib_tutorials/Resource2Action.h>
 
+/*
 void consumerCallback(const std_msgs::String::ConstPtr &msg)
 {
   ROS_INFO("The time is: [%s]", msg->data.c_str());
 }
+*/
 
 int main(int argc, char **argv)
 {
+  std::string name = "timeRequestor";
+  std::string target = "timePublisher";
+
+  ros::init(argc, argv, name);
+
+  ROS_INFO("init rr");
+  RosRR rr(name);
+
+  ROS_INFO("init Request");
+  temoto_resource_registrar::RrQueryRequest request("time", "stringServer");
+
+  actionlib_tutorials::Resource1Goal goal;
+
+  goal.message = "test goal";
+
+  RosQuery<actionlib_tutorials::Resource1Action, actionlib_tutorials::Resource1Goal>
+      query(request, goal);
+
+  ROS_INFO("calling");
+  rr.call(query, 5);
+
+  /*
   std::string name = "timeRequestor";
   std::string target = "timePublisher";
 
@@ -39,4 +65,5 @@ int main(int argc, char **argv)
   std::cout << query.response().response_ << std::endl;
 
   //ros::spin();
+  */
 }

@@ -26,13 +26,8 @@ namespace temoto_resource_registrar
   class RrQueryBase
   {
   public:
-    RrQueryBase(const std::string targetServer, RrQueryRequest request)
-        : target_server_(targetServer), request_(request){};
-
-    std::string target()
-    {
-      return target_server_;
-    };
+    RrQueryBase(RrQueryRequest &request)
+        : request_(request){};
 
     RrQueryRequest request()
     {
@@ -50,7 +45,6 @@ namespace temoto_resource_registrar
     };
 
   private:
-    std::string target_server_;
     RrQueryRequest request_;
     RrQueryResponse response_;
   };

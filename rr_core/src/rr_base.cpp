@@ -26,6 +26,7 @@ namespace temoto_resource_registrar
 
   void RrBase::addServer(std::unique_ptr<RrServerBase> baseServer)
   {
+    baseServer->setMessageRegistry(rr_message_registry_);
     rr_registry_->addServer(std::move(baseServer));
   }
 
@@ -38,7 +39,7 @@ namespace temoto_resource_registrar
 
   void RrBase::call(RrQueryBase &resource, RrBase &rr)
   {
-    if (rr.exists(resource.target()))
+    if (rr.exists(resource.request().target_))
     {
       rr.call(resource);
     }
@@ -58,7 +59,7 @@ namespace temoto_resource_registrar
   {
     if (!(rr_message_registry_->hasResponse(resource)))
     {
-      RrServerBase *server = rr_registry_->fetchServer(resource.target());
+      RrServerBase *server = rr_registry_->fetchServer(resource.request().target_);
       server->loadResource();
       resource.updateResponse(server->processRequest(resource.request()));
     }

@@ -1,4 +1,4 @@
-#include "ResourceRegistrar.cpp"
+#include "RRServerBased.cpp"
 
 #include "std_msgs/String.h"
 #include "temoto_resource_registrar/rr_server_base.h"
@@ -8,6 +8,10 @@
 #include <iostream>
 #include <sstream>
 
+#include <actionlib_tutorials/Resource1Action.h>
+#include <actionlib_tutorials/Resource2Action.h>
+
+/*
 bool initialized = false;
 
 static std::string pubName = "timePublisher";
@@ -47,17 +51,16 @@ void runLoop()
     loop_rate.sleep();
   }
 }
+*/
 
 void startCB()
 {
   std::cout << "start CB" << std::endl;
-  initialized = true;
 };
 
-static void stopCB()
+void stopCB()
 {
   std::cout << "stop CB" << std::endl;
-  initialized = false;
 };
 
 int main(int argc, char **argv)
@@ -65,13 +68,29 @@ int main(int argc, char **argv)
   std::string name = "timePublisher";
   ros::init(argc, argv, name);
 
-  //RosRR<std_msgs::String> rr(name);
+  RosRR rr("timeRR");
 
-  RRActionManager rr_am_(name);
+  auto server = std::make_unique<ActionBasedServer<actionlib_tutorials::Resource1Action,
+                                                   actionlib_tutorials::Resource1Feedback,
+                                                   actionlib_tutorials::Resource1Result,
+                                                   actionlib_tutorials::Resource1GoalConstPtr>>("stringServer", &startCB, &stopCB);
+
+  rr.registerServer(std::move(server));
+
+  auto server2 = std::make_unique<ActionBasedServer<actionlib_tutorials::Resource2Action,
+                                                    actionlib_tutorials::Resource2Feedback,
+                                                    actionlib_tutorials::Resource2Result,
+                                                    actionlib_tutorials::Resource2GoalConstPtr>>("intServer", &startCB, &stopCB);
+
+  rr.registerServer(std::move(server2));
+
+  /*RRActionManager rr_am_(name);
 
   rr_am_.registerServer(std::make_unique<ServerDerivate<std_msgs::String>>(name, &startCB, &stopCB));
 
   runLoop();
+
+  ros::spin();*/
 
   ros::spin();
 }

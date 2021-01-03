@@ -35,11 +35,6 @@ namespace temoto_resource_registrar
               << "My ID: " << id() << std::endl;
   }
 
-  //RrClientBase RrServerBase::buildClient(const std::string &clientName, RrRegistryPtr rr_registry)
-  //{
-  //  return RrClientBase(clientName, rr_registry);
-  //}
-
   std::string RrServerBase::id()
   {
     return name_;
@@ -52,5 +47,10 @@ namespace temoto_resource_registrar
 
   RrQueryResponse RrServerBase::processRequest(RrQueryRequest req){
 
+  };
+
+  void RrServerBase::setMessageRegistry(const RrMessageRegistryPtr &reg)
+  {
+    rr_message_registry_ = reg;
   };
 } // namespace temoto_resource_registrar

@@ -8,8 +8,7 @@ find_package(temoto_resource_registrar REQUIRED)
 
 add_action_files(
   DIRECTORY action
-  FILES Fibonacci.action
-  FibonacciDuplicate.action
+  FILES
   Resource1.action
   Resource2.action
   RequestResource.action
@@ -25,18 +24,6 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
-add_executable(fibonacci_server src/fibonacci_server.cpp)
-
-target_link_libraries(
-  fibonacci_server
-  ${catkin_LIBRARIES}
-)
-
-add_dependencies(
-  fibonacci_server
-  ${actionlib_tutorials_EXPORTED_TARGETS}
-)
-
 #add_executable(resource_server src/ResourceRegistrar.cpp)
 #
 #target_link_libraries(
@@ -50,19 +37,6 @@ add_dependencies(
 #  ${actionlib_tutorials_EXPORTED_TARGETS}
 #)
 
-
-
-add_executable(fibonacci_client src/fibonacci_client.cpp)
-
-target_link_libraries( 
-  fibonacci_client
-  ${catkin_LIBRARIES}
-)
-
-add_dependencies(
-  fibonacci_client
-  ${actionlib_tutorials_EXPORTED_TARGETS}
-)
 
 # ------------------
 

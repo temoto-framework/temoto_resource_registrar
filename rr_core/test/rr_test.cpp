@@ -1,3 +1,4 @@
+/*
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 #include <iostream>
@@ -10,6 +11,7 @@
 
 #include <unistd.h>
 using namespace temoto_resource_registrar;
+*/
 
 /*
    * In order to test all the required features the RR must posess, we need at least 3 RR objects 
@@ -29,7 +31,7 @@ using namespace temoto_resource_registrar;
    *  - load callbacks have to be defined, where loadCallbackRtM1 makes a client call to rr_m2.
    *  - in order to test this contraption, rr_m0 must make a client call to rr_m1
    */
-
+/*
 RrBase rr_m0 = RrBase("rr_m0");
 RrBase rr_m1 = RrBase("rr_m1");
 RrBase rr_m2 = RrBase("rr_m2");
@@ -148,14 +150,16 @@ static void RtM2UnloadCB()
 
 TEST_F(RrBaseTest, ResourceRegistrarTest)
 {
+  */
 
-  /*
+/*
    * TODO: Request a RtM1 resoure via rr_m0 for couple of times and verify that:
    *   a) the resource has been allocated once, both on rr_m1 and rr_m2
    *   b) resource reference count in rr_m1 is equal to the nr of requests by rr_m0
    */
 
-  //check that counts for servers are 0
+//check that counts for servers are 0
+/*
   EXPECT_EQ(rr_m0.serverCount(), 0);
   EXPECT_EQ(rr_m1.serverCount(), 0);
   EXPECT_EQ(rr_m2.serverCount(), 0);
@@ -218,3 +222,4 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   // check that message is expected
   EXPECT_EQ(query.response().response_, "Processed data from Resource1 resource");
 }
+*/

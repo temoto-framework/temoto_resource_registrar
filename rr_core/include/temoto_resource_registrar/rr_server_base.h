@@ -24,6 +24,8 @@
 #include "rr_query_request.h"
 #include "rr_query_response.h"
 
+#include "rr_message_registry.h"
+
 #include <iostream>
 
 namespace temoto_resource_registrar
@@ -42,16 +44,14 @@ namespace temoto_resource_registrar
 
     std::string id();
 
-    //RrClientBase buildClient(const std::string &clientName);
-
     void loadResource();
 
     virtual RrQueryResponse processRequest(RrQueryRequest req);
 
-#include "rr_query_response.h"
+    void setMessageRegistry(const RrMessageRegistryPtr &reg);
 
   protected:
-    //RrRegistryPtr rr_registry_;
+    RrMessageRegistryPtr rr_message_registry_;
     //keeping debug values, just in case for dev
     std::string name_;
     std::string class_name_;
