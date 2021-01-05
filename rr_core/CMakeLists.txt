@@ -38,6 +38,11 @@ set(SOURCE_FILES ${SOURCES})
 
 configure_file(${LIBRARY_NAME}.pc.in ${LIBRARY_NAME}.pc @ONLY)
 
+find_package (Boost 1.65.1 REQUIRED)
+if (Boost_FOUND)
+    include_directories (SYSTEM ${Boost_INCLUDE_DIR})
+endif ()
+
 #############
 # test flag
 #############
@@ -76,18 +81,42 @@ if (test)
     "IMPORTED_LOCATION" "${binary_dir}/lib/libgmock.a"
     "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
   )
-  
+
   include_directories("${source_dir}/googletest/include"
                     "${source_dir}/googlemock/include")
 
-  enable_testing()
+  ExternalProject_Add(
+    glog
+    URL https://github.com/google/glog/archive/master.zip
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/glog
+    INSTALL_COMMAND ""
+  )
 
-  add_executable(rr_test test/rr_test.cpp)
-  target_link_libraries(rr_test libgtest libgmock gtest_main)
+  ExternalProject_Get_Property(glog source_dir binary_dir)
 
-  target_link_libraries(rr_test ${LIBRARY_NAME})
+  add_library(libglog IMPORTED STATIC GLOBAL)
+  add_dependencies(libglog gtest)
 
-  add_test(NAME ResourceRegistrarTest COMMAND rr_test)
+  set_target_properties(libglog PROPERTIES
+    "IMPORTED_LOCATION" "${binary_dir}/libglog.a"
+  )
+
+  include_directories("${binary_dir}"
+                      "${source_dir}/src")
+
+  #enable_testing()
+  #find_package(GTest)
+
+  set(TEST_BINARY ${CMAKE_PROJECT_NAME}_test)
+  file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false test/*.h test/*.cpp)
+
+  add_executable(${TEST_BINARY} ${TEST_SOURCES})
+  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog ${LIBRARY_NAME})
+
+  #gtest_discover_tests(${TEST_BINARY}
+  #  WORKING_DIRECTORY ${PROJECT_DIR}
+  #)
+  
 endif()
 #############
 
