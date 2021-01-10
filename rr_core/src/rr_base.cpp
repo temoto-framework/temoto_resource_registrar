@@ -60,8 +60,7 @@ namespace temoto_resource_registrar
     if (!(rr_message_registry_->hasResponse(resource)))
     {
       RrServerBase *server = rr_registry_->fetchServer(resource.request().target_);
-      server->loadResource();
-      resource.updateResponse(server->processRequest(resource.request()));
+      server->processQuery(&resource);
     }
     //enriching response
     rr_message_registry_->response(resource);

@@ -18,12 +18,12 @@
 
 namespace temoto_resource_registrar
 {
-  RrServerBase::RrServerBase(const std::string &name, void (*loadCallback)(), void (*unLoadCallback)())
+  RrServerBase::RrServerBase(const std::string &name, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *))
       : name_(name), load_callback_ptr_(loadCallback), unload_callback_ptr_(unLoadCallback), class_name_(__func__)
   {
   }
 
-  RrServerBase::RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(), void (*unLoadCallback)())
+  RrServerBase::RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *))
       : RrServerBase(name, loadCallback, unLoadCallback)
   {
     class_name_ = className;
@@ -40,13 +40,9 @@ namespace temoto_resource_registrar
     return name_;
   }
 
-  void RrServerBase::loadResource()
+  RrQueryResponse RrServerBase::processQuery(RrQueryBase *query)
   {
-    load_callback_ptr_();
-  }
-
-  RrQueryResponse RrServerBase::processRequest(RrQueryRequest req){
-
+    load_callback_ptr_(query);
   };
 
   void RrServerBase::setMessageRegistry(const RrMessageRegistryPtr &reg)
