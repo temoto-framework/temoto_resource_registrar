@@ -17,10 +17,36 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_BASE_H
 
+#include "rr_query_request.h"
+#include "rr_query_response.h"
+#include <string>
+
 namespace temoto_resource_registrar
 {
   class RrQueryBase
   {
+  public:
+    RrQueryBase(RrQueryRequest &request)
+        : request_(request){};
+
+    RrQueryRequest request()
+    {
+      return request_;
+    };
+
+    RrQueryResponse response()
+    {
+      return response_;
+    };
+
+    void updateResponse(RrQueryResponse resp)
+    {
+      response_ = resp;
+    };
+
+  private:
+    RrQueryRequest request_;
+    RrQueryResponse response_;
   };
 
 } // namespace temoto_resource_registrar

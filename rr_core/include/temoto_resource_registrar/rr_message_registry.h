@@ -14,45 +14,42 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_MESSAGE_REGISTRY_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_MESSAGE_REGISTRY_H
 
-#include "rr_client_base.h"
-#include "rr_message_registry.h"
 #include "rr_query_base.h"
-#include "rr_registry.h"
-#include "rr_resource.h"
-#include "rr_server_base.h"
-#include <iostream>
+#include "rr_query_request.h"
+#include "rr_query_response.h"
+
+#include <algorithm>
+#include <boost/functional/hash.hpp>
+#include <map>
+#include <memory>
 #include <unordered_map>
 
 namespace temoto_resource_registrar
 {
-  class RrBase
+
+  class HashFn
   {
   public:
-    RrBase(std::string name);
-
-    void addServer(std::unique_ptr<RrServerBase> baseServer);
-    void addClient(std::unique_ptr<RrClientBase> baseClient);
-    bool exists(std::string serverId);
-    void call(RrQueryBase &resource, RrBase &base);
-    void call(RrQueryBase &resource);
-    RrServerBase *fetchServer(std::string serverId);
-    void print();
-    const std::string id();
-
-    int serverCount();
-
-    bool hasResponse(RrQueryBase &resource);
-    void registerResponse(RrQueryBase &resource);
-
-  private:
-    RrRegistryPtr rr_registry_;
-    RrMessageRegistryPtr rr_message_registry_;
-    std::string name_;
+    std::size_t operator()(const RrQueryRequest &r) const;
   };
 
-} // namespace temoto_resource_registrar
+  class RrMessageRegistry
+  {
+  public:
+    RrMessageRegistry() = default;
 
+    void response(RrQueryBase &query);
+    void clearResponses();
+    bool hasResponse(RrQueryBase query);
+    bool storeResponse(RrQueryRequest req, RrQueryResponse res);
+
+  private:
+    std::unordered_map<RrQueryRequest, RrQueryResponse, HashFn> request_response_map_;
+  };
+
+  typedef std::shared_ptr<RrMessageRegistry> RrMessageRegistryPtr;
+} // namespace temoto_resource_registrar
 #endif

@@ -1,33 +1,92 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Copyright 2020 TeMoto Telerobotics
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #include "temoto_resource_registrar/rr_base.h"
+
 #include <iostream>
 
 namespace temoto_resource_registrar
 {
-  RrBase::RrBase()
-      : rr_registry_(std::make_shared<RrRegistry>())
+
+  RrBase::RrBase(std::string name)
+      : rr_registry_(std::make_shared<RrRegistry>()), rr_message_registry_(std::make_shared<RrMessageRegistry>()), name_(name){};
+
+  void RrBase::addServer(std::unique_ptr<RrServerBase> baseServer)
   {
+    baseServer->setMessageRegistry(rr_message_registry_);
+    rr_registry_->addServer(std::move(baseServer));
   }
 
-  void RrBase::addServer(std::unique_ptr<RrServerBase> base_server)
+  void RrBase::addClient(std::unique_ptr<RrClientBase> baseClient){};
+
+  bool RrBase::exists(std::string serverId)
   {
-    rr_servers_.insert({base_server->id(), std::move(base_server)});
+    return rr_registry_->hasServer(serverId);
   }
 
-  bool RrBase::exists(std::unique_ptr<RrServerBase> server)
+  void RrBase::call(RrQueryBase &resource, RrBase &rr)
   {
-    return rr_servers_.count(server->id()) > 0;
+    if (rr.exists(resource.request().target_))
+    {
+      rr.call(resource);
+    }
   }
 
-  void RrBase::call()
+  bool RrBase::hasResponse(RrQueryBase &resource)
   {
+    return rr_message_registry_->hasResponse(resource);
+  }
+
+  void RrBase::registerResponse(RrQueryBase &resource)
+  {
+    rr_message_registry_->response(resource);
+  }
+
+  void RrBase::call(RrQueryBase &resource)
+  {
+    if (!(rr_message_registry_->hasResponse(resource)))
+    {
+      RrServerBase *server = rr_registry_->fetchServer(resource.request().target_);
+      server->processQuery(&resource);
+    }
+    //enriching response
+    rr_message_registry_->response(resource);
+  }
+
+  RrServerBase *RrBase::fetchServer(std::string serverId)
+  {
+    return rr_registry_->fetchServer(serverId);
   }
 
   void RrBase::print()
   {
-    for (const auto &server : rr_servers_)
+    for (const auto &server : rr_registry_->registeredServers())
     {
-      server.second->print();
+      rr_registry_->fetchServer(server)->print();
     }
+  }
+
+  const std::string RrBase::id()
+  {
+    return name_;
+  }
+
+  int RrBase::serverCount()
+  {
+    return rr_registry_->registeredServers().size();
   }
 
 } // namespace temoto_resource_registrar

@@ -14,32 +14,20 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
 
-#include "rr_identifiable.h"
-
-#include <string>
+#include "string"
 
 namespace temoto_resource_registrar
 {
-  class RrClientBase : public Identifiable
+  class Identifiable
   {
   public:
-    RrClientBase(const std::string &name);
+    virtual ~Identifiable(){};
 
-    virtual void wrappedCallback();
-
-    virtual std::string id();
-
-  protected:
-    std::string name_;
-
-  private:
-    std::string id_;
-    //RrRegistryPtr rr_registry_;
+    virtual std::string id() = 0;
   };
-
 } // namespace temoto_resource_registrar
 
 #endif

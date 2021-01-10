@@ -14,32 +14,32 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
-
-#include "rr_identifiable.h"
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_REQUEST_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_REQUEST_H
 
 #include <string>
 
 namespace temoto_resource_registrar
 {
-  class RrClientBase : public Identifiable
+  class RrQueryRequest
   {
   public:
-    RrClientBase(const std::string &name);
+    std::string message_;
+    std::string target_;
 
-    virtual void wrappedCallback();
+    RrQueryRequest(const std::string &message, const std::string &target)
+        : message_(message), target_(target) {}
 
-    virtual std::string id();
+    RrQueryRequest(const RrQueryRequest &query)
+        : message_(query.message_), target_(query.target_) {}
 
-  protected:
-    std::string name_;
+    bool operator==(const RrQueryRequest &other) const
+    {
+      return message_ == other.message_ && target_ == other.target_;
+    }
 
   private:
-    std::string id_;
-    //RrRegistryPtr rr_registry_;
   };
-
 } // namespace temoto_resource_registrar
 
 #endif

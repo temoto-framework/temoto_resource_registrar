@@ -17,37 +17,47 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 
+#include "rr_client_base.h"
+#include "rr_identifiable.h"
 #include "rr_query_base.h"
-#include "rr_registry.h"
-#include <boost/crc.hpp>
+
+#include "rr_query_base.h"
+
+#include "rr_message_registry.h"
+
+#include <iostream>
 
 namespace temoto_resource_registrar
 {
-  class RrServerBase
+  class RrServerBase : public Identifiable
   {
 
   public:
-    RrServerBase(const std::string &name, void (*loadCallback)(), void (*unLoadCallback)());
+    RrServerBase(const std::string &name, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *));
 
-    RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(), void (*unLoadCallback)());
+    RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *));
 
     void wrappedCallback();
 
     virtual void print();
 
-    virtual unsigned int id();
+    std::string id();
+
+    virtual RrQueryResponse processQuery(RrQueryBase *query);
+
+    void setMessageRegistry(const RrMessageRegistryPtr &reg);
+
+    void (*load_callback_ptr_)(RrQueryBase *);
+    void (*unload_callback_ptr_)(RrQueryBase *);
 
   protected:
-    RrRegistryPtr rr_registry_;
+    RrMessageRegistryPtr rr_message_registry_;
     //keeping debug values, just in case for dev
     std::string name_;
     std::string class_name_;
 
   private:
     unsigned int id_;
-    unsigned int calculateId();
-    void (*load_callback_ptr_)();
-    void (*unload_callback_ptr_)();
   };
 
 } // namespace temoto_resource_registrar
