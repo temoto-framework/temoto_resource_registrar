@@ -7,11 +7,24 @@
 #include "temoto_resource_registrar/rr_query_base.h"
 #include "temoto_resource_registrar/rr_server_base.h"
 
+template <class requestClass, class goalClass>
+class RosQuery : public temoto_resource_registrar::RrQueryBase
+{
+public:
+  RosQuery(temoto_resource_registrar::RrQueryRequest &request, const goalClass &goal) : RrQueryBase(request), goal_(goal) {}
+  typedef requestClass req_class_;
+  typedef goalClass goal_class_;
+  goalClass goal_;
+
+protected:
+private:
+};
+
 template <class requestClass, class feedbackClass, class responseClass, class goalClass>
 class ActionBasedServer : public temoto_resource_registrar::RrServerBase
 {
 public:
-  ActionBasedServer(const std::string &name, void (*loadCallback)(), void (*unLoadCallback)())
+  ActionBasedServer(const std::string &name, void (*loadCallback)(temoto_resource_registrar::RrQueryBase *), void (*unLoadCallback)(temoto_resource_registrar::RrQueryBase *))
       : RrServerBase(name, __func__, loadCallback, unLoadCallback),
         as_(nh_, name, boost::bind(&ActionBasedServer::serveCallback, this, _1), false)
   {
@@ -22,7 +35,19 @@ public:
   void serveCallback(const goalClass &goal)
   {
     std::cout << "serveCallback" << std::endl;
-    loadResource();
+
+    std::cout << "goal: " << goal << std::endl;
+    temoto_resource_registrar::RrQueryRequest request("", name_);
+    RosQuery<requestClass, goalClass> q(request, goal);
+
+    std::cout << "before" << std::endl;
+    load_callback_ptr_(&q);
+    std::cout << "after" << std::endl;
+
+    std::cout << "Got final thing: " << q.response().response_ << std::endl;
+    responseClass result;
+
+    as_.setSucceeded(result);
   }
 
   std::string id()
@@ -36,19 +61,6 @@ protected:
   feedbackClass feedback_;
   responseClass result_;
 
-private:
-};
-
-template <class requestClass, class goalClass>
-class RosQuery : public temoto_resource_registrar::RrQueryBase
-{
-public:
-  RosQuery(temoto_resource_registrar::RrQueryRequest &request, const goalClass &goal) : RrQueryBase(request), goal_(goal) {}
-  typedef requestClass req_class_;
-  typedef goalClass goal_class_;
-  goalClass goal_;
-
-protected:
 private:
 };
 

@@ -53,12 +53,23 @@ void runLoop()
 }
 */
 
-void startCB()
+void startCB(temoto_resource_registrar::RrQueryBase *query)
 {
   std::cout << "start CB" << std::endl;
+
+  //std::move(query);
+
+  temoto_resource_registrar::RrQueryResponse resp("Starting up!");
+
+  query->updateResponse(resp);
+
+  //std::cout << query.goal_ << std::endl;
+
+  std::cout << query->response().response_ << std::endl;
+  std::cout << "start CB end" << std::endl;
 };
 
-void stopCB()
+void stopCB(temoto_resource_registrar::RrQueryBase *query)
 {
   std::cout << "stop CB" << std::endl;
 };

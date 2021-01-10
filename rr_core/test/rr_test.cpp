@@ -13,10 +13,9 @@
 using namespace temoto_resource_registrar;
 */
 
-
-int main(int argc, char **argv)
-{
-  /*
+//int main(int argc, char **argv)
+//{
+/*
    * In order to test all the required features the RR must posess, we need at least 3 RR objects 
    * (named rr_m0, rr_m1 & rr_m2), each representing a "resource manager" (in terms of TeMoto terminology).
    * Dependency wise, this is what we are aiming for:

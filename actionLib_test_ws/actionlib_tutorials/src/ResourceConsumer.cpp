@@ -22,7 +22,7 @@ int main(int argc, char **argv)
   RosRR rr(name);
 
   ROS_INFO("init Request");
-  temoto_resource_registrar::RrQueryRequest request("time", "stringServer");
+  temoto_resource_registrar::RrQueryRequest request("", "stringServer");
 
   actionlib_tutorials::Resource1Goal goal;
 
