@@ -45,7 +45,7 @@ namespace temoto_resource_registrar
     load_callback_ptr_(query);
   };
 
-  void RrServerBase::setMessageRegistry(const RrMessageRegistryPtr &reg)
+  void RrServerBase::setCatalog(const RrCatalogPtr &reg)
   {
     rr_message_registry_ = reg;
   };

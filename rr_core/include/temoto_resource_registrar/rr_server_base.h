@@ -17,13 +17,10 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 
+#include "rr_catalog.h"
 #include "rr_client_base.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
-
-#include "rr_query_base.h"
-
-#include "rr_message_registry.h"
 
 #include <iostream>
 
@@ -45,13 +42,13 @@ namespace temoto_resource_registrar
 
     virtual RrQueryResponse processQuery(RrQueryBase *query);
 
-    void setMessageRegistry(const RrMessageRegistryPtr &reg);
+    void setCatalog(const RrCatalogPtr &reg);
 
     void (*load_callback_ptr_)(RrQueryBase *);
     void (*unload_callback_ptr_)(RrQueryBase *);
 
   protected:
-    RrMessageRegistryPtr rr_message_registry_;
+    RrCatalogPtr rr_message_registry_;
     //keeping debug values, just in case for dev
     std::string name_;
     std::string class_name_;

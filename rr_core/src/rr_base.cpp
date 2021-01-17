@@ -22,11 +22,13 @@ namespace temoto_resource_registrar
 {
 
   RrBase::RrBase(std::string name)
-      : rr_registry_(std::make_shared<RrRegistry>()), rr_message_registry_(std::make_shared<RrMessageRegistry>()), name_(name){};
+      : rr_registry_(std::make_shared<RrConnectionRegistry>()),
+        rr_message_registry_(std::make_shared<RrCatalog>()),
+        name_(name){};
 
   void RrBase::addServer(std::unique_ptr<RrServerBase> baseServer)
   {
-    baseServer->setMessageRegistry(rr_message_registry_);
+    baseServer->setCatalog(rr_message_registry_);
     rr_registry_->addServer(std::move(baseServer));
   }
 
@@ -52,7 +54,7 @@ namespace temoto_resource_registrar
 
   void RrBase::registerResponse(RrQueryBase &resource)
   {
-    rr_message_registry_->response(resource);
+    rr_message_registry_->respond(resource);
   }
 
   void RrBase::call(RrQueryBase &resource)
@@ -63,7 +65,7 @@ namespace temoto_resource_registrar
       server->processQuery(&resource);
     }
     //enriching response
-    rr_message_registry_->response(resource);
+    rr_message_registry_->respond(resource);
   }
 
   RrServerBase *RrBase::fetchServer(std::string serverId)

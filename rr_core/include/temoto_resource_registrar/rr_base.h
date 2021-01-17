@@ -17,11 +17,10 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
+#include "rr_catalog.h"
 #include "rr_client_base.h"
-#include "rr_message_registry.h"
+#include "rr_connection_registry.h"
 #include "rr_query_base.h"
-#include "rr_registry.h"
-#include "rr_resource.h"
 #include "rr_server_base.h"
 #include <iostream>
 #include <unordered_map>
@@ -48,8 +47,8 @@ namespace temoto_resource_registrar
     void registerResponse(RrQueryBase &resource);
 
   private:
-    RrRegistryPtr rr_registry_;
-    RrMessageRegistryPtr rr_message_registry_;
+    RrConnectionRegistryPtr rr_registry_;
+    RrCatalogPtr rr_message_registry_;
     std::string name_;
   };
 
