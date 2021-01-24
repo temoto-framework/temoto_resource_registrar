@@ -19,7 +19,9 @@
 
 #include "rr_catalog.h"
 #include "rr_identifiable.h"
+#include "rr_query_base.h"
 
+#include <iostream>
 #include <string>
 
 namespace temoto_resource_registrar
@@ -34,6 +36,8 @@ namespace temoto_resource_registrar
     virtual std::string id();
 
     void setCatalog(const RrCatalogPtr &reg);
+
+    void invoke(const RrQueryBase &query);
 
   protected:
     std::string name_;

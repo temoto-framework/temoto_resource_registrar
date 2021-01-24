@@ -43,10 +43,12 @@ namespace temoto_resource_registrar
     void clearResponses();
     bool hasResponse(RrQueryBase query);
 
+    void storeDependency(std::string dependent, std::string dependency);
+
   private:
     std::unordered_map<RrQueryRequest, RrQueryResponse, HashFn> request_response_map_;
 
-    std::unordered_map<RrQueryRequest, std::vector<RrQueryRequest>, HashFn> request_dependency_map_;
+    std::unordered_map<std::string, std::vector<std::string>> request_dependency_map_;
 
     bool storeResponse(RrQueryRequest req, RrQueryResponse res);
   };

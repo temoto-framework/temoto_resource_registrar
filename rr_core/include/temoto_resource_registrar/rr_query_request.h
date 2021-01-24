@@ -25,17 +25,16 @@ namespace temoto_resource_registrar
   {
   public:
     std::string message_;
-    std::string target_;
 
-    RrQueryRequest(const std::string &message, const std::string &target)
-        : message_(message), target_(target) {}
+    RrQueryRequest(const std::string &request)
+        : message_(request) {}
 
     RrQueryRequest(const RrQueryRequest &query)
-        : message_(query.message_), target_(query.target_) {}
+        : message_(query.message_) {}
 
     bool operator==(const RrQueryRequest &other) const
     {
-      return message_ == other.message_ && target_ == other.target_;
+      return message_ == other.message_;
     }
 
   private:

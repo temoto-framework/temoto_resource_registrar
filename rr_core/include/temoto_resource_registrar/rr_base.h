@@ -18,39 +18,123 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
 #include "rr_catalog.h"
-#include "rr_client_base.h"
-#include "rr_connection_registry.h"
-#include "rr_query_base.h"
-#include "rr_server_base.h"
 #include <iostream>
 #include <unordered_map>
 
 namespace temoto_resource_registrar
 {
+  const static std::string CLIENT_SUFIX = ";CLIENT";
+
+  template <class ContentClass>
+  class MapContainer
+  {
+  public:
+    bool add(std::unique_ptr<ContentClass> content)
+    {
+      auto ret = rr_contents_.insert(std::make_pair(content->id(), std::move(content)));
+      return ret.second;
+    };
+
+    bool remove(const std::string &id)
+    {
+      return rr_contents_.erase(id) > 0;
+    };
+
+    bool exists(const std::string &id)
+    {
+      auto it = rr_contents_.find(id);
+      if (it != rr_contents_.end())
+      {
+        return true;
+      }
+      return false;
+    };
+
+    std::vector<std::string> getIds()
+    {
+      std::vector<std::string> ids;
+      for (auto it = rr_contents_.begin(); it != rr_contents_.end(); ++it)
+      {
+        ids.push_back(it->first);
+      }
+      return ids;
+    };
+
+    ContentClass *getElement(std::string key)
+    {
+      auto it = rr_contents_.find(key);
+      if (it != rr_contents_.end())
+      {
+        return std::move(it->second.get());
+      }
+    };
+
+  protected:
+    std::unordered_map<std::string, std::unique_ptr<ContentClass>>
+        rr_contents_;
+  };
+
+  template <class serverClass>
+  class RrServers : public MapContainer<serverClass>
+  {
+  };
+
+  template <class clientClass>
+  class RrClients : public MapContainer<clientClass>
+  {
+  };
+
+  template <class ServerType, class ClientType>
   class RrBase
   {
   public:
-    RrBase(std::string name);
+    RrBase(std::string name) : name_(name),
+                               rr_catalog_(std::make_shared<RrCatalog>()){};
 
-    void addServer(std::unique_ptr<RrServerBase> baseServer);
-    void addClient(std::unique_ptr<RrClientBase> baseClient);
-    bool exists(std::string serverId);
-    void call(RrQueryBase &resource, RrBase &base);
-    void call(RrQueryBase &resource);
-    RrServerBase *fetchServer(std::string serverId);
-    void print();
+    //void call(RrQueryBase &resource, RrBase &base);
+    //void call(RrQueryBase &resource);
+    template <class CallClientClass>
+    void call(std::string rr, std::string server, const RrQueryBase &query)
+    {
+      std::string clientName = rr + ";" + server + CLIENT_SUFIX;
+      if (!clients_.exists(clientName))
+      {
+        std::cout << "creating client! " << clientName << std::endl;
+
+        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
+        client->setCatalog(rr_catalog_);
+
+        clients_.add(std::move(client));
+      }
+
+      auto client = dynamic_cast<CallClientClass *>(clients_.getElement(clientName));
+
+      client->invoke(query);
+    };
+
     const std::string id();
 
-    int serverCount();
+    size_t serverCount()
+    {
+      return servers_.getIds().size();
+    };
 
-    bool hasResponse(RrQueryBase &resource);
-    void registerResponse(RrQueryBase &resource);
+    //bool hasResponse(RrQueryBase &resource);
+    //void registerResponse(RrQueryBase &resource);
+
+    void registerServer(std::unique_ptr<ServerType> serverPtr)
+    {
+      serverPtr->setCatalog(rr_catalog_);
+      servers_.add(std::move(serverPtr));
+    };
 
   private:
-    RrConnectionRegistryPtr rr_registry_;
-    RrCatalogPtr rr_message_registry_;
+    RrCatalogPtr rr_catalog_;
     std::string name_;
-  };
+
+    RrServers<ServerType> servers_;
+    RrClients<ClientType> clients_;
+  }; // namespace temoto_resource_registrar
 
 } // namespace temoto_resource_registrar
 

@@ -21,7 +21,7 @@ namespace temoto_resource_registrar
   void RrCatalog::clearResponses()
   {
     request_response_map_.clear();
-  };
+  }
 
   void RrCatalog::respond(RrQueryBase &query)
   {
@@ -34,24 +34,36 @@ namespace temoto_resource_registrar
     {
       storeResponse(query.request(), query.response());
     }
-  };
+  }
 
   bool RrCatalog::hasResponse(RrQueryBase query)
   {
     return request_response_map_.count(query.request()) > 0;
-  };
+  }
 
   bool RrCatalog::storeResponse(RrQueryRequest req, RrQueryResponse res)
   {
     auto ret = request_response_map_.insert(std::make_pair(req, res));
     return ret.second;
-  };
+  }
+
+  void RrCatalog::storeDependency(std::string dependent, std::string dependency)
+  {
+    if (request_dependency_map_.find(dependent) != request_dependency_map_.end())
+    {
+      request_dependency_map_.at(dependent).push_back(dependency);
+    }
+    else
+    {
+      request_dependency_map_.insert({dependent, std::vector<std::string>{dependency}});
+    }
+  }
 
   std::size_t HashFn::operator()(const RrQueryRequest &r) const
   {
     std::size_t seed = 0;
     boost::hash_combine(seed, r.message_);
     return seed;
-  };
+  }
 
 } // namespace temoto_resource_registrar
