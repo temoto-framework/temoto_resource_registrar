@@ -40,7 +40,7 @@ namespace temoto_resource_registrar
     return name_;
   }
 
-  RrQueryResponse RrServerBase::processQuery(RrQueryBase *query)
+  void RrServerBase::processQuery(RrQueryBase *query)
   {
     load_callback_ptr_(query);
   };

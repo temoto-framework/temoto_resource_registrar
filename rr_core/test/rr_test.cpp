@@ -92,6 +92,7 @@ public:
   void invoke(const RrQueryBase &query)
   {
     std::cout << "invoke done - override" << std::endl;
+    // need to call server here.
   };
 
 protected:
@@ -131,6 +132,14 @@ class RrTemplateServer : public RrServerBase
 
 public:
   RrTemplateServer(const std::string &name, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *)) : RrServerBase(name, loadCallback, unLoadCallback){};
+
+  void processQuery(RrQueryBase *query)
+  {
+    std::cout << "processQuery done - override" << std::endl;
+    // need to call server here.
+
+    load_callback_ptr_(query);
+  };
 
 protected:
 private:
@@ -178,6 +187,11 @@ void RtM1LoadCB(RrQueryBase *query)
   loadCalls++;
   r1LoadCalls++;
   LOG(INFO) << "RtM1LoadCB called";
+
+  EXPECT_EQ(query->request().message_, "request resource 1 messsage");
+  EXPECT_EQ(query->response().response_, "");
+
+  rr_m1.call<RrTemplateServer<Resource2>>(rr_m2, "R2_S", query);
 
   //RrQueryRequest req("request resource 2 messsage");
   //RrQueryBase query = RrQueryBase("Resource2 resource", req);
@@ -239,15 +253,16 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(query.response().response_, "");
 
   LOG(INFO) << "calling...";
-  rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
-  /*
+  //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
+  rr_m0.call<RrTemplateServer<Resource1>>(rr_m1, "R1_S", &query);
+
   EXPECT_EQ(loadCalls, 2);
   EXPECT_EQ(r1LoadCalls, 1);
   EXPECT_EQ(r2LoadCalls, 1);
 
   // check that message is expected
-  EXPECT_EQ(query.response().response_, "Processed data from Resource1 resource");
-
+  //EXPECT_EQ(query.response().response_, "Processed data from Resource1 resource");
+  /*
   // execute query again and check that reload is not done
   LOG(INFO)
       << "executing call to rr_m0";
