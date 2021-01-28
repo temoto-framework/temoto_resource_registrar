@@ -40,8 +40,9 @@ namespace temoto_resource_registrar
     return name_;
   }
 
-  void RrServerBase::processQuery(RrQueryBase *query)
+  void RrServerBase::processQuery(RrQueryBase *query) const
   {
+    std::cout << "processQuery done - base" << std::endl;
     load_callback_ptr_(query);
   };
 

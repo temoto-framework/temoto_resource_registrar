@@ -34,6 +34,11 @@ namespace temoto_resource_registrar
 
     std::string response_;
 
+    void setResponse(std::string val)
+    {
+      response_ = val;
+    };
+
   private:
   };
 } // namespace temoto_resource_registrar

@@ -31,9 +31,13 @@ namespace temoto_resource_registrar
   void RrClientBase::setCatalog(const RrCatalogPtr &reg)
   {
     rr_message_registry_ = reg;
-  };
+  }
 
   void RrClientBase::wrappedCallback()
+  {
+  }
+
+  void RrClientBase::invoke(const RrQueryBase &query) const
   {
   }
 } // namespace temoto_resource_registrar

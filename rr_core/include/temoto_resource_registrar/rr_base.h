@@ -60,12 +60,12 @@ namespace temoto_resource_registrar
       return ids;
     };
 
-    ContentClass *getElement(std::string key)
+    const ContentClass &getElement(std::string key)
     {
       auto it = rr_contents_.find(key);
       if (it != rr_contents_.end())
       {
-        return it->second.get();
+        return *(it->second.get());
       }
     };
 
@@ -95,6 +95,7 @@ namespace temoto_resource_registrar
     void call(std::string rr, std::string server, const RrQueryBase &query)
     {
       std::string clientName = rr + ";" + server + CLIENT_SUFIX;
+
       if (!clients_.exists(clientName))
       {
         std::cout << "creating client! " << clientName << std::endl;
@@ -105,36 +106,36 @@ namespace temoto_resource_registrar
         clients_.add(std::move(client));
       }
 
-      auto client = dynamic_cast<CallClientClass *>(clients_.getElement(clientName));
+      auto &client = clients_.getElement(clientName);
 
-      client->invoke(query);
+      client.invoke(query);
 
       // add client back to pool
       //clients_.add(std::move(dynamic_cast<ClientType *>(client)));
-    };
+    }
 
     template <class CallServerClass>
     void call(RrBase &target, std::string server, RrQueryBase *query)
     {
       target.callServer<CallServerClass>(server, query);
-    };
+    }
 
     template <class CallServerClass>
     void callServer(std::string server, RrQueryBase *query)
     {
-      auto serverPtr = dynamic_cast<CallServerClass *>(servers_.getElement(server));
+      auto &serverPtr = servers_.getElement(server);
 
       std::cout << "calli server CB!" << std::endl;
 
-      serverPtr->processQuery(query);
-    };
+      serverPtr.processQuery(query);
+    }
 
     const std::string id();
 
     size_t serverCount()
     {
       return servers_.getIds().size();
-    };
+    }
 
     //bool hasResponse(RrQueryBase &resource);
     //void registerResponse(RrQueryBase &resource);
@@ -143,7 +144,7 @@ namespace temoto_resource_registrar
     {
       serverPtr->setCatalog(rr_catalog_);
       servers_.add(std::move(serverPtr));
-    };
+    }
 
   private:
     RrCatalogPtr rr_catalog_;

@@ -40,7 +40,7 @@ namespace temoto_resource_registrar
 
     std::string id();
 
-    virtual void processQuery(RrQueryBase *query);
+    virtual void processQuery(RrQueryBase *query) const;
 
     void setCatalog(const RrCatalogPtr &reg);
 

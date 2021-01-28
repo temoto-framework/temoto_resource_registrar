@@ -8,6 +8,8 @@
 #include "temoto_resource_registrar/rr_server_base.h"
 
 #include <unistd.h>
+
+#include <thread>
 using namespace temoto_resource_registrar;
 
 /*
@@ -89,11 +91,11 @@ class RrClientTemplate : public RrClientBase
 public:
   RrClientTemplate(const std::string &name) : RrClientBase(name){};
 
-  void invoke(const RrQueryBase &query)
+  void invoke(const RrQueryBase &query) const
   {
     std::cout << "invoke done - override" << std::endl;
     // need to call server here.
-  };
+  }
 
 protected:
 private:
@@ -133,7 +135,7 @@ class RrTemplateServer : public RrServerBase
 public:
   RrTemplateServer(const std::string &name, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *)) : RrServerBase(name, loadCallback, unLoadCallback){};
 
-  void processQuery(RrQueryBase *query)
+  void processQuery(RrQueryBase *query) const
   {
     std::cout << "processQuery done - override" << std::endl;
     // need to call server here.
@@ -193,9 +195,7 @@ void RtM1LoadCB(RrQueryBase *query)
 
   rr_m1.call<RrTemplateServer<Resource2>>(rr_m2, "R2_S", query);
 
-  //RrQueryRequest req("request resource 2 messsage");
-  //RrQueryBase query = RrQueryBase("Resource2 resource", req);
-  //rr_m1.call(query, rr_m2);
+  EXPECT_EQ(query->response().response_, "done!");
 };
 
 static void RtM1UnloadCB(RrQueryBase *query)
@@ -208,6 +208,13 @@ static void RtM2LoadCB(RrQueryBase *query)
   loadCalls++;
   r2LoadCalls++;
   LOG(INFO) << "RtM2LoadCB called";
+
+  LOG(INFO) << "Setting response";
+  query->updateResponse(RrQueryResponse("done!"));
+
+  LOG(INFO) << "Done Setting response";
+
+  LOG(INFO) << query->response().response_;
 };
 
 static void RtM2UnloadCB(RrQueryBase *query)
@@ -232,6 +239,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   LOG(INFO) << "adding resource servers to rr_m1 and rr_m2";
 
+  LOG(INFO) << std::this_thread::get_id();
+
   rr_m1.registerServer(std::make_unique<RrTemplateServer<Resource1>>("R1_S", &RtM1LoadCB, &RtM1UnloadCB));
   rr_m2.registerServer(std::make_unique<RrTemplateServer<Resource2>>("R2_S", &RtM2LoadCB, &RtM2UnloadCB));
   LOG(INFO) << "adding resource done";
@@ -254,32 +263,12 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   LOG(INFO) << "calling...";
   //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
+
   rr_m0.call<RrTemplateServer<Resource1>>(rr_m1, "R1_S", &query);
 
   EXPECT_EQ(loadCalls, 2);
   EXPECT_EQ(r1LoadCalls, 1);
   EXPECT_EQ(r2LoadCalls, 1);
 
-  // check that message is expected
-  //EXPECT_EQ(query.response().response_, "Processed data from Resource1 resource");
-  /*
-  // execute query again and check that reload is not done
-  LOG(INFO)
-      << "executing call to rr_m0";
-  LOG(INFO) << "calling...";
-
-  req = RrQueryRequest("request resource 1 messsage");
-  query = RrQueryBase("Resource1 resource", req);
-
-  EXPECT_EQ(query.response().response_, "");
-
-  rr_m0.call(query, rr_m1);
-
-  EXPECT_EQ(loadCalls, 2);
-  EXPECT_EQ(r1LoadCalls, 1);
-  EXPECT_EQ(r2LoadCalls, 1);
-
-  // check that message is expected
-  EXPECT_EQ(query.response().response_, "Processed data from Resource1 resource");
-  */
+  EXPECT_EQ(query.response().response_, "done!");
 }

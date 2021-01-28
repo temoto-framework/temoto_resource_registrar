@@ -37,7 +37,7 @@ namespace temoto_resource_registrar
 
     void setCatalog(const RrCatalogPtr &reg);
 
-    void invoke(const RrQueryBase &query);
+    virtual void invoke(const RrQueryBase &query) const;
 
   protected:
     std::string name_;
