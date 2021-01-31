@@ -59,31 +59,6 @@ protected:
   {
   }
 };
-/*
-template <class serverClass>
-class ServerDerivate : public temoto_resource_registrar::RrServerBase
-{
-public:
-  ServerDerivate(const std::string &name, void (*loadCallback)(), void (*unLoadCallback)())
-      : RrServerBase(name, __func__, loadCallback, unLoadCallback)
-  {
-  }
-  void print()
-  {
-    LOG(INFO) << "I am '" << name_ << "' (" << class_name_ << "). "
-              << "My resource class: "
-              << typeid(serverClass).name() << " ."
-              << "My ID: " << id() << std::endl;
-  }
-
-  RrQueryResponse processRequest(RrQueryRequest req)
-  {
-
-    LOG(INFO) << "processing req from derivate server: " << name_;
-    return RrQueryResponse("Processed data from " + name_);
-  }
-};
-*/
 
 template <class MessageType>
 class RrClientTemplate : public RrClientBase
@@ -96,6 +71,31 @@ public:
     std::cout << "invoke done - override" << std::endl;
     // need to call server here.
   }
+
+protected:
+private:
+  char *serialize(MessageType message);
+  MessageType deSerialize(char *data);
+};
+
+template <class MessageType>
+class RrTemplateServer : public RrServerBase
+{
+
+public:
+  RrTemplateServer(const std::string &name, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *)) : RrServerBase(name, loadCallback, unLoadCallback){};
+
+  void processQuery(RrQueryBase *query) const
+  {
+    std::cout << "processQuery done - override" << std::endl;
+    // need to call server here.
+
+    if (!rr_message_registry_->hasResponse(*(query)))
+    {
+      LOG(INFO) << "Request not found. Storing it";
+      load_callback_ptr_(query);
+    }
+  };
 
 protected:
 private:
@@ -126,27 +126,6 @@ public:
   RrQueryTemplate(RrQueryRequestTemplate<MessageType> &request) : RrQueryBase(request){};
 
 private:
-};
-
-template <class MessageType>
-class RrTemplateServer : public RrServerBase
-{
-
-public:
-  RrTemplateServer(const std::string &name, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *)) : RrServerBase(name, loadCallback, unLoadCallback){};
-
-  void processQuery(RrQueryBase *query) const
-  {
-    std::cout << "processQuery done - override" << std::endl;
-    // need to call server here.
-
-    load_callback_ptr_(query);
-  };
-
-protected:
-private:
-  char *serialize(MessageType message);
-  MessageType deSerialize(char *data);
 };
 
 class SimpleResource : public RrResource
@@ -193,7 +172,7 @@ void RtM1LoadCB(RrQueryBase *query)
   EXPECT_EQ(query->request().message_, "request resource 1 messsage");
   EXPECT_EQ(query->response().response_, "");
 
-  rr_m1.call<RrTemplateServer<Resource2>>(rr_m2, "R2_S", query);
+  rr_m1.call(rr_m2, "R2_S", *(query));
 
   EXPECT_EQ(query->response().response_, "done!");
 };
@@ -264,11 +243,15 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "calling...";
   //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
 
-  rr_m0.call<RrTemplateServer<Resource1>>(rr_m1, "R1_S", &query);
+  rr_m0.call(rr_m1, "R1_S", query);
 
   EXPECT_EQ(loadCalls, 2);
   EXPECT_EQ(r1LoadCalls, 1);
   EXPECT_EQ(r2LoadCalls, 1);
 
   EXPECT_EQ(query.response().response_, "done!");
+
+  LOG(INFO) << "-------------------";
+
+  rr_m0.call(rr_m1, "R1_S", query);
 }

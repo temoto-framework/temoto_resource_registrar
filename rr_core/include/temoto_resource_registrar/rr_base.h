@@ -17,9 +17,12 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
-#include "rr_catalog.h"
 #include <iostream>
+#include <thread>
 #include <unordered_map>
+
+#include "rr_catalog.h"
+#include "rr_client_base.h"
 
 namespace temoto_resource_registrar
 {
@@ -92,42 +95,14 @@ namespace temoto_resource_registrar
                                rr_catalog_(std::make_shared<RrCatalog>()){};
 
     template <class CallClientClass>
-    void call(std::string rr, std::string server, const RrQueryBase &query)
+    void call(const std::string &rr, const std::string &server, const RrQueryBase &query)
     {
-      std::string clientName = rr + ";" + server + CLIENT_SUFIX;
-
-      if (!clients_.exists(clientName))
-      {
-        std::cout << "creating client! " << clientName << std::endl;
-
-        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
-        client->setCatalog(rr_catalog_);
-
-        clients_.add(std::move(client));
-      }
-
-      auto &client = clients_.getElement(clientName);
-
-      client.invoke(query);
-
-      // add client back to pool
-      //clients_.add(std::move(dynamic_cast<ClientType *>(client)));
+      call<CallClientClass>(&rr, NULL, server, query);
     }
 
-    template <class CallServerClass>
-    void call(RrBase &target, std::string server, RrQueryBase *query)
+    void call(RrBase &target, const std::string &server, RrQueryBase &query)
     {
-      target.callServer<CallServerClass>(server, query);
-    }
-
-    template <class CallServerClass>
-    void callServer(std::string server, RrQueryBase *query)
-    {
-      auto &serverPtr = servers_.getElement(server);
-
-      std::cout << "calli server CB!" << std::endl;
-
-      serverPtr.processQuery(query);
+      call<RrClientBase>(NULL, &(target), server, query);
     }
 
     const std::string id();
@@ -146,12 +121,67 @@ namespace temoto_resource_registrar
       servers_.add(std::move(serverPtr));
     }
 
+    void handleInternalCall(const std::string &server, RrQueryBase &query)
+    {
+      auto &serverPtr = servers_.getElement(server);
+
+      std::cout << "calli server CB!" << std::endl;
+
+      serverPtr.processQuery(&query);
+    }
+
   private:
     RrCatalogPtr rr_catalog_;
     std::string name_;
 
     RrServers<ServerType> servers_;
     RrClients<ClientType> clients_;
+
+    std::thread::id workId;
+
+    template <class CallClientClass>
+    void call(const std::string *rr, RrBase *target, const std::string &server, RrQueryBase &query)
+    {
+
+      workId = std::this_thread::get_id();
+
+      // In case we have a client call, not a internal call
+      if ((rr == NULL) && !(target != NULL))
+      {
+        handleClientCall<CallClientClass>(*(rr), server, query);
+      }
+      else
+      {
+        target->handleInternalCall(server, query);
+      }
+
+      std::cout << "workId " << workId << std::endl;
+
+      rr_catalog_->respond(query);
+
+      // here we need to store messages!
+    }
+
+    template <class CallClientClass>
+    void handleClientCall(const std::string &rr, const std::string &server, const RrQueryBase &query)
+    {
+      std::string clientName = rr + ";" + server + CLIENT_SUFIX;
+
+      if (!clients_.exists(clientName))
+      {
+        std::cout << "creating client! " << clientName << std::endl;
+
+        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
+        client->setCatalog(rr_catalog_);
+
+        clients_.add(std::move(client));
+      }
+
+      auto &client = clients_.getElement(clientName);
+
+      client.invoke(query);
+    }
+
   }; // namespace temoto_resource_registrar
 
 } // namespace temoto_resource_registrar
