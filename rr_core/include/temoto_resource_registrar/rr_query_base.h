@@ -19,6 +19,7 @@
 
 #include "rr_query_request.h"
 #include "rr_query_response.h"
+#include <iostream>
 #include <string>
 
 namespace temoto_resource_registrar
@@ -26,27 +27,14 @@ namespace temoto_resource_registrar
   class RrQueryBase
   {
   public:
-    RrQueryBase(RrQueryRequest &request)
-        : request_(request){};
+    virtual ~RrQueryBase() = default;
 
-    RrQueryRequest request()
-    {
-      return request_;
-    };
+    template <class MT>
+    MT request() const;
 
-    RrQueryResponse response()
-    {
-      return response_;
-    };
+    RrQueryResponse response();
 
-    void updateResponse(RrQueryResponse resp)
-    {
-      response_ = resp;
-    };
-
-  private:
-    RrQueryRequest request_;
-    RrQueryResponse response_;
+    void updateResponse(RrQueryResponse &resp);
   };
 
 } // namespace temoto_resource_registrar

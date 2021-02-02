@@ -24,21 +24,6 @@ namespace temoto_resource_registrar
   class RrQueryResponse
   {
   public:
-    RrQueryResponse(){};
-
-    RrQueryResponse(const std::string &resp)
-        : response_(resp){};
-
-    RrQueryResponse(const RrQueryResponse &resp)
-        : response_(resp.response_){};
-
-    std::string response_;
-
-    void setResponse(std::string val)
-    {
-      response_ = val;
-    };
-
   private:
   };
 } // namespace temoto_resource_registrar

@@ -38,7 +38,7 @@ set(SOURCE_FILES ${SOURCES})
 
 configure_file(${LIBRARY_NAME}.pc.in ${LIBRARY_NAME}.pc @ONLY)
 
-find_package (Boost 1.65.1 REQUIRED)
+find_package (Boost 1.65.1 COMPONENTS system filesystem serialization REQUIRED)
 if (Boost_FOUND)
     include_directories (SYSTEM ${Boost_INCLUDE_DIR})
 endif ()
@@ -111,7 +111,7 @@ if (test)
   file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false test/*.h test/*.cpp)
 
   add_executable(${TEST_BINARY} ${TEST_SOURCES})
-  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog ${LIBRARY_NAME})
+  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog ${LIBRARY_NAME} ${Boost_LIBRARIES})
 
   #gtest_discover_tests(${TEST_BINARY}
   #  WORKING_DIRECTORY ${PROJECT_DIR}

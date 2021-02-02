@@ -23,25 +23,24 @@ namespace temoto_resource_registrar
     request_response_map_.clear();
   }
 
-  void RrCatalog::respond(RrQueryBase &query)
+  void RrCatalog::processResponse(RawData req, RawData res)
   {
-    auto it = request_response_map_.find(query.request());
+    auto it = request_response_map_.find(req);
     if (it != request_response_map_.end())
     {
-      query.updateResponse(it->second);
     }
     else
     {
-      storeResponse(query.request(), query.response());
+      storeResponse(req, res);
     }
   }
 
-  bool RrCatalog::hasResponse(RrQueryBase query)
+  bool RrCatalog::hasResponse(RawData queryData)
   {
-    return request_response_map_.count(query.request()) > 0;
+    return request_response_map_.count(queryData) > 0;
   }
 
-  bool RrCatalog::storeResponse(RrQueryRequest req, RrQueryResponse res)
+  bool RrCatalog::storeResponse(RawData req, RawData res)
   {
     auto ret = request_response_map_.insert(std::make_pair(req, res));
     return ret.second;
@@ -57,13 +56,6 @@ namespace temoto_resource_registrar
     {
       request_dependency_map_.insert({dependent, std::vector<std::string>{dependency}});
     }
-  }
-
-  std::size_t HashFn::operator()(const RrQueryRequest &r) const
-  {
-    std::size_t seed = 0;
-    boost::hash_combine(seed, r.message_);
-    return seed;
   }
 
 } // namespace temoto_resource_registrar

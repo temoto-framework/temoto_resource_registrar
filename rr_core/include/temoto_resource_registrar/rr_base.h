@@ -95,14 +95,18 @@ namespace temoto_resource_registrar
                                rr_catalog_(std::make_shared<RrCatalog>()){};
 
     template <class CallClientClass>
-    void call(const std::string &rr, const std::string &server, const RrQueryBase &query)
+    void call(const std::string &rr, const std::string &server, RrQueryBase &query)
     {
       call<CallClientClass>(&rr, NULL, server, query);
     }
 
-    void call(RrBase &target, const std::string &server, RrQueryBase &query)
+    template <class ServType, class QueryType>
+    void call(RrBase &target, const std::string &server, QueryType &query)
     {
-      call<RrClientBase>(NULL, &(target), server, query);
+
+      std::cout << typeid(query).name() << std::endl;
+
+      call<RrClientBase, ServType, QueryType>(NULL, &(target), server, query);
     }
 
     const std::string id();
@@ -121,13 +125,22 @@ namespace temoto_resource_registrar
       servers_.add(std::move(serverPtr));
     }
 
-    void handleInternalCall(const std::string &server, RrQueryBase &query)
+    template <class ServType, class QueryType>
+    void handleInternalCall(const std::string &server, QueryType &query)
     {
-      auto &serverPtr = servers_.getElement(server);
+      auto &serverRef = servers_.getElement(server);
 
       std::cout << "calli server CB!" << std::endl;
 
-      serverPtr.processQuery(&query);
+      std::cout << typeid(serverRef).name() << std::endl;
+      std::cout << typeid(query).name() << std::endl;
+      std::cout << typeid(ServType).name() << std::endl;
+
+      auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
+
+      std::cout << "------------ " << typeid(dynamicRef).name() << std::endl;
+
+      dynamicRef.processQuery(query);
     }
 
   private:
@@ -139,9 +152,11 @@ namespace temoto_resource_registrar
 
     std::thread::id workId;
 
-    template <class CallClientClass>
-    void call(const std::string *rr, RrBase *target, const std::string &server, RrQueryBase &query)
+    template <class CallClientClass, class ServType, class QueryType>
+    void call(const std::string *rr, RrBase *target, const std::string &server, QueryType &query)
     {
+
+      std::cout << typeid(query).name() << std::endl;
 
       workId = std::this_thread::get_id();
 
@@ -152,18 +167,16 @@ namespace temoto_resource_registrar
       }
       else
       {
-        target->handleInternalCall(server, query);
+        target->handleInternalCall<ServType, QueryType>(server, query);
       }
 
       std::cout << "workId " << workId << std::endl;
-
-      rr_catalog_->respond(query);
 
       // here we need to store messages!
     }
 
     template <class CallClientClass>
-    void handleClientCall(const std::string &rr, const std::string &server, const RrQueryBase &query)
+    void handleClientCall(const std::string &rr, const std::string &server, RrQueryBase &query)
     {
       std::string clientName = rr + ";" + server + CLIENT_SUFIX;
 
