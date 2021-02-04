@@ -58,4 +58,21 @@ namespace temoto_resource_registrar
     }
   }
 
+  RawData RrCatalog::fetchFromStorage(RawData req)
+  {
+    if (hasResponse(req))
+    {
+      return fetchResponse(req);
+    }
+  };
+
+  RawData RrCatalog::fetchResponse(RawData req)
+  {
+    auto it = request_response_map_.find(req);
+    if (it != request_response_map_.end())
+    {
+      return it->second;
+    }
+  };
+
 } // namespace temoto_resource_registrar

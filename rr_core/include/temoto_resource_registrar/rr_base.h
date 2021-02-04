@@ -103,9 +103,6 @@ namespace temoto_resource_registrar
     template <class ServType, class QueryType>
     void call(RrBase &target, const std::string &server, QueryType &query)
     {
-
-      std::cout << typeid(query).name() << std::endl;
-
       call<RrClientBase, ServType, QueryType>(NULL, &(target), server, query);
     }
 
@@ -130,15 +127,7 @@ namespace temoto_resource_registrar
     {
       auto &serverRef = servers_.getElement(server);
 
-      std::cout << "calli server CB!" << std::endl;
-
-      std::cout << typeid(serverRef).name() << std::endl;
-      std::cout << typeid(query).name() << std::endl;
-      std::cout << typeid(ServType).name() << std::endl;
-
       auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
-
-      std::cout << "------------ " << typeid(dynamicRef).name() << std::endl;
 
       dynamicRef.processQuery(query);
     }
@@ -155,8 +144,6 @@ namespace temoto_resource_registrar
     template <class CallClientClass, class ServType, class QueryType>
     void call(const std::string *rr, RrBase *target, const std::string &server, QueryType &query)
     {
-
-      std::cout << typeid(query).name() << std::endl;
 
       workId = std::this_thread::get_id();
 

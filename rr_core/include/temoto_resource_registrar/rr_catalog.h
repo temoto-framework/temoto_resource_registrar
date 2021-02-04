@@ -37,15 +37,14 @@ namespace temoto_resource_registrar
     void processResponse(RawData req, RawData res);
     void clearResponses();
     bool hasResponse(RawData queryData);
-
     void storeDependency(std::string dependent, std::string dependency);
+    RawData fetchFromStorage(RawData req);
 
   private:
     std::unordered_map<RawData, RawData> request_response_map_;
-
     std::unordered_map<std::string, std::vector<std::string>> request_dependency_map_;
-
     bool storeResponse(RawData req, RawData res);
+    RawData fetchResponse(RawData req);
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;

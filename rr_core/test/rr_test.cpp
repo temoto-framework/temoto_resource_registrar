@@ -14,6 +14,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
 #include <sstream>
 using namespace temoto_resource_registrar;
 
@@ -39,6 +40,8 @@ using namespace temoto_resource_registrar;
 RrBase<RrServerBase, RrClientBase> rr_m0("rr_m0");
 RrBase<RrServerBase, RrClientBase> rr_m1("rr_m1");
 RrBase<RrServerBase, RrClientBase> rr_m2("rr_m2");
+
+std ::string expectedMessage = "";
 
 int loadCalls = 0;
 int r1LoadCalls = 0;
@@ -71,7 +74,7 @@ class RrQueryRequestTemplate : public RrQueryRequest
 public:
   RrQueryRequestTemplate(const MessageType &request) : message_(request){};
 
-  MessageType getMessage() const
+  MessageType getRequest() const
   {
     return message_;
   };
@@ -103,7 +106,6 @@ public:
 
   RrQueryRequestTemplate<MessageType> request() const
   {
-    std::cout << "base get request - override" << std::endl;
     return typed_request_;
   }
 
@@ -130,14 +132,14 @@ public:
 
   void invoke(const RrQueryBase &query) const
   {
-    std::cout << "invoke done - override" << std::endl;
+    LOG(INFO) << "invoke done - override";
     // need to call server here.
   }
 
 protected:
 private:
-  char *serialize(MessageType message);
-  MessageType deSerialize(char *data);
+  std::string serialize(MessageType message);
+  MessageType deSerialize(std::string);
 };
 
 template <class MessageType>
@@ -155,28 +157,31 @@ public:
 
   void processQuery(RrQueryTemplate<MessageType> &query) const
   {
-    std::cout << "processQuery done - override" << std::endl;
+    LOG(INFO) << "processQuery - override - " << typeid(MessageType).name();
     // need to call server here.
 
-    auto request = query.request();
-    MessageType rawRequest = request.getMessage();
-    std::string serializedData = serialize(rawRequest);
+    MessageType rawRequest = query.request().getRequest();
+    std::string serializedRequest = serialize(rawRequest);
 
-    if (!rr_message_registry_->hasResponse(serializedData))
+    if (!rr_message_registry_->hasResponse(serializedRequest))
     {
       LOG(INFO) << "Request not found. Running and storing it";
       typed_load_callback_ptr_(query);
+      LOG(INFO) << "Finished callback";
+
+      MessageType rawResponse = query.response().getResponse();
+      rr_message_registry_->processResponse(serializedRequest, serialize(rawResponse));
     }
-
-    //serialize(query.request().getMessage());
-
-    //if (!rr_message_registry_->hasResponse())
-
-    /*if (!rr_message_registry_->hasResponse(*(query)))
+    else
     {
-      LOG(INFO) << "Request not found. Storing it";
-      load_callback_ptr_(query);
-    }*/
+      std::string fetchedResponse = rr_message_registry_->fetchFromStorage(serializedRequest);
+
+      MessageType responseObject = deserialize(fetchedResponse);
+
+      LOG(INFO) << "Request found. No storage needed " << fetchedResponse;
+
+      query.storeResponse(responseObject);
+    }
   };
 
 protected:
@@ -193,7 +198,6 @@ private:
     oa << message;
 
     return ss.str();
-    return "";
   };
 
   MessageType deserialize(const std::string &data) const
@@ -211,7 +215,13 @@ private:
 class Resource1
 {
 public:
-  Resource1(const std::string &message) : message_(message) {}
+  Resource1()
+  {
+  }
+
+  Resource1(const std::string &message) : message_(message)
+  {
+  }
 
   std::string rawMessage()
   {
@@ -233,6 +243,10 @@ protected:
 class Resource2
 {
 public:
+  Resource2()
+  {
+  }
+
   Resource2(int i, int j) : i_(i), j_(j)
   {
   }
@@ -256,14 +270,18 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   r1LoadCalls++;
   LOG(INFO) << "RtM1LoadCB called";
 
-  EXPECT_EQ(query.request().getMessage().rawMessage(), "testMessage here");
+  EXPECT_EQ(query.request().getRequest().rawMessage(), expectedMessage);
 
   RrQueryRequestTemplate<Resource2> req(Resource2(1, 0));
   RrQueryResponseTemplate<Resource2> resp(Resource2(0, 0));
   RrQueryTemplate<Resource2> newQuery(req, resp);
 
   rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery);
-  //EXPECT_EQ(query->response().response_, "done!");
+
+  EXPECT_EQ(newQuery.response().getResponse().j_, 100);
+  EXPECT_EQ(newQuery.response().getResponse().i_, 1);
+
+  query.storeResponse(RrQueryResponseTemplate<Resource1>(Resource1("Everything Works")));
 };
 
 void RtM1UnloadCB(RrQueryTemplate<Resource1> &query)
@@ -279,7 +297,10 @@ void RtM2LoadCB(RrQueryTemplate<Resource2> &query)
 
   LOG(INFO) << "Setting response";
 
-  Resource2 rawMessage = query.request().getMessage();
+  Resource2 rawMessage = query.request().getRequest();
+
+  EXPECT_EQ(rawMessage.i_, 1);
+  EXPECT_EQ(rawMessage.j_, 0);
 
   query.storeResponse(RrQueryResponseTemplate<Resource2>(Resource2(rawMessage.i_, 100)));
   LOG(INFO) << "Done Setting response";
@@ -324,25 +345,43 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r2LoadCalls, 0);
 
   LOG(INFO) << "executing call to rr_m0";
+  expectedMessage = "testMessage here";
   RrQueryRequestTemplate<Resource1> req(Resource1("testMessage here"));
   RrQueryResponseTemplate<Resource1> resp(Resource1(""));
   RrQueryTemplate<Resource1> query(req, resp);
 
-  //EXPECT_EQ(query.response(), RrQueryResponseTemplate<Resource1>());
-
   LOG(INFO) << "calling...";
   //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
-  LOG(INFO) << typeid(query).name();
   rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
 
   EXPECT_EQ(loadCalls, 2);
   EXPECT_EQ(r1LoadCalls, 1);
   EXPECT_EQ(r2LoadCalls, 1);
 
-  /*EXPECT_EQ(query.response().response_, "done!");
+  EXPECT_EQ(query.response().getResponse().rawMessage(), "Everything Works");
 
   LOG(INFO) << "-------------------";
 
-  rr_m0.call(rr_m1, "R1_S", query);
-  */
+  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
+
+  EXPECT_EQ(loadCalls, 2);
+  EXPECT_EQ(r1LoadCalls, 1);
+  EXPECT_EQ(r2LoadCalls, 1);
+
+  LOG(INFO) << "-------------------";
+
+  LOG(INFO) << "executing new call to rr_m0";
+
+  expectedMessage = "newMessage here";
+  RrQueryRequestTemplate<Resource1> newReq(Resource1("newMessage here"));
+  RrQueryResponseTemplate<Resource1> newResp(Resource1(""));
+  RrQueryTemplate<Resource1> newQuery(newReq, newResp);
+
+  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", newQuery);
+
+  EXPECT_EQ(query.response().getResponse().rawMessage(), "Everything Works");
+
+  EXPECT_EQ(loadCalls, 3);
+  EXPECT_EQ(r1LoadCalls, 2);
+  EXPECT_EQ(r2LoadCalls, 1);
 }
