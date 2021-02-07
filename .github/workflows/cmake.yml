@@ -21,10 +21,9 @@ jobs:
       - name: Download and install Boost
         # You may pin to the exact commit or the version.
         # uses: MarkusJx/install-boost@072e2dd3b37f8652cda1b00bcaca9bcfe06b7278
-        uses: MarkusJx/install-boost@v1.0.1
-        with:
-          # The boost version to install, e.g. "1.73.0"
-          boost_version: "1.73.0"
+        # install dependencies
+      - name: boost
+        run: sudo apt-get update && sudo apt-get install -yq libboost1.65-dev
 
       - name: Create Build Environment
         # Some projects don't allow in-source building, so create a separate build directory
