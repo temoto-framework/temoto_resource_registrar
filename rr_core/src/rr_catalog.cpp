@@ -64,7 +64,7 @@ namespace temoto_resource_registrar
     {
       return fetchResponse(req);
     }
-  };
+  }
 
   RawData RrCatalog::fetchResponse(RawData req)
   {
@@ -73,6 +73,31 @@ namespace temoto_resource_registrar
     {
       return it->second;
     }
-  };
+  }
+
+  void RrCatalog::storeServerQuery(const std::string &server, const std::string &messageId, RawData request, RawData query)
+  {
+    server_query_map_[server].insert(std::make_pair(request, query));
+    id_request_map_.insert(std::make_pair(messageId, request));
+  }
+
+  bool RrCatalog::hasStoredServerQuery(const std::string &server, RawData request)
+  {
+    return server_query_map_[server].count(request) > 0;
+  }
+
+  RawData RrCatalog::fetchFromServerStorage(const std::string &server, RawData req)
+  {
+    return server_query_map_[server][req];
+  }
+
+  bool RrCatalog::removeServerQuery(const std::string &server, const std::string &id)
+  {
+    auto serverRequests = server_query_map_[server];
+    int currentSize = serverRequests.size();
+    serverRequests.erase(id_request_map_[id]);
+
+    return currentSize > serverRequests.size();
+  }
 
 } // namespace temoto_resource_registrar

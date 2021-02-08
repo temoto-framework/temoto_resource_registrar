@@ -26,23 +26,12 @@
 
 namespace temoto_resource_registrar
 {
-  class RrServerBase : public Identifiable
+  class RrServerBase : public Identifiable<std::string>
   {
 
   public:
     RrServerBase(const std::string &name, void (*loadCallback)(RrQueryBase &), void (*unLoadCallback)(RrQueryBase &))
-        : name_(name), load_callback_ptr_(loadCallback), unload_callback_ptr_(unLoadCallback), class_name_(__func__){};
-
-    RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(RrQueryBase &), void (*unLoadCallback)(RrQueryBase &))
-        : RrServerBase(name, loadCallback, unLoadCallback){};
-
-    void wrappedCallback();
-
-    virtual void print()
-    {
-      std::cout << "I am '" << name_ << "' (" << class_name_ << "). "
-                << "My ID: " << id() << std::endl;
-    };
+        : name_(name), load_callback_ptr_(loadCallback), unload_callback_ptr_(unLoadCallback){};
 
     std::string id()
     {
@@ -58,14 +47,15 @@ namespace temoto_resource_registrar
 
     void setCatalog(const RrCatalogPtr &reg)
     {
-      rr_message_registry_ = reg;
+      rr_catalog_ = reg;
     };
 
+    virtual bool unloadMessage(const std::string &id) = 0;
+
   protected:
-    RrCatalogPtr rr_message_registry_;
+    RrCatalogPtr rr_catalog_;
     //keeping debug values, just in case for dev
     std::string name_;
-    std::string class_name_;
 
     void (*load_callback_ptr_)(RrQueryBase &);
     void (*unload_callback_ptr_)(RrQueryBase &);

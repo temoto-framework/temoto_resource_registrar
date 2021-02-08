@@ -35,6 +35,9 @@ namespace temoto_resource_registrar
     RrQueryResponse response();
 
     void updateResponse(RrQueryResponse &resp);
+
+  protected:
+  private:
   };
 
 } // namespace temoto_resource_registrar

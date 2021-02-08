@@ -14,21 +14,19 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_IDENTIFIABLE_H
-
-#include "string"
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_SERIALIZABLE_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_SERIALIZABLE_H
 
 namespace temoto_resource_registrar
 {
-  template <class IdentityClass>
-  class Identifiable
+  template <class SerialClass>
+  class Serializable
   {
   public:
-    virtual ~Identifiable(){};
-
-    virtual IdentityClass id() = 0;
+    virtual std::string serialize(SerialClass obj) const = 0;
+    //virtual SerialClass deserialize(const std::string &obj) const = 0;
   };
+
 } // namespace temoto_resource_registrar
 
 #endif

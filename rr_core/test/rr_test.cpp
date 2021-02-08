@@ -1,21 +1,25 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
 #include <iostream>
+#include <sstream>
+#include <thread>
+#include <unistd.h>
 
 #include "temoto_resource_registrar/rr_base.h"
 #include "temoto_resource_registrar/rr_client_base.h"
 #include "temoto_resource_registrar/rr_resource.h"
+#include "temoto_resource_registrar/rr_serializable.h"
 #include "temoto_resource_registrar/rr_server_base.h"
-
-#include <unistd.h>
-
-#include <thread>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/vector.hpp>
-#include <sstream>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 using namespace temoto_resource_registrar;
 
 /*
@@ -52,7 +56,6 @@ class RrBaseTest : public ::testing::Test
 protected:
   RrBaseTest()
   {
-    //rr_m0_client = temoto_resource_registrar::RrClientBase("rr_m0_client", rr_m0 << rr_registry_);
   }
 
   virtual ~RrBaseTest()
@@ -72,12 +75,36 @@ template <class MessageType>
 class RrQueryRequestTemplate : public RrQueryRequest
 {
 public:
-  RrQueryRequestTemplate(const MessageType &request) : message_(request){};
+  RrQueryRequestTemplate() : requestId_(boost::uuids::to_string(boost::uuids::random_generator()()))
+  {
+    LOG(INFO) << "generated id: " << requestId_;
+  }
+
+  RrQueryRequestTemplate(const MessageType &request) : message_(request)
+  {
+    RrQueryRequestTemplate();
+  };
 
   MessageType getRequest() const
   {
     return message_;
   };
+
+  std::string getId()
+  {
+    return requestId_;
+  }
+
+protected:
+  std::string requestId_;
+
+  friend class boost::serialization::access;
+
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /* version */)
+  {
+    ar &requestId_ &message_;
+  }
 
 private:
   MessageType message_;
@@ -87,12 +114,23 @@ template <class MessageType>
 class RrQueryResponseTemplate : public RrQueryResponse
 {
 public:
+  RrQueryResponseTemplate() {}
+
   RrQueryResponseTemplate(const MessageType &response) : response_(response){};
 
   MessageType getResponse() const
   {
     return response_;
   };
+
+protected:
+  friend class boost::serialization::access;
+
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /* version */)
+  {
+    ar &response_;
+  }
 
 private:
   MessageType response_;
@@ -102,7 +140,9 @@ template <class MessageType>
 class RrQueryTemplate : public RrQueryBase
 {
 public:
-  RrQueryTemplate(const RrQueryRequestTemplate<MessageType> &request, const RrQueryResponseTemplate<MessageType> &response) : typed_request_(request), typed_response_(response) {}
+  RrQueryTemplate() {}
+
+  RrQueryTemplate(const RrQueryRequestTemplate<MessageType> &request, const RrQueryResponseTemplate<MessageType> &response) : typed_request_(request), typed_response_(response){};
 
   RrQueryRequestTemplate<MessageType> request() const
   {
@@ -112,7 +152,7 @@ public:
   void storeResponse(RrQueryResponseTemplate<MessageType> response)
   {
     typed_response_ = response;
-  };
+  }
 
   RrQueryResponseTemplate<MessageType> response() const
   {
@@ -122,10 +162,20 @@ public:
 protected:
   RrQueryRequestTemplate<MessageType> typed_request_;
   RrQueryResponseTemplate<MessageType> typed_response_;
+
+  std::string requestId_;
+
+  friend class boost::serialization::access;
+
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /* version */)
+  {
+    ar &requestId_ &typed_request_ &typed_response_;
+  }
 };
 
 template <class MessageType>
-class RrClientTemplate : public RrClientBase
+class RrClientTemplate : public RrClientBase, Serializable<MessageType>
 {
 public:
   RrClientTemplate(const std::string &name) : RrClientBase(name){};
@@ -133,13 +183,13 @@ public:
   void invoke(const RrQueryBase &query) const
   {
     LOG(INFO) << "invoke done - override";
-    // need to call server here.
   }
+
+  std::string serialize(MessageType message) const {};
+  MessageType deserialize(const std::string &data) const {};
 
 protected:
 private:
-  std::string serialize(MessageType message);
-  MessageType deSerialize(std::string);
 };
 
 template <class MessageType>
@@ -157,39 +207,43 @@ public:
 
   void processQuery(RrQueryTemplate<MessageType> &query) const
   {
-    LOG(INFO) << "processQuery - override - " << typeid(MessageType).name();
+    LOG(INFO) << "processQuery - override - " << typeid(MessageType).name() << "server: " << name_;
     // need to call server here.
 
     MessageType rawRequest = query.request().getRequest();
-    std::string serializedRequest = serialize(rawRequest);
+    std::string serializedRequest = serialize<MessageType>(rawRequest);
 
-    if (!rr_message_registry_->hasResponse(serializedRequest))
+    LOG(INFO) << "checking existance of: " << name_ << " - " << serializedRequest;
+
+    if (!rr_catalog_->hasStoredServerQuery(name_, serializedRequest))
     {
       LOG(INFO) << "Request not found. Running and storing it";
       typed_load_callback_ptr_(query);
       LOG(INFO) << "Finished callback";
 
-      MessageType rawResponse = query.response().getResponse();
-      rr_message_registry_->processResponse(serializedRequest, serialize(rawResponse));
+      LOG(INFO) << "Storing query data..." << name_ << " - " << serializedRequest;
+      rr_catalog_->storeServerQuery(name_, query.request().getId(), serializedRequest, serialize<RrQueryTemplate<MessageType>>(query));
+      LOG(INFO) << "Finished storing";
     }
     else
     {
-      std::string fetchedResponse = rr_message_registry_->fetchFromStorage(serializedRequest);
+      LOG(INFO) << "Request found. No storage needed. Fetching it... ";
+      RrQueryTemplate<MessageType> storedQuery = deserialize<RrQueryTemplate<MessageType>>(rr_catalog_->fetchFromServerStorage(name_, serializedRequest));
+      LOG(INFO) << "Fetching done";
 
-      MessageType responseObject = deserialize(fetchedResponse);
-
-      LOG(INFO) << "Request found. No storage needed " << fetchedResponse;
-
-      query.storeResponse(responseObject);
+      query.storeResponse(storedQuery.response());
     }
   };
 
-protected:
-  void (*typed_load_callback_ptr_)(RrQueryTemplate<MessageType> &);
-  void (*typed_unload_callback_ptr_)(RrQueryTemplate<MessageType> &);
+  bool unloadMessage(const std::string &id)
+  {
+    LOG(INFO) << "unloading resource: " << id;
 
-private:
-  std::string serialize(MessageType message) const
+    return rr_catalog_->removeServerQuery(name_, id);
+  }
+
+  template <class SerialClass>
+  std::string serialize(SerialClass message) const
   {
 
     std::stringstream ss;
@@ -200,16 +254,23 @@ private:
     return ss.str();
   };
 
-  MessageType deserialize(const std::string &data) const
+  template <class SerialClass>
+  SerialClass deserialize(const std::string &data) const
   {
     std::stringstream ss(data);
     boost::archive::binary_iarchive ia(ss);
 
-    MessageType obj; // Foo must be default-constructible
+    SerialClass obj;
     ia >> obj;
 
     return obj;
   };
+
+protected:
+  void (*typed_load_callback_ptr_)(RrQueryTemplate<MessageType> &);
+  void (*typed_unload_callback_ptr_)(RrQueryTemplate<MessageType> &);
+
+private:
 };
 
 class Resource1
@@ -322,6 +383,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   //check that counts for servers are 0
 
+  std::vector<std::string> ids;
+
   EXPECT_EQ(rr_m0.serverCount(), 0);
   EXPECT_EQ(rr_m1.serverCount(), 0);
   EXPECT_EQ(rr_m2.serverCount(), 0);
@@ -346,9 +409,9 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   LOG(INFO) << "executing call to rr_m0";
   expectedMessage = "testMessage here";
-  RrQueryRequestTemplate<Resource1> req(Resource1("testMessage here"));
-  RrQueryResponseTemplate<Resource1> resp(Resource1(""));
-  RrQueryTemplate<Resource1> query(req, resp);
+  RrQueryTemplate<Resource1> query(Resource1("testMessage here"), Resource1(""));
+
+  ids.push_back(query.request().getId());
 
   LOG(INFO) << "calling...";
   //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
@@ -377,6 +440,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   RrQueryResponseTemplate<Resource1> newResp(Resource1(""));
   RrQueryTemplate<Resource1> newQuery(newReq, newResp);
 
+  ids.push_back(newReq.getId());
+
   rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", newQuery);
 
   EXPECT_EQ(query.response().getResponse().rawMessage(), "Everything Works");
@@ -384,4 +449,18 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(loadCalls, 3);
   EXPECT_EQ(r1LoadCalls, 2);
   EXPECT_EQ(r2LoadCalls, 1);
+
+  LOG(INFO) << "-------------------";
+  LOG(INFO) << "-------------------";
+  LOG(INFO) << "-------------------";
+
+  LOG(INFO) << "Unloading results!";
+
+  LOG(INFO) << "ids size " << ids.size();
+
+  for (auto const &i : ids)
+  {
+    LOG(INFO) << "possible ID: " << i;
+    LOG(INFO) << rr_m1.unload<RrTemplateServer<Resource1>>("R1_S", i);
+  }
 }

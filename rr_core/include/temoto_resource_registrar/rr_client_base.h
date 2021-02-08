@@ -26,7 +26,7 @@
 
 namespace temoto_resource_registrar
 {
-  class RrClientBase : public Identifiable
+  class RrClientBase : public Identifiable<std::string>
   {
   public:
     RrClientBase(const std::string &name);
@@ -41,7 +41,7 @@ namespace temoto_resource_registrar
 
   protected:
     std::string name_;
-    RrCatalogPtr rr_message_registry_;
+    RrCatalogPtr rr_catalog_;
 
   private:
     std::string id_;

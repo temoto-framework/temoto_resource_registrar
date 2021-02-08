@@ -30,7 +30,7 @@ namespace temoto_resource_registrar
 
   void RrClientBase::setCatalog(const RrCatalogPtr &reg)
   {
-    rr_message_registry_ = reg;
+    rr_catalog_ = reg;
   }
 
   void RrClientBase::wrappedCallback()

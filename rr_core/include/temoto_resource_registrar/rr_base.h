@@ -113,9 +113,6 @@ namespace temoto_resource_registrar
       return servers_.getIds().size();
     }
 
-    //bool hasResponse(RrQueryBase &resource);
-    //void registerResponse(RrQueryBase &resource);
-
     void registerServer(std::unique_ptr<ServerType> serverPtr)
     {
       serverPtr->setCatalog(rr_catalog_);
@@ -130,6 +127,14 @@ namespace temoto_resource_registrar
       auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
 
       dynamicRef.processQuery(query);
+    }
+
+    template <class ServType>
+    bool unload(const std::string &server, const std::string &id)
+    {
+      auto &serverRef = servers_.getElement(server);
+      auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
+      return dynamicRef.unloadMessage(id);
     }
 
   private:
@@ -157,8 +162,6 @@ namespace temoto_resource_registrar
         target->handleInternalCall<ServType, QueryType>(server, query);
       }
 
-      std::cout << "workId " << workId << std::endl;
-
       // here we need to store messages!
     }
 
@@ -181,8 +184,7 @@ namespace temoto_resource_registrar
 
       client.invoke(query);
     }
-
-  }; // namespace temoto_resource_registrar
+  };
 
 } // namespace temoto_resource_registrar
 

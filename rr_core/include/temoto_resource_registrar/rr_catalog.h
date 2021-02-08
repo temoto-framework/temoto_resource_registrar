@@ -40,7 +40,15 @@ namespace temoto_resource_registrar
     void storeDependency(std::string dependent, std::string dependency);
     RawData fetchFromStorage(RawData req);
 
+    bool hasStoredServerQuery(const std::string &server, RawData request);
+    void storeServerQuery(const std::string &server, const std::string &id, RawData request, RawData query);
+    RawData fetchFromServerStorage(const std::string &server, RawData req);
+    bool removeServerQuery(const std::string &server, const std::string &id);
+
   private:
+    std::unordered_map<std::string, std::unordered_map<RawData, RawData>> server_query_map_;
+    std::unordered_map<std::string, RawData> id_request_map_;
+
     std::unordered_map<RawData, RawData> request_response_map_;
     std::unordered_map<std::string, std::vector<std::string>> request_dependency_map_;
     bool storeResponse(RawData req, RawData res);
