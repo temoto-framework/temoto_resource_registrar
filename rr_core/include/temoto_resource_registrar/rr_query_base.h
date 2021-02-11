@@ -19,6 +19,10 @@
 
 #include "rr_query_request.h"
 #include "rr_query_response.h"
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
 #include <iostream>
 #include <string>
 
@@ -34,9 +38,22 @@ namespace temoto_resource_registrar
 
     RrQueryResponse response();
 
-    void updateResponse(RrQueryResponse &resp);
+    template <class MT>
+    void storeResponse(MT &resp);
+
+    void setId(const std::string &id)
+    {
+      requestId_ = id;
+    };
+
+    std::string id() const
+    {
+      return requestId_;
+    }
 
   protected:
+    std::string requestId_;
+
   private:
   };
 

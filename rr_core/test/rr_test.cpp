@@ -75,35 +75,24 @@ template <class MessageType>
 class RrQueryRequestTemplate : public RrQueryRequest
 {
 public:
-  RrQueryRequestTemplate() : requestId_(boost::uuids::to_string(boost::uuids::random_generator()()))
-  {
-    LOG(INFO) << "generated id: " << requestId_;
-  }
+  RrQueryRequestTemplate() {}
 
   RrQueryRequestTemplate(const MessageType &request) : message_(request)
   {
-    RrQueryRequestTemplate();
-  };
+  }
 
   MessageType getRequest() const
   {
     return message_;
-  };
-
-  std::string getId()
-  {
-    return requestId_;
   }
 
 protected:
-  std::string requestId_;
-
   friend class boost::serialization::access;
 
   template <class Archive>
   void serialize(Archive &ar, const unsigned int /* version */)
   {
-    ar &requestId_ &message_;
+    ar &message_;
   }
 
 private:
@@ -163,9 +152,9 @@ protected:
   RrQueryRequestTemplate<MessageType> typed_request_;
   RrQueryResponseTemplate<MessageType> typed_response_;
 
-  std::string requestId_;
-
   friend class boost::serialization::access;
+
+  std::string requestId_;
 
   template <class Archive>
   void serialize(Archive &ar, const unsigned int /* version */)
@@ -215,23 +204,27 @@ public:
 
     LOG(INFO) << "checking existance of: " << name_ << " - " << serializedRequest;
 
-    if (!rr_catalog_->hasStoredServerQuery(name_, serializedRequest))
+    query.setId(generateId());
+    std::string requestId = rr_catalog_->queryExists(name_, serializedRequest);
+    if (requestId.size() == 0)
     {
       LOG(INFO) << "Request not found. Running and storing it";
       typed_load_callback_ptr_(query);
       LOG(INFO) << "Finished callback";
 
-      LOG(INFO) << "Storing query data..." << name_ << " - " << serializedRequest;
-      rr_catalog_->storeServerQuery(name_, query.request().getId(), serializedRequest, serialize<RrQueryTemplate<MessageType>>(query));
+      LOG(INFO) << "Storing query data to server..." << name_;
+
+      storeQuery(serializedRequest, query);
       LOG(INFO) << "Finished storing";
     }
     else
     {
       LOG(INFO) << "Request found. No storage needed. Fetching it... ";
-      RrQueryTemplate<MessageType> storedQuery = deserialize<RrQueryTemplate<MessageType>>(rr_catalog_->fetchFromServerStorage(name_, serializedRequest));
-      LOG(INFO) << "Fetching done";
+      std::string serializedQuery = processExisting(requestId, query);
+      RrQueryTemplate<MessageType> previousRequest = deserialize<RrQueryTemplate<MessageType>>(serializedQuery);
 
-      query.storeResponse(storedQuery.response());
+      query.storeResponse(previousRequest.response());
+      LOG(INFO) << "Fetching done... " << serializedQuery;
     }
   };
 
@@ -239,7 +232,18 @@ public:
   {
     LOG(INFO) << "unloading resource: " << id;
 
-    return rr_catalog_->removeServerQuery(name_, id);
+    std::string query = rr_catalog_->unload(name_, id);
+
+    /*LOG(INFO) << "Unload result size: " << query.size();
+
+    if (rr_catalog_->canBeUnloaded(name_))
+    {
+      RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);
+      LOG(INFO) << "Time to unload resource!";
+      typed_unload_callback_ptr_(q);
+    }
+
+    return query.size() > 0;*/
   }
 
   template <class SerialClass>
@@ -270,7 +274,24 @@ protected:
   void (*typed_load_callback_ptr_)(RrQueryTemplate<MessageType> &);
   void (*typed_unload_callback_ptr_)(RrQueryTemplate<MessageType> &);
 
+  std::string generateId() const
+  {
+    return boost::uuids::to_string(boost::uuids::random_generator()());
+  }
+
 private:
+  void storeQuery(const std::string &rawRequest, RrQueryTemplate<MessageType> query) const
+  {
+    rr_catalog_->storeQuery(name_,
+                            query,
+                            rawRequest,
+                            serialize<RrQueryTemplate<MessageType>>(query));
+  }
+
+  std::string processExisting(const std::string &requestId, RrQueryTemplate<MessageType> query) const
+  {
+    return rr_catalog_->processExisting(name_, requestId, query);
+  };
 };
 
 class Resource1
@@ -411,9 +432,10 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   expectedMessage = "testMessage here";
   RrQueryTemplate<Resource1> query(Resource1("testMessage here"), Resource1(""));
 
-  ids.push_back(query.request().getId());
-
   LOG(INFO) << "calling...";
+
+  LOG(INFO) << "query : -------------------------------------------------------";
+
   //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
   rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
 
@@ -423,7 +445,9 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   EXPECT_EQ(query.response().getResponse().rawMessage(), "Everything Works");
 
-  LOG(INFO) << "-------------------";
+  ids.push_back(query.id());
+
+  LOG(INFO) << "requery : -------------------------------------------------------";
 
   rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
 
@@ -431,7 +455,7 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r1LoadCalls, 1);
   EXPECT_EQ(r2LoadCalls, 1);
 
-  LOG(INFO) << "-------------------";
+  LOG(INFO) << "new query : -------------------------------------------------------";
 
   LOG(INFO) << "executing new call to rr_m0";
 
@@ -440,9 +464,9 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   RrQueryResponseTemplate<Resource1> newResp(Resource1(""));
   RrQueryTemplate<Resource1> newQuery(newReq, newResp);
 
-  ids.push_back(newReq.getId());
-
   rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", newQuery);
+
+  ids.push_back(newQuery.id());
 
   EXPECT_EQ(query.response().getResponse().rawMessage(), "Everything Works");
 
@@ -458,7 +482,7 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   LOG(INFO) << "ids size " << ids.size();
 
-  for (auto const &i : ids)
+  for (std::string const &i : ids)
   {
     LOG(INFO) << "possible ID: " << i;
     LOG(INFO) << rr_m1.unload<RrTemplateServer<Resource1>>("R1_S", i);

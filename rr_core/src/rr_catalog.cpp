@@ -18,86 +18,47 @@
 
 namespace temoto_resource_registrar
 {
-  void RrCatalog::clearResponses()
+
+  void RrCatalog::storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData)
   {
-    request_response_map_.clear();
+    id_query_map_[q.id()] = QueryContainer(q, reqData, qData, server);
+    server_id_map_[server].push_back(q.id());
   }
 
-  void RrCatalog::processResponse(RawData req, RawData res)
+  std::string RrCatalog::queryExists(const std::string &server, RawData reqData)
   {
-    auto it = request_response_map_.find(req);
-    if (it != request_response_map_.end())
+    for (auto const &query : id_query_map_)
+    {
+      QueryContainer wrapper = query.second;
+      if (wrapper.rawRequest_ == reqData && wrapper.responsibleServer_ == server)
+      {
+        return query.second.q_.id();
+      }
+    }
+    return "";
+  }
+
+  RawData RrCatalog::processExisting(const std::string &server, const std::string &id, RrQueryBase q)
+  {
+    id_query_map_[id].storeNewId(q.id());
+    server_id_map_[server].push_back(q.id());
+
+    return id_query_map_[id].rawQuery_;
+  }
+
+  RawData RrCatalog::unload(const std::string &server, const std::string &id)
+  {
+    auto vec = server_id_map_[server];
+
+    std::remove(vec.begin(), vec.end(), id);
+
+    for (auto const &query : id_query_map_)
     {
     }
-    else
-    {
-      storeResponse(req, res);
-    }
-  }
 
-  bool RrCatalog::hasResponse(RawData queryData)
-  {
-    return request_response_map_.count(queryData) > 0;
-  }
-
-  bool RrCatalog::storeResponse(RawData req, RawData res)
-  {
-    auto ret = request_response_map_.insert(std::make_pair(req, res));
-    return ret.second;
-  }
-
-  void RrCatalog::storeDependency(std::string dependent, std::string dependency)
-  {
-    if (request_dependency_map_.find(dependent) != request_dependency_map_.end())
-    {
-      request_dependency_map_.at(dependent).push_back(dependency);
-    }
-    else
-    {
-      request_dependency_map_.insert({dependent, std::vector<std::string>{dependency}});
-    }
-  }
-
-  RawData RrCatalog::fetchFromStorage(RawData req)
-  {
-    if (hasResponse(req))
-    {
-      return fetchResponse(req);
-    }
-  }
-
-  RawData RrCatalog::fetchResponse(RawData req)
-  {
-    auto it = request_response_map_.find(req);
-    if (it != request_response_map_.end())
-    {
-      return it->second;
-    }
-  }
-
-  void RrCatalog::storeServerQuery(const std::string &server, const std::string &messageId, RawData request, RawData query)
-  {
-    server_query_map_[server].insert(std::make_pair(request, query));
-    id_request_map_.insert(std::make_pair(messageId, request));
-  }
-
-  bool RrCatalog::hasStoredServerQuery(const std::string &server, RawData request)
-  {
-    return server_query_map_[server].count(request) > 0;
-  }
-
-  RawData RrCatalog::fetchFromServerStorage(const std::string &server, RawData req)
-  {
-    return server_query_map_[server][req];
-  }
-
-  bool RrCatalog::removeServerQuery(const std::string &server, const std::string &id)
-  {
-    auto serverRequests = server_query_map_[server];
-    int currentSize = serverRequests.size();
-    serverRequests.erase(id_request_map_[id]);
-
-    return currentSize > serverRequests.size();
+    std::cout << "AAAAAAAAAAAA "
+              << "\n";
+    return "";
   }
 
 } // namespace temoto_resource_registrar

@@ -29,30 +29,52 @@ namespace temoto_resource_registrar
 {
   using RawData = std::string;
 
+  class QueryContainer
+  {
+  public:
+    QueryContainer(){};
+    QueryContainer(RrQueryBase q,
+                   RawData req,
+                   RawData data,
+                   const std::string &server) : q_(q),
+                                                rawRequest_(req),
+                                                rawQuery_(data),
+                                                responsibleServer_(server){};
+
+    void storeNewId(const std::string &id)
+    {
+      ids_.push_back(id);
+    }
+
+    RawData rawQuery_;
+    RawData rawRequest_;
+    RrQueryBase q_;
+    std::vector<std::string> ids_;
+    std::string responsibleServer_;
+
+  protected:
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &q_ &rawRequest_ &rawQuery_ &ids_ &responsibleServer_;
+    }
+  };
+
   class RrCatalog
   {
   public:
     RrCatalog() = default;
 
-    void processResponse(RawData req, RawData res);
-    void clearResponses();
-    bool hasResponse(RawData queryData);
-    void storeDependency(std::string dependent, std::string dependency);
-    RawData fetchFromStorage(RawData req);
-
-    bool hasStoredServerQuery(const std::string &server, RawData request);
-    void storeServerQuery(const std::string &server, const std::string &id, RawData request, RawData query);
-    RawData fetchFromServerStorage(const std::string &server, RawData req);
-    bool removeServerQuery(const std::string &server, const std::string &id);
+    void storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData);
+    std::string queryExists(const std::string &server, RawData qData);
+    RawData processExisting(const std::string &server, const std::string &id, RrQueryBase q);
+    RawData unload(const std::string &server, const std::string &id);
 
   private:
-    std::unordered_map<std::string, std::unordered_map<RawData, RawData>> server_query_map_;
-    std::unordered_map<std::string, RawData> id_request_map_;
-
-    std::unordered_map<RawData, RawData> request_response_map_;
-    std::unordered_map<std::string, std::vector<std::string>> request_dependency_map_;
-    bool storeResponse(RawData req, RawData res);
-    RawData fetchResponse(RawData req);
+    std::unordered_map<std::string, std::vector<std::string>> server_id_map_;
+    std::unordered_map<std::string, QueryContainer> id_query_map_;
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;
