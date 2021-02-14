@@ -21,8 +21,8 @@ namespace temoto_resource_registrar
 
   void RrCatalog::storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData)
   {
-    id_query_map_[q.id()] = QueryContainer(q, reqData, qData, server);
-    server_id_map_[server].push_back(q.id());
+    id_query_map_[reqData] = QueryContainer(q, reqData, qData, server);
+    server_id_map_[server].insert(q.id());
   }
 
   std::string RrCatalog::queryExists(const std::string &server, RawData reqData)
@@ -40,25 +40,101 @@ namespace temoto_resource_registrar
 
   RawData RrCatalog::processExisting(const std::string &server, const std::string &id, RrQueryBase q)
   {
-    id_query_map_[id].storeNewId(q.id());
-    server_id_map_[server].push_back(q.id());
+    std::string request = "";
 
-    return id_query_map_[id].rawQuery_;
+    request = findOriginalContainer(id).rawRequest_;
+
+    if (request.size())
+    {
+      id_query_map_[request].storeNewId(q.id());
+      server_id_map_[server].insert(q.id());
+      return id_query_map_[request].rawQuery_;
+    }
+
+    return "";
   }
 
   RawData RrCatalog::unload(const std::string &server, const std::string &id)
   {
+
     auto vec = server_id_map_[server];
+    int removedElCnt = vec.erase(id);
+    server_id_map_[server] = vec;
 
-    std::remove(vec.begin(), vec.end(), id);
+    std::string queryResp = "";
 
-    for (auto const &query : id_query_map_)
+    if (removedElCnt)
     {
+      QueryContainer qc = findOriginalContainer(id);
+
+      if (qc.responsibleServer_.size())
+      {
+        queryResp = qc.rawQuery_;
+        qc.removeId(id);
+        id_query_map_[qc.rawRequest_] = qc;
+      }
+    }
+    return queryResp;
+  }
+
+  bool RrCatalog::canBeUnloaded(const std::string &server)
+  {
+    int serverCount = server_id_map_.count(server);
+
+    if (!serverCount)
+    {
+      return false;
     }
 
-    std::cout << "AAAAAAAAAAAA "
-              << "\n";
-    return "";
+    return server_id_map_[server].size() == 0;
+  }
+
+  QueryContainer RrCatalog::findOriginalContainer(const std::string &id)
+  {
+    for (auto const &queryEntry : id_query_map_)
+    {
+
+      if (queryEntry.second.ids_.count(id))
+      {
+        return queryEntry.second;
+      }
+    }
+
+    return QueryContainer();
+  }
+
+  std::string RrCatalog::getIdServer(const std::string &id)
+  {
+    return findOriginalContainer(id).responsibleServer_;
+  }
+
+  void RrCatalog::print()
+  {
+    std::cout << "server_id_map_: " << std::endl;
+    for (auto const &i : server_id_map_)
+    {
+      std::cout << "{" << std::endl;
+      std::cout << i.first << ": ";
+      for (auto const &j : i.second)
+      {
+        std::cout << j << ", ";
+      }
+      std::cout << std::endl;
+      std::cout << "}" << std::endl;
+    }
+
+    std::cout << "id_query_map_: " << std::endl;
+    for (auto const &i : id_query_map_)
+    {
+      std::cout << "{" << std::endl;
+      std::cout << i.first << ": ";
+      for (auto const &j : i.second.ids_)
+      {
+        std::cout << j << ", ";
+      }
+      std::cout << std::endl;
+      std::cout << "}" << std::endl;
+    }
   }
 
 } // namespace temoto_resource_registrar

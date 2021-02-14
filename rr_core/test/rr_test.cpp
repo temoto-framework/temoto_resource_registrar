@@ -50,6 +50,8 @@ std ::string expectedMessage = "";
 int loadCalls = 0;
 int r1LoadCalls = 0;
 int r2LoadCalls = 0;
+int r1UnLoadCalls = 0;
+int r2UnLoadCalls = 0;
 
 class RrBaseTest : public ::testing::Test
 {
@@ -202,9 +204,9 @@ public:
     MessageType rawRequest = query.request().getRequest();
     std::string serializedRequest = serialize<MessageType>(rawRequest);
 
-    LOG(INFO) << "checking existance of: " << name_ << " - " << serializedRequest;
-
     query.setId(generateId());
+
+    LOG(INFO) << "checking existance of: " << name_ << " - " << query.id();
     std::string requestId = rr_catalog_->queryExists(name_, serializedRequest);
     if (requestId.size() == 0)
     {
@@ -234,16 +236,18 @@ public:
 
     std::string query = rr_catalog_->unload(name_, id);
 
-    /*LOG(INFO) << "Unload result size: " << query.size();
+    RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);
+
+    LOG(INFO) << "Unload result size: " << query.size();
 
     if (rr_catalog_->canBeUnloaded(name_))
     {
       RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);
-      LOG(INFO) << "Time to unload resource!";
+      LOG(INFO) << "Time for unload CB!";
       typed_unload_callback_ptr_(q);
     }
 
-    return query.size() > 0;*/
+    return query.size() > 0;
   }
 
   template <class SerialClass>
@@ -368,6 +372,7 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
 
 void RtM1UnloadCB(RrQueryTemplate<Resource1> &query)
 {
+  r1UnLoadCalls++;
   LOG(INFO) << "RtM1UnloadCB called";
 };
 
@@ -390,6 +395,7 @@ void RtM2LoadCB(RrQueryTemplate<Resource2> &query)
 
 void RtM2UnloadCB(RrQueryTemplate<Resource2> &query)
 {
+  r2UnLoadCalls++;
   LOG(INFO) << "RtM2UnloadCB called";
 };
 
@@ -455,6 +461,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r1LoadCalls, 1);
   EXPECT_EQ(r2LoadCalls, 1);
 
+  ids.push_back(query.id());
+
   LOG(INFO) << "new query : -------------------------------------------------------";
 
   LOG(INFO) << "executing new call to rr_m0";
@@ -474,17 +482,32 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r1LoadCalls, 2);
   EXPECT_EQ(r2LoadCalls, 1);
 
-  LOG(INFO) << "-------------------";
+  LOG(INFO) << "RR_M0 Catalog -------------------";
+  rr_m0.printCatalog();
+  LOG(INFO) << "RR_M0 Catalog -------------------";
+
+  LOG(INFO) << "RR_M1 Catalog -------------------";
+  rr_m1.printCatalog();
+  LOG(INFO) << "RR_M1 Catalog -------------------";
+
+  LOG(INFO) << "RR_M2 Catalog -------------------";
+  rr_m2.printCatalog();
+  LOG(INFO) << "RR_M2 Catalog -------------------";
+
   LOG(INFO) << "-------------------";
   LOG(INFO) << "-------------------";
 
   LOG(INFO) << "Unloading results!";
 
-  LOG(INFO) << "ids size " << ids.size();
+  LOG(INFO) << "ids to unload: " << ids.size();
 
   for (std::string const &i : ids)
   {
-    LOG(INFO) << "possible ID: " << i;
-    LOG(INFO) << rr_m1.unload<RrTemplateServer<Resource1>>("R1_S", i);
+    LOG(INFO) << "possible to unload ID: " << i;
+    LOG(INFO) << rr_m0.unload<RrTemplateServer<Resource1>>(rr_m1, i);
+    LOG(INFO) << "<<<<<<<<<<<<<<<NEW UNLOAD PLEASE<<<<<<<<<<<<<<<<<<<<<<<";
   }
+
+  EXPECT_EQ(r1UnLoadCalls, 1);
+  //EXPECT_EQ(r2UnLoadCalls, 1);
 }

@@ -23,6 +23,7 @@
 #include <boost/functional/hash.hpp>
 #include <map>
 #include <memory>
+#include <set>
 #include <unordered_map>
 
 namespace temoto_resource_registrar
@@ -39,17 +40,25 @@ namespace temoto_resource_registrar
                    const std::string &server) : q_(q),
                                                 rawRequest_(req),
                                                 rawQuery_(data),
-                                                responsibleServer_(server){};
+                                                responsibleServer_(server)
+    {
+      storeNewId(q.id());
+    };
 
     void storeNewId(const std::string &id)
     {
-      ids_.push_back(id);
+      ids_.insert(id);
+    }
+
+    void removeId(const std::string &id)
+    {
+      ids_.erase(id);
     }
 
     RawData rawQuery_;
     RawData rawRequest_;
     RrQueryBase q_;
-    std::vector<std::string> ids_;
+    std::set<std::string> ids_;
     std::string responsibleServer_;
 
   protected:
@@ -71,10 +80,16 @@ namespace temoto_resource_registrar
     std::string queryExists(const std::string &server, RawData qData);
     RawData processExisting(const std::string &server, const std::string &id, RrQueryBase q);
     RawData unload(const std::string &server, const std::string &id);
+    bool canBeUnloaded(const std::string &server);
+    std::string getIdServer(const std::string &id);
+
+    void print();
 
   private:
-    std::unordered_map<std::string, std::vector<std::string>> server_id_map_;
-    std::unordered_map<std::string, QueryContainer> id_query_map_;
+    std::unordered_map<std::string, std::set<std::string>> server_id_map_;
+    std::unordered_map<RawData, QueryContainer> id_query_map_;
+
+    QueryContainer findOriginalContainer(const std::string &id);
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;

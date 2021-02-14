@@ -130,11 +130,25 @@ namespace temoto_resource_registrar
     }
 
     template <class ServType>
-    bool unload(const std::string &server, const std::string &id)
+    bool unload(RrBase &target, const std::string &id)
     {
-      auto &serverRef = servers_.getElement(server);
+      return target.unload<ServType>(id);
+    }
+
+    template <class ServType>
+    bool unload(const std::string &id)
+    {
+
+      std::string serverId = rr_catalog_->getIdServer(id);
+
+      auto &serverRef = servers_.getElement(serverId);
       auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
       return dynamicRef.unloadMessage(id);
+    }
+
+    void printCatalog()
+    {
+      rr_catalog_->print();
     }
 
   private:

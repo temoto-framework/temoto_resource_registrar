@@ -1,2 +1,11 @@
 /build
 /doc
+catkin_ws/build/
+CMakeFiles
+rr_core/build
+cmake_install.cmake
+install_manifest.txt
+Makefile
+temoto_resource_registrar_conf.cmake
+temoto_resource_registrar-config.cmake
+.vscode
