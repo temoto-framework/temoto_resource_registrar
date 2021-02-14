@@ -25,8 +25,9 @@
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/vector.hpp>
 #include <iostream>
+#include <map>
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 namespace temoto_resource_registrar
 {
@@ -53,19 +54,30 @@ namespace temoto_resource_registrar
       return requestId_;
     }
 
-    void includeDependency(const std::string &id)
+    void includeDependency(const std::string &rr, const std::string &id)
     {
-      dependentQueryIds_.insert(id);
+      dependentQueryIds_[id] = rr;
     }
 
-    std::set<std::string> dependencies()
+    std::unordered_map<std::string, std::string> dependencies()
     {
       return dependentQueryIds_;
     }
 
+    void setRr(const std::string &rr)
+    {
+      servingRr_ = rr;
+    }
+
+    std::string rr()
+    {
+      return servingRr_;
+    }
+
   protected:
     std::string requestId_;
-    std::set<std::string> dependentQueryIds_;
+    std::unordered_map<std::string, std::string> dependentQueryIds_;
+    std::string servingRr_;
 
   private:
   };

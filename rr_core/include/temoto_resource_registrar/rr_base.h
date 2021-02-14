@@ -23,6 +23,7 @@
 
 #include "rr_catalog.h"
 #include "rr_client_base.h"
+#include "rr_query_base.h"
 
 #include <mutex>
 
@@ -105,7 +106,13 @@ namespace temoto_resource_registrar
     template <class ServType, class QueryType>
     void call(RrBase &target, const std::string &server, QueryType &query)
     {
-      call<RrClientBase, ServType, QueryType>(NULL, &(target), server, query);
+      call<RrClientBase, ServType, QueryType>(NULL, &(target), server, query, NULL);
+    }
+
+    template <class ServType, class QueryType>
+    void call(RrBase &target, const std::string &server, QueryType &query, RrQueryBase &parentQuery)
+    {
+      call<RrClientBase, ServType, QueryType>(NULL, &(target), server, query, &(parentQuery));
     }
 
     const std::string id();
@@ -163,27 +170,14 @@ namespace temoto_resource_registrar
     std::thread::id workId;
     std::mutex mtx;
 
-    bool processing = false;
-
     template <class CallClientClass, class ServType, class QueryType>
-    void call(const std::string *rr, RrBase *target, const std::string &server, QueryType &query)
+    void call(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery)
     {
       mtx.lock();
 
-      if (processing == true)
-      {
-        std::cout << "need to record dependencies " << name_ << std::endl;
-      }
-      else
-      {
-        processing = true;
-        std::cout << "starting processing " << name_ << std::endl;
-      }
-
-      std::cout << "---------------call in " << name_ << std::endl;
-      std::cout << "---------------call id? " << name_ << " - " << query.id() << std::endl;
-
       workId = std::this_thread::get_id();
+
+      query.setRr(name_);
 
       // In case we have a client call, not a internal call
       if ((rr == NULL) && !(target != NULL))
@@ -195,9 +189,11 @@ namespace temoto_resource_registrar
         target->handleInternalCall<ServType, QueryType>(server, query);
       }
 
-      std::cout << "---------------call id end? " << name_ << " - " << query.id() << std::endl;
-      processing = false;
-      std::cout << "ending processing " << name_ << std::endl;
+      if (parentQuery != NULL)
+      {
+        parentQuery->includeDependency(query.rr(), query.id());
+      }
+
       mtx.unlock();
     }
 

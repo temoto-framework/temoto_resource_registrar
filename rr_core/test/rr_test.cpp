@@ -218,6 +218,15 @@ public:
 
       storeQuery(serializedRequest, query);
       LOG(INFO) << "Finished storing";
+
+      if (query.dependencies().size())
+      {
+        LOG(INFO) << "dependency storage required";
+        for (auto const &i : query.dependencies())
+        {
+          LOG(INFO) << "     dependency: " << i.first << " - " << i.second;
+        }
+      }
     }
     else
     {
@@ -228,6 +237,12 @@ public:
       query.storeResponse(previousRequest.response());
       LOG(INFO) << "Fetching done... " << serializedQuery;
     }
+
+    /*LOG(INFO) << "dependencies for query: " << query.id();
+    for (auto const &i : query.dependencies())
+    {
+      LOG(INFO) << "dependency: " << i;
+    }*/
   };
 
   bool unloadMessage(const std::string &id)
@@ -362,7 +377,7 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   RrQueryResponseTemplate<Resource2> resp(Resource2(0, 0));
   RrQueryTemplate<Resource2> newQuery(req, resp);
 
-  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery);
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery, query);
 
   EXPECT_EQ(newQuery.response().getResponse().j_, 100);
   EXPECT_EQ(newQuery.response().getResponse().i_, 1);
@@ -371,7 +386,7 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   RrQueryResponseTemplate<Resource2> resp2(Resource2(0, 0));
   RrQueryTemplate<Resource2> newQuery2(req2, resp2);
 
-  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2);
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2, query);
 
   EXPECT_EQ(newQuery2.response().getResponse().j_, 100);
   EXPECT_EQ(newQuery2.response().getResponse().i_, 1);
