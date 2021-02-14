@@ -137,4 +137,10 @@ namespace temoto_resource_registrar
     }
   }
 
+  template <class Archive>
+  void RrCatalog::serialize(Archive &ar, const unsigned int /* version */)
+  {
+    ar &server_id_map_ &id_query_map_ &id_dependency_map;
+  }
+
 } // namespace temoto_resource_registrar

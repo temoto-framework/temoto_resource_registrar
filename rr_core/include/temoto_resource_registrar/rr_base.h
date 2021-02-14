@@ -24,6 +24,8 @@
 #include "rr_catalog.h"
 #include "rr_client_base.h"
 
+#include <mutex>
+
 namespace temoto_resource_registrar
 {
   const static std::string CLIENT_SUFIX = ";CLIENT";
@@ -159,10 +161,27 @@ namespace temoto_resource_registrar
     RrClients<ClientType> clients_;
 
     std::thread::id workId;
+    std::mutex mtx;
+
+    bool processing = false;
 
     template <class CallClientClass, class ServType, class QueryType>
     void call(const std::string *rr, RrBase *target, const std::string &server, QueryType &query)
     {
+      mtx.lock();
+
+      if (processing == true)
+      {
+        std::cout << "need to record dependencies " << name_ << std::endl;
+      }
+      else
+      {
+        processing = true;
+        std::cout << "starting processing " << name_ << std::endl;
+      }
+
+      std::cout << "---------------call in " << name_ << std::endl;
+      std::cout << "---------------call id? " << name_ << " - " << query.id() << std::endl;
 
       workId = std::this_thread::get_id();
 
@@ -176,7 +195,10 @@ namespace temoto_resource_registrar
         target->handleInternalCall<ServType, QueryType>(server, query);
       }
 
-      // here we need to store messages!
+      std::cout << "---------------call id end? " << name_ << " - " << query.id() << std::endl;
+      processing = false;
+      std::cout << "ending processing " << name_ << std::endl;
+      mtx.unlock();
     }
 
     template <class CallClientClass>

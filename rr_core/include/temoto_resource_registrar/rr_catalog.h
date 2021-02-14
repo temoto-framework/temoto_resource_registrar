@@ -71,6 +71,29 @@ namespace temoto_resource_registrar
     }
   };
 
+  class DependencyContainer
+  {
+  public:
+    DependencyContainer() {}
+    DependencyContainer(const std::string &rr,
+                        const std::string &id)
+    {
+      id_rr_map_[id] = rr;
+    }
+
+  protected:
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &id_rr_map_;
+    }
+
+  private:
+    std::unordered_map<std::string, std::string> id_rr_map_;
+  };
+
   class RrCatalog
   {
   public:
@@ -85,9 +108,17 @@ namespace temoto_resource_registrar
 
     void print();
 
+  protected:
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */);
+
   private:
     std::unordered_map<std::string, std::set<std::string>> server_id_map_;
     std::unordered_map<RawData, QueryContainer> id_query_map_;
+
+    std::unordered_map<std::string, DependencyContainer> id_dependency_map;
 
     QueryContainer findOriginalContainer(const std::string &id);
   };

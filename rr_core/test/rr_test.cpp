@@ -367,6 +367,15 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   EXPECT_EQ(newQuery.response().getResponse().j_, 100);
   EXPECT_EQ(newQuery.response().getResponse().i_, 1);
 
+  RrQueryRequestTemplate<Resource2> req2(Resource2(1, 0));
+  RrQueryResponseTemplate<Resource2> resp2(Resource2(0, 0));
+  RrQueryTemplate<Resource2> newQuery2(req2, resp2);
+
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2);
+
+  EXPECT_EQ(newQuery2.response().getResponse().j_, 100);
+  EXPECT_EQ(newQuery2.response().getResponse().i_, 1);
+
   query.storeResponse(RrQueryResponseTemplate<Resource1>(Resource1("Everything Works")));
 };
 

@@ -22,9 +22,11 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/set.hpp>
 #include <boost/serialization/vector.hpp>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace temoto_resource_registrar
 {
@@ -36,10 +38,10 @@ namespace temoto_resource_registrar
     template <class MT>
     MT request() const;
 
-    RrQueryResponse response();
-
     template <class MT>
     void storeResponse(MT &resp);
+
+    RrQueryResponse response();
 
     void setId(const std::string &id)
     {
@@ -51,8 +53,19 @@ namespace temoto_resource_registrar
       return requestId_;
     }
 
+    void includeDependency(const std::string &id)
+    {
+      dependentQueryIds_.insert(id);
+    }
+
+    std::set<std::string> dependencies()
+    {
+      return dependentQueryIds_;
+    }
+
   protected:
     std::string requestId_;
+    std::set<std::string> dependentQueryIds_;
 
   private:
   };
