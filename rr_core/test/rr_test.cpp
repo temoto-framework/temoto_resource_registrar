@@ -245,6 +245,8 @@ public:
   {
     LOG(INFO) << "unloading resource: " << id;
 
+    LOG(INFO) << "checkign for dependencies... ";
+
     std::string query = rr_catalog_->unload(name_, id);
 
     RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);

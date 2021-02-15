@@ -97,6 +97,11 @@ namespace temoto_resource_registrar
       std::cout << "}" << std::endl;
     }
 
+    std::unordered_map<std::string, std::string> dependencies()
+    {
+      return id_rr_map_;
+    }
+
   protected:
     friend class boost::serialization::access;
 
@@ -122,6 +127,7 @@ namespace temoto_resource_registrar
     bool canBeUnloaded(const std::string &server);
     std::string getIdServer(const std::string &id);
     void storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId);
+    std::unordered_map<std::string, std::string> getDependencies(const std::string &queryId);
 
     void print();
 

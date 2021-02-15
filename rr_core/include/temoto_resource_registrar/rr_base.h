@@ -150,6 +150,15 @@ namespace temoto_resource_registrar
 
       std::string serverId = rr_catalog_->getIdServer(id);
 
+      auto dependencyMap = rr_catalog_->getDependencies(id);
+      if (dependencyMap.size() > 0)
+      {
+        for (auto const &dependency : dependencyMap)
+        {
+          std::cout << "unload needed..." << dependency.first << "; " << dependency.second << std::endl;
+        }
+      }
+
       auto &serverRef = servers_.getElement(serverId);
       auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
       return dynamicRef.unloadMessage(id);

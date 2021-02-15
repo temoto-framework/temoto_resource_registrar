@@ -113,6 +113,11 @@ namespace temoto_resource_registrar
     id_dependency_map[queryId].registerDependency(dependencySource, dependencyId);
   }
 
+  std::unordered_map<std::string, std::string> RrCatalog::getDependencies(const std::string &queryId)
+  {
+    return id_dependency_map[queryId].dependencies();
+  }
+
   void RrCatalog::print()
   {
     std::cout << "server_id_map_: " << std::endl;
