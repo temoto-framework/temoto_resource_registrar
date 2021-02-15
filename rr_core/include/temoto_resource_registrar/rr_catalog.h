@@ -78,7 +78,23 @@ namespace temoto_resource_registrar
     DependencyContainer(const std::string &rr,
                         const std::string &id)
     {
+      registerDependency(rr, id);
+    }
+
+    void registerDependency(const std::string &rr, const std::string &id)
+    {
       id_rr_map_[id] = rr;
+    }
+
+    void print() const
+    {
+      std::cout << "{";
+      for (auto const &i : id_rr_map_)
+      {
+
+        std::cout << i.first << ": " << i.second << ", ";
+      }
+      std::cout << "}" << std::endl;
     }
 
   protected:
@@ -105,6 +121,7 @@ namespace temoto_resource_registrar
     RawData unload(const std::string &server, const std::string &id);
     bool canBeUnloaded(const std::string &server);
     std::string getIdServer(const std::string &id);
+    void storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId);
 
     void print();
 

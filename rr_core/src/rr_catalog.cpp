@@ -108,6 +108,11 @@ namespace temoto_resource_registrar
     return findOriginalContainer(id).responsibleServer_;
   }
 
+  void RrCatalog::storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId)
+  {
+    id_dependency_map[queryId].registerDependency(dependencySource, dependencyId);
+  }
+
   void RrCatalog::print()
   {
     std::cout << "server_id_map_: " << std::endl;
@@ -132,6 +137,18 @@ namespace temoto_resource_registrar
       {
         std::cout << j << ", ";
       }
+      std::cout << std::endl;
+      std::cout << "}" << std::endl;
+    }
+
+    std::cout << "id_dependency_map: " << std::endl;
+    for (auto const &i : id_dependency_map)
+    {
+      std::cout << "{" << std::endl;
+      std::cout << i.first << ": ";
+
+      i.second.print();
+
       std::cout << std::endl;
       std::cout << "}" << std::endl;
     }

@@ -160,6 +160,11 @@ namespace temoto_resource_registrar
       rr_catalog_->print();
     }
 
+    std::string name()
+    {
+      return name_;
+    }
+
   private:
     RrCatalogPtr rr_catalog_;
     std::string name_;
@@ -177,15 +182,15 @@ namespace temoto_resource_registrar
 
       workId = std::this_thread::get_id();
 
-      query.setRr(name_);
-
       // In case we have a client call, not a internal call
       if ((rr == NULL) && !(target != NULL))
       {
+        query.setRr(*(rr));
         handleClientCall<CallClientClass>(*(rr), server, query);
       }
       else
       {
+        query.setRr(target->name());
         target->handleInternalCall<ServType, QueryType>(server, query);
       }
 

@@ -225,6 +225,8 @@ public:
         for (auto const &i : query.dependencies())
         {
           LOG(INFO) << "     dependency: " << i.first << " - " << i.second;
+
+          rr_catalog_->storeDependency(query.id(), i.second, i.first);
         }
       }
     }
@@ -237,12 +239,6 @@ public:
       query.storeResponse(previousRequest.response());
       LOG(INFO) << "Fetching done... " << serializedQuery;
     }
-
-    /*LOG(INFO) << "dependencies for query: " << query.id();
-    for (auto const &i : query.dependencies())
-    {
-      LOG(INFO) << "dependency: " << i;
-    }*/
   };
 
   bool unloadMessage(const std::string &id)
