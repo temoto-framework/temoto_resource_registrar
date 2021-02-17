@@ -5,6 +5,7 @@
 #include <sstream>
 #include <thread>
 #include <unistd.h>
+#include <unordered_map>
 
 #include "temoto_resource_registrar/rr_base.h"
 #include "temoto_resource_registrar/rr_client_base.h"
@@ -44,6 +45,8 @@ using namespace temoto_resource_registrar;
 RrBase<RrServerBase, RrClientBase> rr_m0("rr_m0");
 RrBase<RrServerBase, RrClientBase> rr_m1("rr_m1");
 RrBase<RrServerBase, RrClientBase> rr_m2("rr_m2");
+
+std::unordered_map<std::string, RrBase<RrServerBase, RrClientBase> *> rr_references_;
 
 std ::string expectedMessage = "";
 
@@ -432,6 +435,13 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   //check that counts for servers are 0
 
+  rr_references_["rr_m0"] = &rr_m0;
+  rr_references_["rr_m1"] = &rr_m1;
+  rr_references_["rr_m2"] = &rr_m2;
+  rr_m0.setRrReferences(rr_references_);
+  rr_m1.setRrReferences(rr_references_);
+  rr_m2.setRrReferences(rr_references_);
+
   std::vector<std::string> ids;
 
   EXPECT_EQ(rr_m0.serverCount(), 0);
@@ -526,10 +536,10 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   for (std::string const &i : ids)
   {
     LOG(INFO) << "possible to unload ID: " << i;
-    LOG(INFO) << rr_m0.unload<RrTemplateServer<Resource1>>(rr_m1, i);
+    LOG(INFO) << rr_m0.unload(rr_m1, i);
     LOG(INFO) << "<<<<<<<<<<<<<<<NEW UNLOAD PLEASE<<<<<<<<<<<<<<<<<<<<<<<";
   }
 
   EXPECT_EQ(r1UnLoadCalls, 1);
-  //EXPECT_EQ(r2UnLoadCalls, 1);
+  EXPECT_EQ(r2UnLoadCalls, 1);
 }

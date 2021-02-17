@@ -39,12 +39,12 @@ namespace temoto_resource_registrar
     {
       auto ret = rr_contents_.insert(std::make_pair(content->id(), std::move(content)));
       return ret.second;
-    };
+    }
 
     bool remove(const std::string &id)
     {
       return rr_contents_.erase(id) > 0;
-    };
+    }
 
     bool exists(const std::string &id)
     {
@@ -54,7 +54,7 @@ namespace temoto_resource_registrar
         return true;
       }
       return false;
-    };
+    }
 
     std::vector<std::string> getIds()
     {
@@ -64,16 +64,26 @@ namespace temoto_resource_registrar
         ids.push_back(it->first);
       }
       return ids;
-    };
+    }
 
-    const ContentClass &getElement(std::string key)
+    const ContentClass &getElement(const std::string &key)
     {
       auto it = rr_contents_.find(key);
       if (it != rr_contents_.end())
       {
         return *(it->second.get());
       }
-    };
+    }
+
+    const bool unload(const std::string &key, const std::string &id)
+    {
+      auto it = rr_contents_.find(key);
+      if (it != rr_contents_.end())
+      {
+        return (it->second.get())->unloadMessage(id);
+      }
+      return false;
+    }
 
   protected:
     std::unordered_map<std::string, std::unique_ptr<ContentClass>>
@@ -138,13 +148,11 @@ namespace temoto_resource_registrar
       dynamicRef.processQuery(query);
     }
 
-    template <class ServType>
     bool unload(RrBase &target, const std::string &id)
     {
-      return target.unload<ServType>(id);
+      return target.unload(id);
     }
 
-    template <class ServType>
     bool unload(const std::string &id)
     {
 
@@ -155,13 +163,12 @@ namespace temoto_resource_registrar
       {
         for (auto const &dependency : dependencyMap)
         {
-          std::cout << "unload needed..." << dependency.first << "; " << dependency.second << std::endl;
+          std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
+          rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
         }
       }
 
-      auto &serverRef = servers_.getElement(serverId);
-      auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
-      return dynamicRef.unloadMessage(id);
+      return unloadByServerAndQuery(serverId, id);
     }
 
     void printCatalog()
@@ -174,12 +181,31 @@ namespace temoto_resource_registrar
       return name_;
     }
 
+    void setRrReferences(const std::unordered_map<std::string, RrBase *> &references)
+    {
+      rr_references_ = references;
+    }
+
+    std::string resolveQueryServerId(const std::string &id)
+    {
+      return rr_catalog_->getIdServer(id);
+    }
+
+    bool unloadByServerAndQuery(const std::string &server, const std::string &id)
+    {
+      servers_.unload(server, id);
+
+      return false;
+    }
+
   private:
     RrCatalogPtr rr_catalog_;
     std::string name_;
 
     RrServers<ServerType> servers_;
     RrClients<ClientType> clients_;
+
+    std::unordered_map<std::string, RrBase *> rr_references_;
 
     std::thread::id workId;
     std::mutex mtx;
