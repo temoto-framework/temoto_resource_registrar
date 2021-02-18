@@ -55,6 +55,11 @@ namespace temoto_resource_registrar
       ids_.erase(id);
     }
 
+    int getIdCount()
+    {
+      return ids_.size();
+    }
+
     RawData rawQuery_;
     RawData rawRequest_;
     RrQueryBase q_;
@@ -84,6 +89,16 @@ namespace temoto_resource_registrar
     void registerDependency(const std::string &rr, const std::string &id)
     {
       id_rr_map_[id] = rr;
+    }
+
+    void removeDependency(const std::string &id)
+    {
+      id_rr_map_.erase(id);
+    }
+
+    int count()
+    {
+      return id_rr_map_.size();
     }
 
     void print() const
@@ -123,11 +138,15 @@ namespace temoto_resource_registrar
     void storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData);
     std::string queryExists(const std::string &server, RawData qData);
     RawData processExisting(const std::string &server, const std::string &id, RrQueryBase q);
+
     RawData unload(const std::string &server, const std::string &id);
     bool canBeUnloaded(const std::string &server);
+
     std::string getIdServer(const std::string &id);
-    void storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId);
+
     std::unordered_map<std::string, std::string> getDependencies(const std::string &queryId);
+    void storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId);
+    void unloadDependency(const std::string &queryId, const std::string &dependencyId);
 
     void print();
 
@@ -140,8 +159,7 @@ namespace temoto_resource_registrar
   private:
     std::unordered_map<std::string, std::set<std::string>> server_id_map_;
     std::unordered_map<RawData, QueryContainer> id_query_map_;
-
-    std::unordered_map<std::string, DependencyContainer> id_dependency_map;
+    std::unordered_map<std::string, DependencyContainer> id_dependency_map_;
 
     QueryContainer findOriginalContainer(const std::string &id);
   };

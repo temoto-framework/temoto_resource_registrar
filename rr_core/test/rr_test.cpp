@@ -433,14 +433,14 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
    *   b) resource reference count in rr_m1 is equal to the nr of requests by rr_m0
    */
 
-  //check that counts for servers are 0
-
   rr_references_["rr_m0"] = &rr_m0;
   rr_references_["rr_m1"] = &rr_m1;
   rr_references_["rr_m2"] = &rr_m2;
   rr_m0.setRrReferences(rr_references_);
   rr_m1.setRrReferences(rr_references_);
   rr_m2.setRrReferences(rr_references_);
+
+  //check that counts for servers are 0
 
   std::vector<std::string> ids;
 
@@ -537,9 +537,30 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   {
     LOG(INFO) << "possible to unload ID: " << i;
     LOG(INFO) << rr_m0.unload(rr_m1, i);
-    LOG(INFO) << "<<<<<<<<<<<<<<<NEW UNLOAD PLEASE<<<<<<<<<<<<<<<<<<<<<<<";
+    LOG(INFO) << "-------------------";
   }
 
   EXPECT_EQ(r1UnLoadCalls, 1);
   EXPECT_EQ(r2UnLoadCalls, 1);
+
+  LOG(INFO) << "RR_M0 Catalog -------------------";
+  rr_m0.printCatalog();
+  LOG(INFO) << "RR_M0 Catalog -------------------";
+
+  LOG(INFO) << "RR_M1 Catalog -------------------";
+  rr_m1.printCatalog();
+  LOG(INFO) << "RR_M1 Catalog -------------------";
+
+  LOG(INFO) << "RR_M2 Catalog -------------------";
+  rr_m2.printCatalog();
+  LOG(INFO) << "RR_M2 Catalog -------------------";
+
+  expectedMessage = "testMessage here";
+  query = RrQueryTemplate<Resource1>(Resource1("testMessage here"), Resource1(""));
+
+  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
+
+  EXPECT_EQ(loadCalls, 5);
+  EXPECT_EQ(r1LoadCalls, 3);
+  EXPECT_EQ(r2LoadCalls, 2);
 }

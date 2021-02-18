@@ -71,9 +71,21 @@ namespace temoto_resource_registrar
       {
         queryResp = qc.rawQuery_;
         qc.removeId(id);
-        id_query_map_[qc.rawRequest_] = qc;
+
+        if (!qc.getIdCount())
+        {
+          id_query_map_.erase(qc.rawRequest_);
+        }
+        else
+        {
+          id_query_map_[qc.rawRequest_] = qc;
+        }
       }
     }
+
+    if (!server_id_map_[server].size())
+      server_id_map_.erase(server);
+
     return queryResp;
   }
 
@@ -83,7 +95,7 @@ namespace temoto_resource_registrar
 
     if (!serverCount)
     {
-      return false;
+      return true;
     }
 
     return server_id_map_[server].size() == 0;
@@ -110,12 +122,26 @@ namespace temoto_resource_registrar
 
   void RrCatalog::storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId)
   {
-    id_dependency_map[queryId].registerDependency(dependencySource, dependencyId);
+    id_dependency_map_[queryId].registerDependency(dependencySource, dependencyId);
   }
 
   std::unordered_map<std::string, std::string> RrCatalog::getDependencies(const std::string &queryId)
   {
-    return id_dependency_map[queryId].dependencies();
+    if (id_dependency_map_.count(queryId))
+      return id_dependency_map_[queryId].dependencies();
+
+    std::unordered_map<std::string, std::string> empty;
+    return empty;
+  }
+
+  void RrCatalog::unloadDependency(const std::string &queryId, const std::string &dependencyId)
+  {
+    id_dependency_map_[queryId].removeDependency(dependencyId);
+
+    if (!id_dependency_map_[queryId].count())
+    {
+      id_dependency_map_.erase(queryId);
+    }
   }
 
   void RrCatalog::print()
@@ -147,7 +173,7 @@ namespace temoto_resource_registrar
     }
 
     std::cout << "id_dependency_map: " << std::endl;
-    for (auto const &i : id_dependency_map)
+    for (auto const &i : id_dependency_map_)
     {
       std::cout << "{" << std::endl;
       std::cout << i.first << ": ";
@@ -162,7 +188,7 @@ namespace temoto_resource_registrar
   template <class Archive>
   void RrCatalog::serialize(Archive &ar, const unsigned int /* version */)
   {
-    ar &server_id_map_ &id_query_map_ &id_dependency_map;
+    ar &server_id_map_ &id_query_map_ &id_dependency_map_;
   }
 
 } // namespace temoto_resource_registrar

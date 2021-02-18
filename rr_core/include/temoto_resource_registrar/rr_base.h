@@ -164,7 +164,10 @@ namespace temoto_resource_registrar
         for (auto const &dependency : dependencyMap)
         {
           std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
-          rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
+          bool unloadStatus = rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
+
+          if (unloadStatus)
+            rr_catalog_->unloadDependency(id, dependency.first);
         }
       }
 
@@ -193,9 +196,7 @@ namespace temoto_resource_registrar
 
     bool unloadByServerAndQuery(const std::string &server, const std::string &id)
     {
-      servers_.unload(server, id);
-
-      return false;
+      return servers_.unload(server, id);
     }
 
   private:
