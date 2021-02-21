@@ -44,11 +44,12 @@ using namespace temoto_resource_registrar;
 
 RrBase<RrServerBase, RrClientBase> rr_m0("rr_m0");
 RrBase<RrServerBase, RrClientBase> rr_m1("rr_m1");
+RrBase<RrServerBase, RrClientBase> rr_m1_1("rr_m1_1");
 RrBase<RrServerBase, RrClientBase> rr_m2("rr_m2");
 
 std::unordered_map<std::string, RrBase<RrServerBase, RrClientBase> *> rr_references_;
 
-std ::string expectedMessage = "";
+std::string expectedMessage = "";
 
 int loadCalls = 0;
 int r1LoadCalls = 0;
@@ -378,7 +379,7 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   RrQueryResponseTemplate<Resource2> resp(Resource2(0, 0));
   RrQueryTemplate<Resource2> newQuery(req, resp);
 
-  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery, query);
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery, &(query));
 
   EXPECT_EQ(newQuery.response().getResponse().j_, 100);
   EXPECT_EQ(newQuery.response().getResponse().i_, 1);
@@ -387,7 +388,7 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   RrQueryResponseTemplate<Resource2> resp2(Resource2(0, 0));
   RrQueryTemplate<Resource2> newQuery2(req2, resp2);
 
-  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2, query);
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2, &(query));
 
   EXPECT_EQ(newQuery2.response().getResponse().j_, 100);
   EXPECT_EQ(newQuery2.response().getResponse().i_, 1);
@@ -415,6 +416,7 @@ void RtM2LoadCB(RrQueryTemplate<Resource2> &query)
   EXPECT_EQ(rawMessage.j_, 0);
 
   query.storeResponse(RrQueryResponseTemplate<Resource2>(Resource2(rawMessage.i_, 100)));
+
   LOG(INFO) << "Done Setting response";
 };
 
@@ -435,9 +437,11 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   rr_references_["rr_m0"] = &rr_m0;
   rr_references_["rr_m1"] = &rr_m1;
+  rr_references_["rr_m1_1"] = &rr_m1_1;
   rr_references_["rr_m2"] = &rr_m2;
   rr_m0.setRrReferences(rr_references_);
   rr_m1.setRrReferences(rr_references_);
+  rr_m1_1.setRrReferences(rr_references_);
   rr_m2.setRrReferences(rr_references_);
 
   //check that counts for servers are 0
@@ -514,6 +518,16 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r1LoadCalls, 2);
   EXPECT_EQ(r2LoadCalls, 1);
 
+  LOG(INFO) << "existing query from rr_m1_1 to m2 -------------------------------------------------------";
+  RrQueryRequestTemplate<Resource2> req2(Resource2(1, 0));
+  RrQueryResponseTemplate<Resource2> resp2(Resource2(0, 0));
+  RrQueryTemplate<Resource2> newQuery2(req2, resp2);
+
+  rr_m1_1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2);
+  std::string idForStatus = newQuery2.id();
+
+  LOG(INFO) << "existing query from rr_m1_1 to m2 -------------------------------------------------------";
+
   LOG(INFO) << "RR_M0 Catalog -------------------";
   rr_m0.printCatalog();
   LOG(INFO) << "RR_M0 Catalog -------------------";
@@ -529,6 +543,13 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "-------------------";
   LOG(INFO) << "-------------------";
 
+  std::string updateMessage = "All OK";
+  rr_m2.sendStatus(idForStatus, Status::UPDATE, updateMessage);
+
+  rr_m1_1.unload(rr_m2, idForStatus);
+
+  LOG(INFO) << "status test for id end: " << idForStatus;
+  LOG(INFO) << "--------------------------------------------------";
   LOG(INFO) << "Unloading results!";
 
   LOG(INFO) << "ids to unload: " << ids.size();
@@ -554,6 +575,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "RR_M2 Catalog -------------------";
   rr_m2.printCatalog();
   LOG(INFO) << "RR_M2 Catalog -------------------";
+
+  LOG(INFO) << "FINAL QUERY -------------------";
 
   expectedMessage = "testMessage here";
   query = RrQueryTemplate<Resource1>(Resource1("testMessage here"), Resource1(""));

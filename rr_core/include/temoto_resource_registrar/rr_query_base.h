@@ -44,40 +44,27 @@ namespace temoto_resource_registrar
 
     RrQueryResponse response();
 
-    void setId(const std::string &id)
-    {
-      requestId_ = id;
-    };
+    void setId(const std::string &id) { requestId_ = id; };
 
-    std::string id() const
-    {
-      return requestId_;
-    }
+    std::string id() const { return requestId_; }
 
-    void includeDependency(const std::string &rr, const std::string &id)
-    {
-      dependentQueryIds_[id] = rr;
-    }
+    void includeDependency(const std::string &rr, const std::string &id) { dependentQueryIds_[id] = rr; }
 
-    std::unordered_map<std::string, std::string> dependencies()
-    {
-      return dependentQueryIds_;
-    }
+    std::unordered_map<std::string, std::string> dependencies() { return dependentQueryIds_; }
 
-    void setRr(const std::string &rr)
-    {
-      servingRr_ = rr;
-    }
+    void setRr(const std::string &rr) { servingRr_ = rr; }
 
-    std::string rr()
-    {
-      return servingRr_;
-    }
+    std::string rr() { return servingRr_; }
+
+    void setOrigin(const std::string &rr) { originRr_ = rr; }
+
+    std::string origin() { return originRr_; }
 
   protected:
     std::string requestId_;
     std::unordered_map<std::string, std::string> dependentQueryIds_;
     std::string servingRr_;
+    std::string originRr_;
 
   private:
   };

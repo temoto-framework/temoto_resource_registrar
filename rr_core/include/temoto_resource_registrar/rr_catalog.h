@@ -42,29 +42,27 @@ namespace temoto_resource_registrar
                                                 rawQuery_(data),
                                                 responsibleServer_(server)
     {
-      storeNewId(q.id());
+      storeNewId(q.id(), q.origin());
     };
 
-    void storeNewId(const std::string &id)
+    void storeNewId(const std::string &id, const std::string &rr)
     {
-      ids_.insert(id);
+      rr_ids_[id] = rr;
     }
 
     void removeId(const std::string &id)
     {
-      ids_.erase(id);
+      rr_ids_.erase(id);
     }
 
-    int getIdCount()
-    {
-      return ids_.size();
-    }
+    int getIdCount() { return rr_ids_.size(); }
 
     RawData rawQuery_;
     RawData rawRequest_;
     RrQueryBase q_;
-    std::set<std::string> ids_;
     std::string responsibleServer_;
+
+    std::unordered_map<std::string, std::string> rr_ids_;
 
   protected:
     friend class boost::serialization::access;
@@ -72,7 +70,7 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &q_ &rawRequest_ &rawQuery_ &ids_ &responsibleServer_;
+      ar &q_ &rawRequest_ &rawQuery_ &rr_ids_ &responsibleServer_;
     }
   };
 
@@ -86,20 +84,11 @@ namespace temoto_resource_registrar
       registerDependency(rr, id);
     }
 
-    void registerDependency(const std::string &rr, const std::string &id)
-    {
-      id_rr_map_[id] = rr;
-    }
+    void registerDependency(const std::string &rr, const std::string &id) { id_rr_map_[id] = rr; }
 
-    void removeDependency(const std::string &id)
-    {
-      id_rr_map_.erase(id);
-    }
+    void removeDependency(const std::string &id) { id_rr_map_.erase(id); }
 
-    int count()
-    {
-      return id_rr_map_.size();
-    }
+    int count() { return id_rr_map_.size(); }
 
     void print() const
     {
@@ -112,10 +101,7 @@ namespace temoto_resource_registrar
       std::cout << "}" << std::endl;
     }
 
-    std::unordered_map<std::string, std::string> dependencies()
-    {
-      return id_rr_map_;
-    }
+    std::unordered_map<std::string, std::string> dependencies() const { return id_rr_map_; }
 
   protected:
     friend class boost::serialization::access;
@@ -138,15 +124,18 @@ namespace temoto_resource_registrar
     void storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData);
     std::string queryExists(const std::string &server, RawData qData);
     RawData processExisting(const std::string &server, const std::string &id, RrQueryBase q);
+    std::string getInitialId(const std::string &id);
 
     RawData unload(const std::string &server, const std::string &id);
     bool canBeUnloaded(const std::string &server);
 
     std::string getIdServer(const std::string &id);
+    std::unordered_map<std::string, std::string> getAllQueryIds(const std::string &id);
 
     std::unordered_map<std::string, std::string> getDependencies(const std::string &queryId);
     void storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId);
     void unloadDependency(const std::string &queryId, const std::string &dependencyId);
+    std::string getOriginQueryId(const std::string &queryId);
 
     void print();
 

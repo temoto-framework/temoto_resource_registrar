@@ -24,11 +24,14 @@
 #include "rr_catalog.h"
 #include "rr_client_base.h"
 #include "rr_query_base.h"
+#include "rr_status.h"
 
 #include <mutex>
 
 namespace temoto_resource_registrar
 {
+  typedef void (*StatusFunction)(const std::string &id, Status status, std::string &message);
+
   const static std::string CLIENT_SUFIX = ";CLIENT";
 
   template <class ContentClass>
@@ -107,6 +110,8 @@ namespace temoto_resource_registrar
     RrBase(std::string name) : name_(name),
                                rr_catalog_(std::make_shared<RrCatalog>()){};
 
+    const std::string id();
+
     template <class CallClientClass>
     void call(const std::string &rr, const std::string &server, RrQueryBase &query)
     {
@@ -114,23 +119,17 @@ namespace temoto_resource_registrar
     }
 
     template <class ServType, class QueryType>
-    void call(RrBase &target, const std::string &server, QueryType &query)
+    void call(RrBase &target,
+              const std::string &server,
+              QueryType &query,
+              RrQueryBase *parentQuery = NULL,
+              StatusFunction statusFunc = NULL,
+              bool overrideStatus = false)
     {
-      call<RrClientBase, ServType, QueryType>(NULL, &(target), server, query, NULL);
+      privateCall<RrClientBase, ServType, QueryType>(NULL, &(target), server, query, parentQuery, statusFunc, overrideStatus);
     }
 
-    template <class ServType, class QueryType>
-    void call(RrBase &target, const std::string &server, QueryType &query, RrQueryBase &parentQuery)
-    {
-      call<RrClientBase, ServType, QueryType>(NULL, &(target), server, query, &(parentQuery));
-    }
-
-    const std::string id();
-
-    size_t serverCount()
-    {
-      return servers_.getIds().size();
-    }
+    size_t serverCount() { return servers_.getIds().size(); }
 
     void registerServer(std::unique_ptr<ServerType> serverPtr)
     {
@@ -148,10 +147,7 @@ namespace temoto_resource_registrar
       dynamicRef.processQuery(query);
     }
 
-    bool unload(RrBase &target, const std::string &id)
-    {
-      return target.unload(id);
-    }
+    bool unload(RrBase &target, const std::string &id) { return target.unload(id); }
 
     bool unload(const std::string &id)
     {
@@ -174,29 +170,44 @@ namespace temoto_resource_registrar
       return unloadByServerAndQuery(serverId, id);
     }
 
-    void printCatalog()
+    void printCatalog() { rr_catalog_->print(); }
+
+    std::string name() { return name_; }
+
+    void setRrReferences(const std::unordered_map<std::string, RrBase *> &references) { rr_references_ = references; }
+
+    std::string resolveQueryServerId(const std::string &id) { return rr_catalog_->getIdServer(id); }
+
+    bool unloadByServerAndQuery(const std::string &server, const std::string &id) { return servers_.unload(server, id); }
+
+    void sendStatus(const std::string &id, Status status, std::string &message)
     {
-      rr_catalog_->print();
+      std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
+
+      for (auto const &notId : notifyIds)
+      {
+        std::cout << notId.first << " - " << notId.second << std::endl;
+        rr_references_[notId.second]->handleStatus(notId.first, status, message);
+      }
+      // leia rr, kuhu saata läbi query - DONE
+      // target rr sees on meetod, mis otsib teised sõltuvused - DONE
+      // calli rr user status callback
+      // query liigutatakse edasi ja kordub sama - DONE
     }
 
-    std::string name()
+    void handleStatus(const std::string &id, Status status, std::string &message)
     {
-      return name_;
-    }
+      std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>" << std::endl;
+      std::cout << "in handleStatus " << id << std::endl;
+      std::cout << "rr - " << name_ << std::endl;
+      std::string originQueryId = rr_catalog_->getOriginQueryId(id);
 
-    void setRrReferences(const std::unordered_map<std::string, RrBase *> &references)
-    {
-      rr_references_ = references;
-    }
-
-    std::string resolveQueryServerId(const std::string &id)
-    {
-      return rr_catalog_->getIdServer(id);
-    }
-
-    bool unloadByServerAndQuery(const std::string &server, const std::string &id)
-    {
-      return servers_.unload(server, id);
+      if (originQueryId.size())
+      {
+        std::cout << "found upward id- " << originQueryId << std::endl;
+        sendStatus(originQueryId, status, message);
+      }
+      std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusEND>>>>>>>>>>>>>>>>>>>" << std::endl;
     }
 
   private:
@@ -206,17 +217,21 @@ namespace temoto_resource_registrar
     RrServers<ServerType> servers_;
     RrClients<ClientType> clients_;
 
+    std::unordered_map<std::string, StatusFunction> status_callbacks_;
+
     std::unordered_map<std::string, RrBase *> rr_references_;
 
     std::thread::id workId;
     std::mutex mtx;
 
     template <class CallClientClass, class ServType, class QueryType>
-    void call(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery)
+    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, StatusFunction statusFunc, bool overrideFunc)
     {
       mtx.lock();
 
       workId = std::this_thread::get_id();
+
+      query.setOrigin(name_);
 
       // In case we have a client call, not a internal call
       if ((rr == NULL) && !(target != NULL))
@@ -234,6 +249,9 @@ namespace temoto_resource_registrar
       {
         parentQuery->includeDependency(query.rr(), query.id());
       }
+
+      std::cout << " LOLOLOLOLOLOLOLOLOL " << name_ << " - " << query.id() << std::endl;
+      rr_catalog_->print();
 
       mtx.unlock();
     }

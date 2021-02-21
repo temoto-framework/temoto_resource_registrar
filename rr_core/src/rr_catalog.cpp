@@ -46,12 +46,20 @@ namespace temoto_resource_registrar
 
     if (request.size())
     {
-      id_query_map_[request].storeNewId(q.id());
+      id_query_map_[request].storeNewId(q.id(), q.origin());
       server_id_map_[server].insert(q.id());
       return id_query_map_[request].rawQuery_;
     }
 
     return "";
+  }
+
+  std::string RrCatalog::getInitialId(const std::string &id)
+  {
+    //QueryContainer cotnainer = findOriginalContainer(id);
+    //std::cout << cotnainer.getIdCount() << std::endl;
+    //return cotnainer.q_.id();
+    return getOriginQueryId(id);
   }
 
   RawData RrCatalog::unload(const std::string &server, const std::string &id)
@@ -105,8 +113,7 @@ namespace temoto_resource_registrar
   {
     for (auto const &queryEntry : id_query_map_)
     {
-
-      if (queryEntry.second.ids_.count(id))
+      if (queryEntry.second.rr_ids_.count(id))
       {
         return queryEntry.second;
       }
@@ -118,6 +125,19 @@ namespace temoto_resource_registrar
   std::string RrCatalog::getIdServer(const std::string &id)
   {
     return findOriginalContainer(id).responsibleServer_;
+  }
+
+  std::unordered_map<std::string, std::string> RrCatalog::getAllQueryIds(const std::string &id)
+  {
+    for (auto const &queryEntry : id_query_map_)
+    {
+      if (queryEntry.second.rr_ids_.count(id))
+      {
+        return queryEntry.second.rr_ids_;
+      }
+    }
+    std::unordered_map<std::string, std::string> emptyMap;
+    return emptyMap;
   }
 
   void RrCatalog::storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId)
@@ -144,6 +164,18 @@ namespace temoto_resource_registrar
     }
   }
 
+  std::string RrCatalog::getOriginQueryId(const std::string &queryId)
+  {
+    for (auto const &dependencyEntry : id_dependency_map_)
+    {
+      if (dependencyEntry.second.dependencies().count(queryId))
+      {
+        return dependencyEntry.first;
+      }
+    }
+    return "";
+  }
+
   void RrCatalog::print()
   {
     std::cout << "server_id_map_: " << std::endl;
@@ -164,9 +196,9 @@ namespace temoto_resource_registrar
     {
       std::cout << "{" << std::endl;
       std::cout << i.first << ": ";
-      for (auto const &j : i.second.ids_)
+      for (auto const &j : i.second.rr_ids_)
       {
-        std::cout << j << ", ";
+        std::cout << j.first << ": " << j.second << "; ";
       }
       std::cout << std::endl;
       std::cout << "}" << std::endl;
