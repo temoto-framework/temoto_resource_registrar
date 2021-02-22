@@ -202,6 +202,21 @@ namespace temoto_resource_registrar
     void handleStatus(const std::string &id, Status status, std::string &message)
     {
       std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>" << std::endl;
+
+      // need to check if status is part of a dependency chain. This is to avoid double-status calling
+      std::string originalId = rr_catalog_->getOriginQueryId(id);
+
+      if (originalId.size())
+      {
+        std::unordered_map<std::string, std::string> dependencyMap = rr_catalog_->getDependencies(originalId);
+        std::string firstId = dependencyMap.begin()->first;
+        // stop attempt if dependency
+        if (id != firstId)
+        {
+          return;
+        }
+      }
+
       std::cout << "in handleStatus " << id << std::endl;
       std::cout << "rr - " << name_ << std::endl;
 
