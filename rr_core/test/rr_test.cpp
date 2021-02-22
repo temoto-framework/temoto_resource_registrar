@@ -412,8 +412,8 @@ void RtM2LoadCB(RrQueryTemplate<Resource2> &query)
 
   Resource2 rawMessage = query.request().getRequest();
 
-  EXPECT_EQ(rawMessage.i_, 1);
-  EXPECT_EQ(rawMessage.j_, 0);
+  //EXPECT_EQ(rawMessage.i_, 1);
+  //EXPECT_EQ(rawMessage.j_, 0);
 
   query.storeResponse(RrQueryResponseTemplate<Resource2>(Resource2(rawMessage.i_, 100)));
 
@@ -424,6 +424,13 @@ void RtM2UnloadCB(RrQueryTemplate<Resource2> &query)
 {
   r2UnLoadCalls++;
   LOG(INFO) << "RtM2UnloadCB called";
+};
+
+void RRStatusFucntion(const std::string &id, Status status, std::string &message)
+{
+  LOG(INFO) << "RRStatusFucntion called " << id;
+  EXPECT_EQ(status, Status::UPDATE);
+  EXPECT_EQ(message, "All OK");
 };
 
 TEST_F(RrBaseTest, ResourceRegistrarTest)
@@ -447,6 +454,11 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   //check that counts for servers are 0
 
   std::vector<std::string> ids;
+
+  EXPECT_EQ(rr_m0.callbacks().size(), 0);
+  EXPECT_EQ(rr_m1.callbacks().size(), 0);
+  EXPECT_EQ(rr_m1_1.callbacks().size(), 0);
+  EXPECT_EQ(rr_m2.callbacks().size(), 0);
 
   EXPECT_EQ(rr_m0.serverCount(), 0);
   EXPECT_EQ(rr_m1.serverCount(), 0);
@@ -479,7 +491,7 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "query : -------------------------------------------------------";
 
   //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
-  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
+  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query, NULL, RRStatusFucntion);
 
   EXPECT_EQ(loadCalls, 2);
   EXPECT_EQ(r1LoadCalls, 1);
@@ -487,17 +499,21 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   EXPECT_EQ(query.response().getResponse().rawMessage(), "Everything Works");
 
+  LOG(INFO) << "registered callback for query with id: " << query.id();
+  EXPECT_EQ(rr_m0.callbacks().size(), 1);
+  EXPECT_EQ(rr_m0.callbacks().count(query.id()), 1);
+
   ids.push_back(query.id());
 
   LOG(INFO) << "requery : -------------------------------------------------------";
 
-  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
+  //rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
 
   EXPECT_EQ(loadCalls, 2);
   EXPECT_EQ(r1LoadCalls, 1);
   EXPECT_EQ(r2LoadCalls, 1);
 
-  ids.push_back(query.id());
+  //ids.push_back(query.id());
 
   LOG(INFO) << "new query : -------------------------------------------------------";
 
@@ -541,7 +557,7 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "RR_M2 Catalog -------------------";
 
   LOG(INFO) << "-------------------";
-  LOG(INFO) << "-------------------";
+  LOG(INFO) << "------------------- STATUS TESTS";
 
   std::string updateMessage = "All OK";
   rr_m2.sendStatus(idForStatus, Status::UPDATE, updateMessage);
@@ -560,6 +576,11 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
     LOG(INFO) << rr_m0.unload(rr_m1, i);
     LOG(INFO) << "-------------------";
   }
+
+  EXPECT_EQ(rr_m0.callbacks().size(), 0);
+  EXPECT_EQ(rr_m1.callbacks().size(), 0);
+  EXPECT_EQ(rr_m1_1.callbacks().size(), 0);
+  EXPECT_EQ(rr_m2.callbacks().size(), 0);
 
   EXPECT_EQ(r1UnLoadCalls, 1);
   EXPECT_EQ(r2UnLoadCalls, 1);

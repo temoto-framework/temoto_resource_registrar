@@ -147,11 +147,14 @@ namespace temoto_resource_registrar
       dynamicRef.processQuery(query);
     }
 
-    bool unload(RrBase &target, const std::string &id) { return target.unload(id); }
+    bool unload(RrBase &target, const std::string &id)
+    {
+      status_callbacks_.erase(id);
+      return target.unload(id);
+    }
 
     bool unload(const std::string &id)
     {
-
       std::string serverId = rr_catalog_->getIdServer(id);
 
       auto dependencyMap = rr_catalog_->getDependencies(id);
@@ -159,11 +162,7 @@ namespace temoto_resource_registrar
       {
         for (auto const &dependency : dependencyMap)
         {
-          std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
-          bool unloadStatus = rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
-
-          if (unloadStatus)
-            rr_catalog_->unloadDependency(id, dependency.first);
+          unloadResource(id, dependency);
         }
       }
 
@@ -183,16 +182,21 @@ namespace temoto_resource_registrar
     void sendStatus(const std::string &id, Status status, std::string &message)
     {
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
+      std::cout << "!!!!!!!!!!!!!!!!!!!!!!! " << id << " START " << std::endl;
+
+      std::cout << "notifyIds: ";
+      for (auto const &notId : notifyIds)
+      {
+        std::cout << notId.first << ", ";
+      }
+      std::cout << "\n";
 
       for (auto const &notId : notifyIds)
       {
-        std::cout << notId.first << " - " << notId.second << std::endl;
         rr_references_[notId.second]->handleStatus(notId.first, status, message);
       }
-      // leia rr, kuhu saata läbi query - DONE
-      // target rr sees on meetod, mis otsib teised sõltuvused - DONE
-      // calli rr user status callback
-      // query liigutatakse edasi ja kordub sama - DONE
+
+      std::cout << "!!!!!!!!!!!!!!!!!!!!!!! " << id << " END " << std::endl;
     }
 
     void handleStatus(const std::string &id, Status status, std::string &message)
@@ -200,6 +204,13 @@ namespace temoto_resource_registrar
       std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>" << std::endl;
       std::cout << "in handleStatus " << id << std::endl;
       std::cout << "rr - " << name_ << std::endl;
+
+      if (status_callbacks_.count(id))
+      {
+        auto callback = status_callbacks_[id];
+        callback(id, status, message);
+      }
+
       std::string originQueryId = rr_catalog_->getOriginQueryId(id);
 
       if (originQueryId.size())
@@ -208,6 +219,11 @@ namespace temoto_resource_registrar
         sendStatus(originQueryId, status, message);
       }
       std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusEND>>>>>>>>>>>>>>>>>>>" << std::endl;
+    }
+
+    std::unordered_map<std::string, StatusFunction> callbacks()
+    {
+      return status_callbacks_;
     }
 
   private:
@@ -250,10 +266,35 @@ namespace temoto_resource_registrar
         parentQuery->includeDependency(query.rr(), query.id());
       }
 
-      std::cout << " LOLOLOLOLOLOLOLOLOL " << name_ << " - " << query.id() << std::endl;
-      rr_catalog_->print();
+      if (statusFunc != NULL)
+      {
+        if (writeCallback(query.id(), overrideFunc))
+        {
+          status_callbacks_[query.id()] = statusFunc;
+        }
+      }
 
       mtx.unlock();
+    }
+
+    void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
+    {
+      std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
+      bool unloadStatus = rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
+
+      if (unloadStatus)
+      {
+        rr_catalog_->unloadDependency(id, dependency.first);
+      }
+    }
+
+    bool writeCallback(const std::string &id, bool override)
+    {
+      if (override)
+        return true;
+      if (!status_callbacks_.count(id))
+        return true;
+      return false;
     }
 
     template <class CallClientClass>
