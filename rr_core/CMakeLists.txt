@@ -13,13 +13,13 @@ file(GLOB SOURCES
 )
 
 set(LIBRARY_NAME
-    temoto_resource_registrar
+    rr_core
 )
 
 project(${LIBRARY_NAME} 
     LANGUAGES CXX 
     VERSION 0.0.1 
-    DESCRIPTION "temodo library development"
+    DESCRIPTION "temodo rr core library"
 )
 
 add_library(${LIBRARY_NAME} SHARED

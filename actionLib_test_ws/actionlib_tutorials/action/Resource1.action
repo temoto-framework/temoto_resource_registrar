@@ -1,8 +1,0 @@
-#goal definition
-string message
----
-#result definition
-string result
----
-#feedback
-string status
