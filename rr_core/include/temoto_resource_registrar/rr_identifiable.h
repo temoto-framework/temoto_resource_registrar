@@ -21,12 +21,13 @@
 
 namespace temoto_resource_registrar
 {
+  template <class IdentityClass>
   class Identifiable
   {
   public:
     virtual ~Identifiable(){};
 
-    virtual std::string id() = 0;
+    virtual IdentityClass id() = 0;
   };
 } // namespace temoto_resource_registrar
 

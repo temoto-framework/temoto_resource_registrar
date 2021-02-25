@@ -14,42 +14,16 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_MESSAGE_REGISTRY_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_MESSAGE_REGISTRY_H
-
-#include "rr_query_base.h"
-#include "rr_query_request.h"
-#include "rr_query_response.h"
-
-#include <algorithm>
-#include <boost/functional/hash.hpp>
-#include <map>
-#include <memory>
-#include <unordered_map>
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_BASE_MESSAGE_TYPE_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_MESSAGE_TYPE_H
 
 namespace temoto_resource_registrar
 {
-
-  class HashFn
+  class RrBaseMessageType
   {
   public:
-    std::size_t operator()(const RrQueryRequest &r) const;
+    int hash();
   };
-
-  class RrMessageRegistry
-  {
-  public:
-    RrMessageRegistry() = default;
-
-    void response(RrQueryBase &query);
-    void clearResponses();
-    bool hasResponse(RrQueryBase query);
-    bool storeResponse(RrQueryRequest req, RrQueryResponse res);
-
-  private:
-    std::unordered_map<RrQueryRequest, RrQueryResponse, HashFn> request_response_map_;
-  };
-
-  typedef std::shared_ptr<RrMessageRegistry> RrMessageRegistryPtr;
 } // namespace temoto_resource_registrar
+
 #endif

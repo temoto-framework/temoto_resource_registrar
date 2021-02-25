@@ -14,8 +14,8 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_REGISTRY_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_REGISTRY_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CONNECTION_REGISTRY_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_CONNECTION_REGISTRY_H
 
 #include "rr_client_base.h"
 #include "rr_server_base.h"
@@ -57,11 +57,9 @@ namespace temoto_resource_registrar
     RrClientRepostioryEntry();
     RrClientRepostioryEntry(std::unique_ptr<RrClientBase> client);
     std::string id();
-    void executeStatusCallback();
 
   private:
     std::unique_ptr<RrClientBase> client_pointer_;
-    std::function<void(RrClientBase)> status_callback_;
   };
 
   class RrClientRepository
@@ -70,21 +68,18 @@ namespace temoto_resource_registrar
     bool add(std::unique_ptr<RrClientBase> client);
     bool remove(const std::string &id);
     bool exists(const std::string &id);
-    void registerStatusCallback(std::function<void(RrClientBase)> rrStatusCallback);
 
   private:
     std::unordered_map<std::string, std::unique_ptr<RrClientRepostioryEntry>> rr_clients_;
-    std::vector<std::function<void(RrClientBase)>> client_status_callbacks_;
   };
 
-  class RrRegistry
+  class RrConnectionRegistry
   {
   public:
-    RrRegistry() = default;
+    RrConnectionRegistry() = default;
 
     bool addServer(std::unique_ptr<RrServerBase> server);
     bool addClient(std::unique_ptr<RrClientBase> client);
-    void registerStatusCallback(std::function<void(RrClientBase)> rrStatusCallback);
 
     bool hasClient(std::string const &id);
     bool hasServer(std::string const &id);
@@ -97,7 +92,7 @@ namespace temoto_resource_registrar
     RrClientRepository client_repository_;
   };
 
-  typedef std::shared_ptr<RrRegistry> RrRegistryPtr;
+  typedef std::shared_ptr<RrConnectionRegistry> RrConnectionRegistryPtr;
 
 } // namespace temoto_resource_registrar
 

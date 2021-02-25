@@ -28,7 +28,16 @@ namespace temoto_resource_registrar
     return name_;
   }
 
+  void RrClientBase::setCatalog(const RrCatalogPtr &reg)
+  {
+    rr_catalog_ = reg;
+  }
+
   void RrClientBase::wrappedCallback()
+  {
+  }
+
+  void RrClientBase::invoke(const RrQueryBase &query) const
   {
   }
 } // namespace temoto_resource_registrar

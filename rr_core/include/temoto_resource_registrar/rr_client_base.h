@@ -17,13 +17,16 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 
+#include "rr_catalog.h"
 #include "rr_identifiable.h"
+#include "rr_query_base.h"
 
+#include <iostream>
 #include <string>
 
 namespace temoto_resource_registrar
 {
-  class RrClientBase : public Identifiable
+  class RrClientBase : public Identifiable<std::string>
   {
   public:
     RrClientBase(const std::string &name);
@@ -32,12 +35,16 @@ namespace temoto_resource_registrar
 
     virtual std::string id();
 
+    void setCatalog(const RrCatalogPtr &reg);
+
+    virtual void invoke(const RrQueryBase &query) const;
+
   protected:
     std::string name_;
+    RrCatalogPtr rr_catalog_;
 
   private:
     std::string id_;
-    //RrRegistryPtr rr_registry_;
   };
 
 } // namespace temoto_resource_registrar

@@ -24,19 +24,10 @@ namespace temoto_resource_registrar
   class RrQueryRequest
   {
   public:
-    std::string message_;
-    std::string target_;
+    template <class MT>
+    MT getMessage() const;
 
-    RrQueryRequest(const std::string &message, const std::string &target)
-        : message_(message), target_(target) {}
-
-    RrQueryRequest(const RrQueryRequest &query)
-        : message_(query.message_), target_(query.target_) {}
-
-    bool operator==(const RrQueryRequest &other) const
-    {
-      return message_ == other.message_ && target_ == other.target_;
-    }
+    bool operator==(const RrQueryRequest &other) const;
 
   private:
   };

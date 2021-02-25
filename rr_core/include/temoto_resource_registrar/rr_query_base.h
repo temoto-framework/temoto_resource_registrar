@@ -19,34 +19,54 @@
 
 #include "rr_query_request.h"
 #include "rr_query_response.h"
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/vector.hpp>
+#include <iostream>
+#include <map>
 #include <string>
+#include <unordered_map>
 
 namespace temoto_resource_registrar
 {
   class RrQueryBase
   {
   public:
-    RrQueryBase(RrQueryRequest &request)
-        : request_(request){};
+    virtual ~RrQueryBase() = default;
 
-    RrQueryRequest request()
-    {
-      return request_;
-    };
+    template <class MT>
+    MT request() const;
 
-    RrQueryResponse response()
-    {
-      return response_;
-    };
+    template <class MT>
+    void storeResponse(MT &resp);
 
-    void updateResponse(RrQueryResponse resp)
-    {
-      response_ = resp;
-    };
+    RrQueryResponse response();
+
+    void setId(const std::string &id) { requestId_ = id; };
+
+    std::string id() const { return requestId_; }
+
+    void includeDependency(const std::string &rr, const std::string &id) { dependentQueryIds_[id] = rr; }
+
+    std::unordered_map<std::string, std::string> dependencies() { return dependentQueryIds_; }
+
+    void setRr(const std::string &rr) { servingRr_ = rr; }
+
+    std::string rr() { return servingRr_; }
+
+    void setOrigin(const std::string &rr) { originRr_ = rr; }
+
+    std::string origin() { return originRr_; }
+
+  protected:
+    std::string requestId_;
+    std::unordered_map<std::string, std::string> dependentQueryIds_;
+    std::string servingRr_;
+    std::string originRr_;
 
   private:
-    RrQueryRequest request_;
-    RrQueryResponse response_;
   };
 
 } // namespace temoto_resource_registrar

@@ -17,44 +17,48 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_SERVER_BASE_H
 
+#include "rr_catalog.h"
 #include "rr_client_base.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
-
-#include "rr_query_base.h"
-
-#include "rr_message_registry.h"
 
 #include <iostream>
 
 namespace temoto_resource_registrar
 {
-  class RrServerBase : public Identifiable
+  class RrServerBase : public Identifiable<std::string>
   {
 
   public:
-    RrServerBase(const std::string &name, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *));
+    RrServerBase(const std::string &name, void (*loadCallback)(RrQueryBase &), void (*unLoadCallback)(RrQueryBase &))
+        : name_(name), load_callback_ptr_(loadCallback), unload_callback_ptr_(unLoadCallback){};
 
-    RrServerBase(const std::string &name, const std::string &className, void (*loadCallback)(RrQueryBase *), void (*unLoadCallback)(RrQueryBase *));
+    std::string id()
+    {
+      return name_;
+    };
 
-    void wrappedCallback();
+    template <class Q>
+    void processQuery(Q &query) const
+    {
+      std::cout << "processQuery done - base" << std::endl;
+      load_callback_ptr_(query);
+    };
 
-    virtual void print();
+    void setCatalog(const RrCatalogPtr &reg)
+    {
+      rr_catalog_ = reg;
+    };
 
-    std::string id();
-
-    virtual RrQueryResponse processQuery(RrQueryBase *query);
-
-    void setMessageRegistry(const RrMessageRegistryPtr &reg);
-
-    void (*load_callback_ptr_)(RrQueryBase *);
-    void (*unload_callback_ptr_)(RrQueryBase *);
+    virtual bool unloadMessage(const std::string &id) = 0;
 
   protected:
-    RrMessageRegistryPtr rr_message_registry_;
+    RrCatalogPtr rr_catalog_;
     //keeping debug values, just in case for dev
     std::string name_;
-    std::string class_name_;
+
+    void (*load_callback_ptr_)(RrQueryBase &);
+    void (*unload_callback_ptr_)(RrQueryBase &);
 
   private:
     unsigned int id_;

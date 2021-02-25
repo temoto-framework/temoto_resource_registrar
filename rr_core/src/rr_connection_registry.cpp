@@ -14,7 +14,7 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "temoto_resource_registrar/rr_registry.h"
+#include "temoto_resource_registrar/rr_connection_registry.h"
 
 namespace temoto_resource_registrar
 {
@@ -88,11 +88,6 @@ namespace temoto_resource_registrar
     return rr_clients_.count(id) > 0;
   };
 
-  void RrClientRepository::registerStatusCallback(std::function<void(RrClientBase)> rrStatusCallback)
-  {
-    client_status_callbacks_.push_back(rrStatusCallback);
-  };
-
   /**
  * 
  * RrClientRepostioryEntry
@@ -107,47 +102,38 @@ namespace temoto_resource_registrar
     return client_pointer_->id();
   };
 
-  void RrClientRepostioryEntry::executeStatusCallback(){
-
-  };
-
   /**
  * 
- * RrRegistry
+ * RrConnectionRegistry
  * 
  */
 
-  bool RrRegistry::addServer(std::unique_ptr<RrServerBase> server)
+  bool RrConnectionRegistry::addServer(std::unique_ptr<RrServerBase> server)
   {
     server_repository_.add(std::move(server));
   };
 
-  bool RrRegistry::addClient(std::unique_ptr<RrClientBase> client)
+  bool RrConnectionRegistry::addClient(std::unique_ptr<RrClientBase> client)
   {
     client_repository_.add(std::move(client));
   };
 
-  void RrRegistry::registerStatusCallback(std::function<void(RrClientBase)> rrStatusCallback)
-  {
-    client_repository_.registerStatusCallback(rrStatusCallback);
-  };
-
-  bool RrRegistry::hasClient(std::string const &id)
+  bool RrConnectionRegistry::hasClient(std::string const &id)
   {
     return client_repository_.exists(id);
   };
 
-  bool RrRegistry::hasServer(std::string const &id)
+  bool RrConnectionRegistry::hasServer(std::string const &id)
   {
     return server_repository_.exists(id);
   };
 
-  RrServerBase *RrRegistry::fetchServer(std::string const &id)
+  RrServerBase *RrConnectionRegistry::fetchServer(std::string const &id)
   {
     return server_repository_.get(id);
   };
 
-  std::vector<std::string> RrRegistry::registeredServers()
+  std::vector<std::string> RrConnectionRegistry::registeredServers()
   {
     return server_repository_.getIds();
   };
