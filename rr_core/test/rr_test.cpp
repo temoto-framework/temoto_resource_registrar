@@ -298,12 +298,7 @@ public:
 protected:
   void (*typed_load_callback_ptr_)(RrQueryTemplate<MessageType> &);
   void (*typed_unload_callback_ptr_)(RrQueryTemplate<MessageType> &);
-
-  std::string generateId() const
-  {
-    return boost::uuids::to_string(boost::uuids::random_generator()());
-  }
-
+  
 private:
   void storeQuery(const std::string &rawRequest, RrQueryTemplate<MessageType> query) const
   {

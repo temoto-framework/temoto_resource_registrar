@@ -22,6 +22,10 @@
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include <iostream>
 
 namespace temoto_resource_registrar
@@ -59,6 +63,11 @@ namespace temoto_resource_registrar
 
     void (*load_callback_ptr_)(RrQueryBase &);
     void (*unload_callback_ptr_)(RrQueryBase &);
+
+    std::string generateId() const
+    {
+      return boost::uuids::to_string(boost::uuids::random_generator()());
+    }
 
   private:
     unsigned int id_;

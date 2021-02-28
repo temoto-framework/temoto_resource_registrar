@@ -32,7 +32,7 @@ namespace temoto_resource_registrar
 {
   typedef void (*StatusFunction)(const std::string &id, Status status, std::string &message);
 
-  const static std::string CLIENT_SUFIX = ";CLIENT";
+  const static std::string CLIENT_SUFIX = "_CLIENT";
 
   template <class ContentClass>
   class MapContainer
@@ -241,55 +241,56 @@ namespace temoto_resource_registrar
       return status_callbacks_;
     }
 
-  private:
-    RrCatalogPtr rr_catalog_;
-    std::string name_;
+    protected:
+      RrServers<ServerType> servers_;
+      RrClients<ClientType> clients_;
+      RrCatalogPtr rr_catalog_;
 
-    RrServers<ServerType> servers_;
-    RrClients<ClientType> clients_;
+    private:
+      std::string name_;
 
-    std::unordered_map<std::string, StatusFunction> status_callbacks_;
+      std::unordered_map<std::string, StatusFunction> status_callbacks_;
 
-    std::unordered_map<std::string, RrBase *> rr_references_;
+      std::unordered_map<std::string, RrBase *> rr_references_;
 
-    std::thread::id workId;
-    std::mutex mtx;
+      std::thread::id workId;
+      std::mutex mtx;
 
-    template <class CallClientClass, class ServType, class QueryType>
-    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, StatusFunction statusFunc, bool overrideFunc)
-    {
-      mtx.lock();
-
-      workId = std::this_thread::get_id();
-
-      query.setOrigin(name_);
-
-      // In case we have a client call, not a internal call
-      if ((rr == NULL) && !(target != NULL))
+      template <class CallClientClass, class ServType, class QueryType>
+      void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, StatusFunction statusFunc, bool overrideFunc)
       {
-        query.setRr(*(rr));
-        handleClientCall<CallClientClass>(*(rr), server, query);
-      }
-      else
-      {
-        query.setRr(target->name());
-        target->handleInternalCall<ServType, QueryType>(server, query);
-      }
+        mtx.lock();
 
-      if (parentQuery != NULL)
-      {
-        parentQuery->includeDependency(query.rr(), query.id());
-      }
+        workId = std::this_thread::get_id();
 
-      if (statusFunc != NULL)
-      {
-        if (writeCallback(query.id(), overrideFunc))
+        query.setOrigin(name_);
+
+        // In case we have a client call, not a internal call
+        if ((rr == NULL) && !(target != NULL))
         {
-          status_callbacks_[query.id()] = statusFunc;
+          query.setRr(*(rr));
+          handleClientCall<CallClientClass>(*(rr), server, query);
         }
-      }
+        else
+        {
+          query.setRr(target->name());
+          target->handleInternalCall<ServType, QueryType>(server, query);
+        }
 
-      mtx.unlock();
+        if (parentQuery != NULL)
+        {
+          parentQuery->includeDependency(query.rr(), query.id());
+        }
+
+        if (statusFunc != NULL)
+        {
+          if (writeCallback(query.id(), overrideFunc))
+          {
+            status_callbacks_[query.id()] = statusFunc;
+          }
+        }
+
+        mtx.unlock();
     }
 
     void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)

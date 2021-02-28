@@ -1,8 +1,6 @@
 #include <iostream>
 
-#include "temoto_resource_registrar/rr_base.h"
-#include "temoto_resource_registrar/rr_client_base.h"
-#include "temoto_resource_registrar/rr_server_base.h"
+#include "rr/Ros1ResourceRegistrar.cpp"
 
 int main(int argc, char **argv)
 {
