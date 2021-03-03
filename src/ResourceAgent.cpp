@@ -1,4 +1,4 @@
-#include "rr/Ros1ResourceRegistrar.cpp"
+#include "rr/ros1_resource_registrar.cpp"
 
 #include "temoto_resource_registrar/LoadComponent.h"
 
@@ -6,11 +6,15 @@ std::string rrName = "AgentRR";
 
 Ros1ResourceRegistrar<temoto_resource_registrar::RrServerBase, temoto_resource_registrar::RrClientBase> rr(rrName);
 
-void RtM1LoadCB(temoto_resource_registrar::LoadComponent &query){
+void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
+{
   ROS_INFO("IN LOAD CB");
+
+  res.loadMessage = req.loadTarget;
 }
 
-void RtM1UnloadCB(temoto_resource_registrar::LoadComponent &query){
+void RtM1UnloadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
+{
   ROS_INFO("IN UNLOAD CB");
 }
 
@@ -24,7 +28,7 @@ int main(int argc, char **argv)
                                             temoto_resource_registrar::LoadComponent::Response>>(rrName  + "_resourceServer", &RtM1LoadCB, &RtM1UnloadCB);
   rr.registerServer(std::move(server));
 
-  ROS_INFO("spinning...");
+  ROS_INFO("spinning....");
   ros::spin();
 
   ROS_INFO("Exiting agent...");

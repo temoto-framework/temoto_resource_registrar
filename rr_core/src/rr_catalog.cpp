@@ -21,18 +21,27 @@ namespace temoto_resource_registrar
 
   void RrCatalog::storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData)
   {
-    id_query_map_[reqData] = QueryContainer(q, reqData, qData, server);
+    print();
+    std::cout << "in store query..." << std::endl;
+
+    id_query_map_[reqData] = QueryContainer<RawData>(q, reqData, qData, server);
     server_id_map_[server].insert(q.id());
+
+    std::cout << "storage done..." << std::endl;
+    print();
   }
 
   std::string RrCatalog::queryExists(const std::string &server, RawData reqData)
   {
     for (auto const &query : id_query_map_)
     {
-      QueryContainer wrapper = query.second;
+      QueryContainer<RawData> wrapper = query.second;
+
+      std::cout << (wrapper.rawRequest_ == reqData) << " & " << (wrapper.responsibleServer_ == server) << std::endl;
+
       if (wrapper.rawRequest_ == reqData && wrapper.responsibleServer_ == server)
       {
-        return query.second.q_.id();
+        return wrapper.q_.id();
       }
     }
     return "";
@@ -73,7 +82,7 @@ namespace temoto_resource_registrar
 
     if (removedElCnt)
     {
-      QueryContainer qc = findOriginalContainer(id);
+      QueryContainer<RawData> qc = findOriginalContainer(id);
 
       if (qc.responsibleServer_.size())
       {
@@ -109,7 +118,7 @@ namespace temoto_resource_registrar
     return server_id_map_[server].size() == 0;
   }
 
-  QueryContainer RrCatalog::findOriginalContainer(const std::string &id)
+  QueryContainer<RawData> RrCatalog::findOriginalContainer(const std::string &id)
   {
     for (auto const &queryEntry : id_query_map_)
     {
@@ -119,7 +128,7 @@ namespace temoto_resource_registrar
       }
     }
 
-    return QueryContainer();
+    return QueryContainer<RawData>();
   }
 
   std::string RrCatalog::getIdServer(const std::string &id)

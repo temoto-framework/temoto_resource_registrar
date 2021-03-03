@@ -18,6 +18,7 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CATALOG_H
 
 #include "rr_query_base.h"
+#include "rr_query_container.h"
 
 #include <algorithm>
 #include <boost/functional/hash.hpp>
@@ -25,54 +26,11 @@
 #include <memory>
 #include <set>
 #include <unordered_map>
+#include <vector>
 
 namespace temoto_resource_registrar
 {
   using RawData = std::string;
-
-  class QueryContainer
-  {
-  public:
-    QueryContainer(){};
-    QueryContainer(RrQueryBase q,
-                   RawData req,
-                   RawData data,
-                   const std::string &server) : q_(q),
-                                                rawRequest_(req),
-                                                rawQuery_(data),
-                                                responsibleServer_(server)
-    {
-      storeNewId(q.id(), q.origin());
-    };
-
-    void storeNewId(const std::string &id, const std::string &rr)
-    {
-      rr_ids_[id] = rr;
-    }
-
-    void removeId(const std::string &id)
-    {
-      rr_ids_.erase(id);
-    }
-
-    int getIdCount() { return rr_ids_.size(); }
-
-    RawData rawQuery_;
-    RawData rawRequest_;
-    RrQueryBase q_;
-    std::string responsibleServer_;
-
-    std::unordered_map<std::string, std::string> rr_ids_;
-
-  protected:
-    friend class boost::serialization::access;
-
-    template <class Archive>
-    void serialize(Archive &ar, const unsigned int /* version */)
-    {
-      ar &q_ &rawRequest_ &rawQuery_ &rr_ids_ &responsibleServer_;
-    }
-  };
 
   class DependencyContainer
   {
@@ -147,10 +105,10 @@ namespace temoto_resource_registrar
 
   private:
     std::unordered_map<std::string, std::set<std::string>> server_id_map_;
-    std::unordered_map<RawData, QueryContainer> id_query_map_;
+    std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
     std::unordered_map<std::string, DependencyContainer> id_dependency_map_;
 
-    QueryContainer findOriginalContainer(const std::string &id);
+    QueryContainer<RawData> findOriginalContainer(const std::string &id);
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;
