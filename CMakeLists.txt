@@ -25,6 +25,7 @@ add_action_files(
 add_service_files(
   FILES
   LoadComponent.srv
+  UnloadComponent.srv
 )
 
 generate_messages(

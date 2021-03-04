@@ -4,7 +4,7 @@
 
 std::string rrName = "ConsumerRR";
 
-Ros1ResourceRegistrar<temoto_resource_registrar::RrServerBase, temoto_resource_registrar::RrClientBase> rr(rrName);
+temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
 int main(int argc, char **argv)
 {
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
   ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
 
-  //rr.unload("AgentRR", load1Id);
+  rr.unload("AgentRR", load1Id);
 
   temoto_resource_registrar::LoadComponent loadCall2;
   loadCall2.request.loadTarget = "TimeService";

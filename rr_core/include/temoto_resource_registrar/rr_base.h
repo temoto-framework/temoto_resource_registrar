@@ -23,6 +23,7 @@
 
 #include "rr_catalog.h"
 #include "rr_client_base.h"
+#include "rr_server_base.h"
 #include "rr_query_base.h"
 #include "rr_status.h"
 
@@ -131,21 +132,7 @@ namespace temoto_resource_registrar
 
     size_t serverCount() { return servers_.getIds().size(); }
 
-    void registerServer(std::unique_ptr<ServerType> serverPtr)
-    {
-      serverPtr->setCatalog(rr_catalog_);
-      servers_.add(std::move(serverPtr));
-    }
-
-    template <class ServType, class QueryType>
-    void handleInternalCall(const std::string &server, QueryType &query)
-    {
-      auto &serverRef = servers_.getElement(server);
-
-      auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
-
-      dynamicRef.processQuery(query);
-    }
+    bool unload(const std::string &rr, const std::string &id);
 
     bool unload(RrBase &target, const std::string &id)
     {
@@ -165,9 +152,26 @@ namespace temoto_resource_registrar
           unloadResource(id, dependency);
         }
       }
-
       return unloadByServerAndQuery(serverId, id);
     }
+
+    void registerServer(std::unique_ptr<ServerType> serverPtr)
+    {
+      serverPtr->setCatalog(rr_catalog_);
+      servers_.add(std::move(serverPtr));
+    }
+
+    template <class ServType, class QueryType>
+    void handleInternalCall(const std::string &server, QueryType &query)
+    {
+      auto &serverRef = servers_.getElement(server);
+
+      auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
+
+      dynamicRef.processQuery(query);
+    }
+
+
 
     void printCatalog() { rr_catalog_->print(); }
 

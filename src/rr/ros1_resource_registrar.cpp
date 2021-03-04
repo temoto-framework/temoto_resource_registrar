@@ -9,38 +9,46 @@
 #include "rr/ros1_server.h"
 #include "ros1_server.cpp"
 
-template <class ServerType, class ClientType>
-class Ros1ResourceRegistrar : public temoto_resource_registrar::RrBase<ServerType, ClientType>
+namespace temoto_resource_registrar
 {
-public:
-  Ros1ResourceRegistrar(const std::string &name) : temoto_resource_registrar::RrBase<ServerType, ClientType>(name) {}
-
-  template <class ServiceClass>
-  void call(const std::string &rr, const std::string &server, ServiceClass &query)
+  class ResourceRegistrarRos1 : public RrBase<RrServerBase, RrClientBase>
   {
-    ROS_INFO_STREAM("CALL ME BABY " << rr << " - " << server);
-    std::string clientName = rr + "_" + server;
+  public:
+    ResourceRegistrarRos1(const std::string &name) : RrBase<RrServerBase, RrClientBase>(name) {}
 
-    if (!this->clients_.exists(clientName))
+    template <class ServiceClass>
+    void call(const std::string &rr, const std::string &server, ServiceClass &query)
     {
-      ROS_INFO_STREAM("creating client...");
+      ROS_INFO_STREAM("CALL ME BABY " << rr << " - " << server);
+      std::string clientName = rr + "_" + server;
 
-      auto client = std::make_unique<Ros1Client<ServiceClass>>(clientName);
-      ROS_INFO_STREAM("setting catalog");
-      client->setCatalog(this->rr_catalog_);
-      ROS_INFO_STREAM("adding to clients");
-      this->clients_.add(std::move(client));
+      if (!this->clients_.exists(clientName))
+      {
+        ROS_INFO_STREAM("creating client...");
+
+        auto client = std::make_unique<Ros1Client<ServiceClass>>(clientName);
+        ROS_INFO_STREAM("setting catalog");
+        client->setCatalog(this->rr_catalog_);
+        ROS_INFO_STREAM("adding to clients");
+        this->clients_.add(std::move(client));
+      }
+
+      auto &clientRef = this->clients_.getElement(clientName);
+
+      auto dynamicRef = dynamic_cast<const Ros1Client<ServiceClass> &>(clientRef);
+
+      ROS_INFO_STREAM("time to query...");
+
+      dynamicRef.invoke(query);
     }
 
-    auto &clientRef = this->clients_.getElement(clientName);
+    bool unload(const std::string &rr, const std::string &id)
+    {
+      ROS_INFO_STREAM("unload Called");
+      return false;
+    }
 
-    auto dynamicRef = dynamic_cast<const Ros1Client<ServiceClass> &>(clientRef);
-
-    ROS_INFO_STREAM("time to query...");
-
-    dynamicRef.invoke(query);
-  }
-
-protected:
-private:
-};
+  protected:
+  private:
+  };
+}

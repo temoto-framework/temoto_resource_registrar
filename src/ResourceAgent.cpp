@@ -4,7 +4,7 @@
 
 std::string rrName = "AgentRR";
 
-Ros1ResourceRegistrar<temoto_resource_registrar::RrServerBase, temoto_resource_registrar::RrClientBase> rr(rrName);
+temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
 {

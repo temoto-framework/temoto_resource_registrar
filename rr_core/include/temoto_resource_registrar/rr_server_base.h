@@ -45,7 +45,6 @@ namespace temoto_resource_registrar
     template <class Q>
     void processQuery(Q &query) const
     {
-      std::cout << "processQuery done - base" << std::endl;
       load_callback_ptr_(query);
     };
 
