@@ -22,16 +22,18 @@ int main(int argc, char **argv)
 
   ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
 
-  rr.unload("AgentRR", load1Id);
+  bool unloadRes = rr.unload("AgentRR", load1Id);
 
-  temoto_resource_registrar::LoadComponent loadCall2;
-  loadCall2.request.loadTarget = "TimeService";
+  ROS_INFO_STREAM("Unload result: " << unloadRes);
 
-  rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall2);
+  //temoto_resource_registrar::LoadComponent loadCall2;
+  //loadCall2.request.loadTarget = "TimeService";
 
-  std::string load2Id = loadCall2.response.TemotoMetadata.requestId;
+  //rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall2);
 
-  ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall2.response.loadMessage << "; id: " << load2Id);
+  //std::string load2Id = loadCall2.response.TemotoMetadata.requestId;
+
+  //ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall2.response.loadMessage << "; id: " << load2Id);
 
   //rr.unload("AgentRR", load2Id);
 

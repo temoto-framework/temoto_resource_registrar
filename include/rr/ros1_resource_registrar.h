@@ -6,7 +6,6 @@
 #include "temoto_resource_registrar/UnloadComponent.h"
 
 #include "rr/ros1_client.h"
-
 #include "rr/ros1_server.h"
 
 namespace temoto_resource_registrar
@@ -62,18 +61,13 @@ namespace temoto_resource_registrar
       temoto_resource_registrar::UnloadComponent unloadSrv;
       unloadSrv.request.target = id;
 
-      unload_clients_[clientName]->call(unloadSrv);
+      ROS_INFO_STREAM("executing unload call");
 
-      //if (clientRef.call(unloadSrv))
-      //{
-      //  ROS_INFO("OK");
-      //}
-      //else
-      //{
-      //  ROS_INFO("FAIL");
-      //}
+      bool res = unload_clients_[clientName]->call(unloadSrv);
 
-      return false;
+      ROS_INFO_STREAM("executing unload call done " << res);
+
+      return res;
     }
 
   protected:
@@ -85,14 +79,13 @@ namespace temoto_resource_registrar
 
     void startUnloadService()
     {
-      ROS_INFO("Starting unload service...");
-      service_ = nh_.advertiseService(name(), &ResourceRegistrarRos1::unloadCallback, this);
-      ROS_INFO("Done...");
+      service_ = nh_.advertiseService(name() + "_unloader", &ResourceRegistrarRos1::unloadCallback, this);
     }
 
     bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
     {
-      ROS_INFO("IN UNLOAD SRV CALLBACK");
+      std::string id = req.target;
+      res.status = localUnload(id);
       return true;
     }
   };

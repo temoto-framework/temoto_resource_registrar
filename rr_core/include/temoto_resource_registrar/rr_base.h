@@ -33,8 +33,6 @@ namespace temoto_resource_registrar
 {
   typedef void (*StatusFunction)(const std::string &id, Status status, std::string &message);
 
-  const static std::string CLIENT_SUFIX = "_CLIENT";
-
   template <class ContentClass>
   class MapContainer
   {
@@ -137,10 +135,10 @@ namespace temoto_resource_registrar
     bool unload(RrBase &target, const std::string &id)
     {
       status_callbacks_.erase(id);
-      return target.unload(id);
+      return target.localUnload(id);
     }
 
-    bool unload(const std::string &id)
+    bool localUnload(const std::string &id)
     {
       std::string serverId = rr_catalog_->getIdServer(id);
 
@@ -250,6 +248,26 @@ namespace temoto_resource_registrar
       RrClients<ClientType> clients_;
       RrCatalogPtr rr_catalog_;
 
+      template <class CallClientClass>
+      void handleClientCall(const std::string &rr, const std::string &server, RrQueryBase &query)
+      {
+        std::string clientName = rr + "_" + server;
+
+        if (!clients_.exists(clientName))
+        {
+          std::cout << "creating client! " << clientName << std::endl;
+
+          std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
+          client->setCatalog(rr_catalog_);
+
+          clients_.add(std::move(client));
+        }
+
+        auto &client = clients_.getElement(clientName);
+
+        client.invoke(query);
+      }
+
     private:
       std::string name_;
 
@@ -317,25 +335,7 @@ namespace temoto_resource_registrar
       return false;
     }
 
-    template <class CallClientClass>
-    void handleClientCall(const std::string &rr, const std::string &server, RrQueryBase &query)
-    {
-      std::string clientName = rr + ";" + server + CLIENT_SUFIX;
-
-      if (!clients_.exists(clientName))
-      {
-        std::cout << "creating client! " << clientName << std::endl;
-
-        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
-        client->setCatalog(rr_catalog_);
-
-        clients_.add(std::move(client));
-      }
-
-      auto &client = clients_.getElement(clientName);
-
-      client.invoke(query);
-    }
+    
   };
 
 } // namespace temoto_resource_registrar
