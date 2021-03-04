@@ -95,7 +95,7 @@ if (test)
   ExternalProject_Get_Property(glog source_dir binary_dir)
 
   add_library(libglog IMPORTED STATIC GLOBAL)
-  add_dependencies(libglog gtest)
+  add_dependencies(libglog glog)
 
   set_target_properties(libglog PROPERTIES
     "IMPORTED_LOCATION" "${binary_dir}/libglog.a"
