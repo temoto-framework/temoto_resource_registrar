@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "rr/ros1_resource_registrar.cpp"
+#include "rr/ros1_resource_registrar.h"
 
 int main(int argc, char **argv)
 {
