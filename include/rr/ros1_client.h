@@ -5,25 +5,31 @@
 
 #include "rr/ros1_query.h"
 
+/**
+ * @brief A wrapper class for the temoto_resource_registrar::RRClientBase. Provides templating to support multiple message types.
+ * 
+ * @tparam ServiceClass - type of message this client supports
+ */
 template <class ServiceClass>
 class Ros1Client : public temoto_resource_registrar::RrClientBase
 {
 public:
   Ros1Client(const std::string &name) : temoto_resource_registrar::RrClientBase(name)
   {
-    ROS_INFO_STREAM("INIT CLIENT..." << name);
-
     client_ = nh_.serviceClient<ServiceClass>(name);
-    ROS_INFO("INIT CLIENT DONE");
   }
 
+  /**
+ * @brief Invokes a call to the Ros1Server responsible for serving requests of that type. 
+ * The request elements are modified to provide a response
+ * 
+ * @param request - A user defined ROS1 srv type request.
+ */
   void invoke(ServiceClass &request)
   {
-    ROS_INFO_STREAM("Time to invoke!!! Target: " << this->id());
     if (client_.call(request))
     {
-      std::string requestId = request.response.TemotoMetadata.requestId;
-      ROS_INFO_STREAM("OK " << requestId);
+      ROS_INFO_STREAM("OK");
     }
     else
     {
@@ -31,14 +37,20 @@ public:
     }
   }
 
+  /**
+ * @brief Invokes a call to the Ros1Server responsible for serving requests of that type. 
+ * The request elements are modified to provide a response
+ * 
+ * @param wrappedRequest - A user defined Ros1Query type request
+ */
   void invoke(Ros1Query<ServiceClass> &wrappedRequest)
   {
+
+    
     ServiceClass sc;
     sc.request = wrappedRequest.request();
     sc.response = wrappedRequest.response();
     invoke(sc);
-
-    ROS_INFO_STREAM("invoce raw request params: " << wrappedRequest.rr() << "; " << wrappedRequest.id());
 
     Ros1Query<ServiceClass> ref2(sc.request, sc.response);
     wrappedRequest = ref2;

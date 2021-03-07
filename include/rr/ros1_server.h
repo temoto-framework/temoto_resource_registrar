@@ -13,10 +13,23 @@
 #include <string>
 #include <vector>
 
+/**
+ * @brief A wrapper class for the temoto_resource_registrar::RRServerBase. Provides templating to support multiple message types.
+ * This class is responsible for executing resource loading and unloading related logic.
+ * 
+ * @tparam ServiceClass - Type of the resource this server will serve.
+ */
 template <class ServiceClass>
 class Ros1Server : public temoto_resource_registrar::RrServerBase
 {
 public:
+/**
+ * @brief Construct a new Ros 1 Server object. 
+ * 
+ * @param name - Name of the server being created. These need to be unique on a ResourceRegistrar basis.
+ * @param loadCallback - Users load callback being executed when a unique resource is first requested.
+ * @param unLoadCallback - User unload callback being executed when the final consumer of a resource is unloaded.
+ */
   Ros1Server(const std::string &name,
              void (*loadCallback)(typename ServiceClass::Request &,
                                   typename ServiceClass::Response &),
@@ -30,6 +43,13 @@ public:
     ROS_INFO("Starting up server done!!!");
   }
 
+/**
+ * @brief Unloads a specific resource specified by the message id from the catalog.
+ * 
+ * @param id - ID of the message being unloaded
+ * @return true - The unloading unloaded some resources.
+ * @return false - No resources were unloaded.
+ */
   bool unloadMessage(const std::string &id)
   {
     ROS_INFO_STREAM("Starting to unload id: " << id);
@@ -47,9 +67,21 @@ public:
     return serializedResponse.size() > 0;
   }
 
+/**
+ * @brief Executes the server message handling logic. A request and response are passed to the method. The request is checked
+ * for uniqueness int he catalog. If it is unique, a new entry is created and the user load callback is executed. In case
+ * it is not unique the corresponding request response is fetched from catalog storage and deserialized for the user.
+ * 
+ * @param req 
+ * @param res 
+ * @return true 
+ * @return false 
+ */
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
     ROS_INFO("In Server Handler!!!");
+    ROS_INFO_STREAM("--OK " << req.TemotoMetadata.requestId << " - " << req.TemotoMetadata.servingRr);
+    ROS_INFO_STREAM("--OK " << res.TemotoMetadata.requestId << " - " << res.TemotoMetadata.servingRr);
 
     std::string generatedId = generateId();
     res.TemotoMetadata.requestId = generatedId;
