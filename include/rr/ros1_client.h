@@ -3,6 +3,8 @@
 
 #include "ros/ros.h"
 
+#include "rr/ros1_query.h"
+
 template <class ServiceClass>
 class Ros1Client : public temoto_resource_registrar::RrClientBase
 {
@@ -20,12 +22,24 @@ public:
     ROS_INFO_STREAM("Time to invoke!!! Target: " << this->id());
     if (client_.call(request))
     {
-      ROS_INFO("OK");
+      std::string requestId = request.response.TemotoMetadata.requestId;
+      ROS_INFO_STREAM("OK " << requestId);
     }
     else
     {
       ROS_INFO("FAIL");
     }
+  }
+
+  void invoke(Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> &wrappedRequest)
+  {
+    ServiceClass sc;
+    sc.request = wrappedRequest.request();
+    sc.response = wrappedRequest.response();
+    invoke(sc);
+
+    Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> ref2(sc.request, sc.response);
+    wrappedRequest = ref2;
   }
 
 protected:

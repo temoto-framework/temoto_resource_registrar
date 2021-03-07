@@ -10,15 +10,14 @@ public:
   Ros1Query() {}
 
   Ros1Query(const RequestClass &req, const ResponseClass &res) : typed_request_(req), typed_response_(res) {
-    requestId_ = "test123";
   }
 
-  RequestClass request()
+  RequestClass& request()
   {
     return typed_request_;
   }
 
-  ResponseClass response()
+  ResponseClass& response()
   {
     return typed_response_;
   }
@@ -26,8 +25,6 @@ public:
 protected:
   RequestClass typed_request_;
   ResponseClass typed_response_;
-
-  std::string requestId_;
 
 private:
 };

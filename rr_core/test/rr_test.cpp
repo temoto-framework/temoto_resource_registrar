@@ -44,12 +44,12 @@ using namespace temoto_resource_registrar;
    *  - in order to test this contraption, rr_m0 must make a client call to rr_m1
    */
 
-RrBase<RrServerBase, RrClientBase> rr_m0("rr_m0");
-RrBase<RrServerBase, RrClientBase> rr_m1("rr_m1");
-RrBase<RrServerBase, RrClientBase> rr_m1_1("rr_m1_1");
-RrBase<RrServerBase, RrClientBase> rr_m2("rr_m2");
+RrBase rr_m0("rr_m0");
+RrBase rr_m1("rr_m1");
+RrBase rr_m1_1("rr_m1_1");
+RrBase rr_m2("rr_m2");
 
-std::unordered_map<std::string, RrBase<RrServerBase, RrClientBase> *> rr_references_;
+std::unordered_map<std::string, RrBase *> rr_references_;
 
 std::string expectedMessage = "";
 

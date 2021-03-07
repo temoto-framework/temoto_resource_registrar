@@ -1,11 +1,31 @@
 #include "rr/ros1_resource_registrar.h"
 
 #include "temoto_resource_registrar/LoadComponent.h"
+#include "temoto_resource_registrar/CounterService.h"
 
 std::string rrName = "AgentRR";
+
+temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
+
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
 {
   ROS_INFO("IN LOAD CB");
+
+  temoto_resource_registrar::CounterService counterSrv;
+  counterSrv.request.startPoint = 1;
+
+  Ros1Query<temoto_resource_registrar::LoadComponent::Request, temoto_resource_registrar::LoadComponent::Response> wrappedQuery(req, res);
+
+  rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(wrappedQuery));
+
+  /*template <class QueryType>
+  void call(const std::string &rr,
+            const std::string &server,
+            QueryType &query,
+            RrQueryBase *parentQuery = NULL,
+            StatusFunction statusFunc = NULL,
+            bool overrideStatus = false)
+  {}*/
 
   res.loadMessage = req.loadTarget;
 }
@@ -20,7 +40,7 @@ int main(int argc, char **argv)
   ROS_INFO("Starting up agent...");
   ros::init(argc, argv, "agent_thing");
 
-  temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
+  rr.init();
 
   auto server = std::make_unique<Ros1Server<temoto_resource_registrar::LoadComponent>>(rrName + "_resourceServer", &RtM1LoadCB, &RtM1UnloadCB);
   rr.registerServer(std::move(server));

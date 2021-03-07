@@ -26,7 +26,6 @@ public:
                                                                           typed_unload_callback_ptr_(unLoadCallback)
   {
     ROS_INFO_STREAM("Starting up server..." << name);
-
     service_ = nh_.advertiseService(name, &Ros1Server::serverCallback, this);
     ROS_INFO("Starting up server done!!!");
   }
@@ -66,7 +65,6 @@ public:
       ROS_INFO("NOPE, does not exist");
       typed_load_callback_ptr_(req, res);
 
-      ROS_INFO_STREAM("lets hope it has a value1: " << res.loadMessage);
       ROS_INFO_STREAM("TIME TO STORE!!!");
 
       rr_catalog_->storeQuery(name_,
@@ -122,7 +120,7 @@ private:
 
   Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> wrapQuery(typename ServiceClass::Request req, typename ServiceClass::Response res)
   {
-    Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> q(req, sanityzeRequest<typename ServiceClass::Response>(res));
+    Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> q(req, res);
     q.setId(res.TemotoMetadata.requestId);
     return q;
   }

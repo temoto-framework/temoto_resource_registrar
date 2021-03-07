@@ -23,8 +23,9 @@
 
 #include "rr_catalog.h"
 #include "rr_client_base.h"
-#include "rr_server_base.h"
 #include "rr_query_base.h"
+#include "rr_query_interpreter.h"
+#include "rr_server_base.h"
 #include "rr_status.h"
 
 #include <mutex>
@@ -92,17 +93,14 @@ namespace temoto_resource_registrar
         rr_contents_;
   };
 
-  template <class serverClass>
-  class RrServers : public MapContainer<serverClass>
+  class RrServers : public MapContainer<RrServerBase>
   {
   };
 
-  template <class clientClass>
-  class RrClients : public MapContainer<clientClass>
+  class RrClients : public MapContainer<RrClientBase>
   {
   };
 
-  template <class ServerType, class ClientType>
   class RrBase
   {
   public:
@@ -153,7 +151,7 @@ namespace temoto_resource_registrar
       return unloadByServerAndQuery(serverId, id);
     }
 
-    void registerServer(std::unique_ptr<ServerType> serverPtr)
+    void registerServer(std::unique_ptr<RrServerBase> serverPtr)
     {
       serverPtr->setCatalog(rr_catalog_);
       servers_.add(std::move(serverPtr));
@@ -168,8 +166,6 @@ namespace temoto_resource_registrar
 
       dynamicRef.processQuery(query);
     }
-
-
 
     void printCatalog() { rr_catalog_->print(); }
 
@@ -243,79 +239,90 @@ namespace temoto_resource_registrar
       return status_callbacks_;
     }
 
-    protected:
-      RrServers<ServerType> servers_;
-      RrClients<ClientType> clients_;
-      RrCatalogPtr rr_catalog_;
+  protected:
+    RrServers servers_;
+    RrClients clients_;
+    RrCatalogPtr rr_catalog_;
 
-      template <class CallClientClass>
-      void handleClientCall(const std::string &rr, const std::string &server, RrQueryBase &query)
+    template <class CallClientClass, class QueryClass>
+    void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query)
+    {
+      std::string clientName = rr + "_" + server;
+
+      if (!clients_.exists(clientName))
       {
-        std::string clientName = rr + "_" + server;
+        std::cout << "creating client! " << clientName << std::endl;
 
-        if (!clients_.exists(clientName))
-        {
-          std::cout << "creating client! " << clientName << std::endl;
+        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
+        client->setCatalog(rr_catalog_);
 
-          std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
-          client->setCatalog(rr_catalog_);
-
-          clients_.add(std::move(client));
-        }
-
-        auto &client = clients_.getElement(clientName);
-
-        client.invoke(query);
+        clients_.add(std::move(client));
       }
 
-    private:
-      std::string name_;
+      auto &client = clients_.getElement(clientName);
+      auto dynamicRef = dynamic_cast<const CallClientClass &>(client);
 
-      std::unordered_map<std::string, StatusFunction> status_callbacks_;
-
-      std::unordered_map<std::string, RrBase *> rr_references_;
-
-      std::thread::id workId;
-      std::mutex mtx;
-
-      template <class CallClientClass, class ServType, class QueryType>
-      void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, StatusFunction statusFunc, bool overrideFunc)
-      {
-        mtx.lock();
-
-        workId = std::this_thread::get_id();
-
-        query.setOrigin(name_);
-
-        // In case we have a client call, not a internal call
-        if ((rr == NULL) && !(target != NULL))
-        {
-          query.setRr(*(rr));
-          handleClientCall<CallClientClass>(*(rr), server, query);
-        }
-        else
-        {
-          query.setRr(target->name());
-          target->handleInternalCall<ServType, QueryType>(server, query);
-        }
-
-        if (parentQuery != NULL)
-        {
-          parentQuery->includeDependency(query.rr(), query.id());
-        }
-
-        if (statusFunc != NULL)
-        {
-          if (writeCallback(query.id(), overrideFunc))
-          {
-            status_callbacks_[query.id()] = statusFunc;
-          }
-        }
-
-        mtx.unlock();
+      dynamicRef.invoke(query);
     }
 
-    void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
+    template <class CallClientClass, class ServType, class QueryType>
+    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, StatusFunction statusFunc, bool overrideFunc)
+    {
+      mtx.lock();
+
+      workId = std::this_thread::get_id();
+
+      std::cout << "in private call" << std::endl;
+
+      query.setOrigin(name_);
+
+      std::cout << "setting origin" << std::endl;
+
+      // In case we have a client call, not a internal call
+      if ((rr != NULL) && (target == NULL))
+      {
+        std::cout << "executing client call, also setting rr" << std::endl;
+        query.setRr(*(rr));
+        handleClientCall<CallClientClass, QueryType>(*(rr), server, query);
+      }
+      else
+      {
+        std::cout << "executing mem call, also setting rr" << std::endl;
+        query.setRr(target->name());
+        target->handleInternalCall<ServType, QueryType>(server, query);
+      }
+
+      if (parentQuery != NULL)
+      {
+        std::cout << "if has parent query" << std::endl;
+        parentQuery->includeDependency(query.rr(), query.id());
+      }
+
+      if (statusFunc != NULL)
+      {
+        std::cout << "statusFunc != NULL" << std::endl;
+        if (writeCallback(query.id(), overrideFunc))
+        {
+          std::cout << "writeCallback(query.id(), overrideFunc)" << std::endl;
+          status_callbacks_[query.id()] = statusFunc;
+        }
+      }
+
+      mtx.unlock();
+    }
+
+  private:
+    std::string name_;
+
+    std::unordered_map<std::string, StatusFunction> status_callbacks_;
+
+    std::unordered_map<std::string, RrBase *> rr_references_;
+
+    std::thread::id workId;
+    std::mutex mtx;
+
+    void
+    unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
     {
       std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
       bool unloadStatus = rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
@@ -334,8 +341,6 @@ namespace temoto_resource_registrar
         return true;
       return false;
     }
-
-    
   };
 
 } // namespace temoto_resource_registrar

@@ -10,50 +10,57 @@
 
 namespace temoto_resource_registrar
 {
-  class ResourceRegistrarRos1 : public RrBase<RrServerBase, RrClientBase>
+  class ResourceRegistrarRos1 : public RrBase
   {
   public:
-    ResourceRegistrarRos1(const std::string &name) : RrBase<RrServerBase, RrClientBase>(name)
-    {
+    ResourceRegistrarRos1(const std::string &name) : RrBase(name)
+    {}
+
+    void init() {
       startUnloadService();
     }
 
-    template <class ServiceClass>
-    void call(const std::string &rr, const std::string &server, ServiceClass &query)
+    template <class QueryType>
+    void call(const std::string &rr,
+              const std::string &server,
+              QueryType &query,
+              RrQueryBase *parentQuery = NULL,
+              StatusFunction statusFunc = NULL,
+              bool overrideStatus = false)
     {
-      ROS_INFO_STREAM("CALL ME BABY " << rr << " - " << server);
-      std::string clientName = rr + "_" + server;
+      ROS_INFO_STREAM("Master call from ros1 impl");
 
-      if (!this->clients_.exists(clientName))
-      {
-        ROS_INFO_STREAM("creating client...");
+      Ros1Query<typename QueryType::Request, typename QueryType::Response> wrappedQuery(query.request, query.response);
 
-        auto client = std::make_unique<Ros1Client<ServiceClass>>(clientName);
-        ROS_INFO_STREAM("setting catalog");
-        client->setCatalog(this->rr_catalog_);
-        ROS_INFO_STREAM("adding to clients");
-        this->clients_.add(std::move(client));
-      }
+      privateCall<Ros1Client<QueryType>,
+                  Ros1Server<QueryType>,
+                  Ros1Query<typename QueryType::Request,
+                            typename QueryType::Response>>(&rr,
+                                                           NULL,
+                                                           server,
+                                                           wrappedQuery,
+                                                           parentQuery,
+                                                           statusFunc,
+                                                           overrideStatus);
 
-      auto &clientRef = this->clients_.getElement(clientName);
-
-      auto dynamicRef = dynamic_cast<const Ros1Client<ServiceClass> &>(clientRef);
-
-      ROS_INFO_STREAM("time to query...");
-
-      dynamicRef.invoke(query);
+      QueryType sc;
+      sc.request = wrappedQuery.request();
+      sc.response = wrappedQuery.response();
+      query = sc;
     }
 
     bool unload(const std::string &rr, const std::string &id)
     {
       ROS_INFO_STREAM("unload Called");
 
+      ros::NodeHandle nh;
+
       std::string clientName = rr + "_unloader";
 
       if (unload_clients_.count(clientName) == 0)
       {
         ROS_INFO_STREAM("creating unload client...");
-        auto sc = nh_.serviceClient<UnloadComponent>(clientName);
+        auto sc = nh.serviceClient<UnloadComponent>(clientName);
         auto client = std::make_unique<ros::ServiceClient>(sc);
         unload_clients_[clientName] = std::move(client);
       }
@@ -74,12 +81,15 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
 
   private:
-    ros::NodeHandle nh_;
+    
     ros::ServiceServer service_;
+
+    
 
     void startUnloadService()
     {
-      service_ = nh_.advertiseService(name() + "_unloader", &ResourceRegistrarRos1::unloadCallback, this);
+      ros::NodeHandle nh;
+      service_ = nh.advertiseService(name() + "_unloader", &ResourceRegistrarRos1::unloadCallback, this);
     }
 
     bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
