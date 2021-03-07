@@ -31,14 +31,16 @@ public:
     }
   }
 
-  void invoke(Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> &wrappedRequest)
+  void invoke(Ros1Query<ServiceClass> &wrappedRequest)
   {
     ServiceClass sc;
     sc.request = wrappedRequest.request();
     sc.response = wrappedRequest.response();
     invoke(sc);
 
-    Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> ref2(sc.request, sc.response);
+    ROS_INFO_STREAM("invoce raw request params: " << wrappedRequest.rr() << "; " << wrappedRequest.id());
+
+    Ros1Query<ServiceClass> ref2(sc.request, sc.response);
     wrappedRequest = ref2;
   }
 

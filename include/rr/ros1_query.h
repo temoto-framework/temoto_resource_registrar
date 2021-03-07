@@ -3,28 +3,31 @@
 
 #include "temoto_resource_registrar/rr_query_container.h"
 
-template <class RequestClass, class ResponseClass>
+template <class ServiceClass>
 class Ros1Query : public temoto_resource_registrar::RrQueryBase
 {
 public:
   Ros1Query() {}
 
-  Ros1Query(const RequestClass &req, const ResponseClass &res) : typed_request_(req), typed_response_(res) {
+  Ros1Query(const typename ServiceClass::Request &req, const typename ServiceClass::Response &res) : typed_request_(req), typed_response_(res)
+  {
+    setId(res.TemotoMetadata.requestId);
+    setRr(res.TemotoMetadata.servingRr);
   }
 
-  RequestClass& request()
+  typename ServiceClass::Request &request()
   {
     return typed_request_;
   }
 
-  ResponseClass& response()
+  typename ServiceClass::Response &response()
   {
     return typed_response_;
   }
 
 protected:
-  RequestClass typed_request_;
-  ResponseClass typed_response_;
+  typename ServiceClass::Request typed_request_;
+  typename ServiceClass::Response typed_response_;
 
 private:
 };

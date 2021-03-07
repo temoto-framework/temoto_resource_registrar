@@ -14,9 +14,11 @@ namespace temoto_resource_registrar
   {
   public:
     ResourceRegistrarRos1(const std::string &name) : RrBase(name)
-    {}
+    {
+    }
 
-    void init() {
+    void init()
+    {
       startUnloadService();
     }
 
@@ -30,12 +32,15 @@ namespace temoto_resource_registrar
     {
       ROS_INFO_STREAM("Master call from ros1 impl");
 
-      Ros1Query<typename QueryType::Request, typename QueryType::Response> wrappedQuery(query.request, query.response);
+      //query.response.TemotoMetadata;
+      query.response.TemotoMetadata.servingRr = name();
+
+      Ros1Query<QueryType>
+          wrappedQuery(query.request, query.response);
 
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
-                  Ros1Query<typename QueryType::Request,
-                            typename QueryType::Response>>(&rr,
+                  Ros1Query<QueryType>>(&rr,
                                                            NULL,
                                                            server,
                                                            wrappedQuery,
@@ -43,9 +48,16 @@ namespace temoto_resource_registrar
                                                            statusFunc,
                                                            overrideStatus);
 
+      if (parentQuery != NULL)
+        ROS_INFO_STREAM("DEPENDENCY SIZE? " << parentQuery->dependencies().size());
+
+      for (const std::string &el : convertDependencies(parentQuery))
+        ROS_INFO_STREAM("" << el);
+
       QueryType sc;
       sc.request = wrappedQuery.request();
       sc.response = wrappedQuery.response();
+      sc.response.TemotoMetadata.dependencies = convertDependencies(parentQuery);
       query = sc;
     }
 
@@ -81,10 +93,7 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
 
   private:
-    
     ros::ServiceServer service_;
-
-    
 
     void startUnloadService()
     {
@@ -97,6 +106,21 @@ namespace temoto_resource_registrar
       std::string id = req.target;
       res.status = localUnload(id);
       return true;
+    }
+
+    std::vector<std::string> convertDependencies(RrQueryBase *query)
+    {
+      std::vector<std::string> dependencies;
+      if (query != NULL)
+      {
+        ROS_INFO_STREAM("query exists with size: " << query->dependencies().size());
+
+        for (auto const mapEntry : query->dependencies())
+        {
+          dependencies.push_back(mapEntry.first + ";;" + mapEntry.second);
+        }
+      }
+      return dependencies;
     }
   };
 }

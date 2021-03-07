@@ -23,9 +23,8 @@ int main(int argc, char **argv)
 
   ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
 
-  bool unloadRes = rr.unload("AgentRR", load1Id);
-
-  ROS_INFO_STREAM("Unload result: " << unloadRes);
+  //bool unloadRes = rr.unload("AgentRR", load1Id);
+  //ROS_INFO_STREAM("Unload result: " << unloadRes);
   
 
   //temoto_resource_registrar::LoadComponent loadCall2;

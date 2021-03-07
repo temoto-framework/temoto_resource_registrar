@@ -9,25 +9,18 @@ temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
 {
+  ROS_INFO("------------------------");
   ROS_INFO("IN LOAD CB");
 
   temoto_resource_registrar::CounterService counterSrv;
   counterSrv.request.startPoint = 1;
 
-  Ros1Query<temoto_resource_registrar::LoadComponent::Request, temoto_resource_registrar::LoadComponent::Response> wrappedQuery(req, res);
+  Ros1Query<temoto_resource_registrar::LoadComponent> wrappedQuery(req, res);
 
   rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(wrappedQuery));
 
-  /*template <class QueryType>
-  void call(const std::string &rr,
-            const std::string &server,
-            QueryType &query,
-            RrQueryBase *parentQuery = NULL,
-            StatusFunction statusFunc = NULL,
-            bool overrideStatus = false)
-  {}*/
-
   res.loadMessage = req.loadTarget;
+  ROS_INFO("------------------------");
 }
 
 void RtM1UnloadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)

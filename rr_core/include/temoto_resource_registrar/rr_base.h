@@ -24,7 +24,6 @@
 #include "rr_catalog.h"
 #include "rr_client_base.h"
 #include "rr_query_base.h"
-#include "rr_query_interpreter.h"
 #include "rr_server_base.h"
 #include "rr_status.h"
 
@@ -281,7 +280,7 @@ namespace temoto_resource_registrar
       // In case we have a client call, not a internal call
       if ((rr != NULL) && (target == NULL))
       {
-        std::cout << "executing client call, also setting rr" << std::endl;
+        std::cout << "executing client call, also setting rr " << *(rr) << std::endl;
         query.setRr(*(rr));
         handleClientCall<CallClientClass, QueryType>(*(rr), server, query);
       }
@@ -294,7 +293,7 @@ namespace temoto_resource_registrar
 
       if (parentQuery != NULL)
       {
-        std::cout << "if has parent query" << std::endl;
+        std::cout << "if has parent query: " << query.rr() << "-" << query.id() << std::endl;
         parentQuery->includeDependency(query.rr(), query.id());
       }
 

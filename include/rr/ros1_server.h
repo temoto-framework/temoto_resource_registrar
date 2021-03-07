@@ -53,7 +53,7 @@ public:
 
     std::string generatedId = generateId();
     res.TemotoMetadata.requestId = generatedId;
-    Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> wrappedQuery = wrapQuery(req, res);
+    Ros1Query<ServiceClass> wrappedQuery = wrapQuery(req, res);
 
     std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(req);
 
@@ -65,6 +65,8 @@ public:
       ROS_INFO("NOPE, does not exist");
       typed_load_callback_ptr_(req, res);
 
+      ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
+
       ROS_INFO_STREAM("TIME TO STORE!!!");
 
       rr_catalog_->storeQuery(name_,
@@ -73,6 +75,18 @@ public:
                               sanitizeAndSerialize(res));
 
       ROS_INFO_STREAM("STORED!!!");
+
+      ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
+
+      if (res.TemotoMetadata.dependencies.size() == 0)
+        ROS_INFO("Nothing to store :O");
+      else {
+        ROS_INFO_STREAM("Dependency size: " << res.TemotoMetadata.dependencies.size());
+        for (const auto element : res.TemotoMetadata.dependencies)
+        {
+          ROS_INFO_STREAM("dependencies passed from CB: " << element);
+        }
+      }
     }
     else
     {
@@ -93,7 +107,7 @@ private:
   ros::NodeHandle nh_;
   ros::ServiceServer service_;
 
-  void storeQuery(const std::string &rawRequest, Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> query) const
+  void storeQuery(const std::string &rawRequest, Ros1Query<ServiceClass> query) const
   {
     rr_catalog_->storeQuery(name_,
                             query,
@@ -101,7 +115,7 @@ private:
                             sanitizeAndSerialize(query.response()));
   }
 
-  typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> query) const
+  typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
   {
     std::string serializedResponse = rr_catalog_->processExisting(name_, requestId, query);
     typename ServiceClass::Response fetchedResponse = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
@@ -118,9 +132,9 @@ private:
     return data;
   }
 
-  Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> wrapQuery(typename ServiceClass::Request req, typename ServiceClass::Response res)
+  Ros1Query<ServiceClass> wrapQuery(typename ServiceClass::Request req, typename ServiceClass::Response res)
   {
-    Ros1Query<typename ServiceClass::Request, typename ServiceClass::Response> q(req, res);
+    Ros1Query<ServiceClass> q(req, res);
     q.setId(res.TemotoMetadata.requestId);
     return q;
   }
