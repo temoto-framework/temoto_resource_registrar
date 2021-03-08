@@ -56,6 +56,7 @@ public:
 
   void registerUserStatusCb(const UserStatusCb& user_status_cb)
   {
+    ROS_INFO_STREAM("registerUserStatusCb");
     user_status_cb_ = user_status_cb;
   }
 
@@ -63,6 +64,11 @@ public:
   {
     ServiceClass query; // TODO: get the query from the rr_catalog;
     user_status_cb_(query, status); // TODO: needs exception handling
+  }
+
+  bool hasRegisteredCb() {
+    ROS_INFO_STREAM("hasRegisteredCb " << (user_status_cb_ != NULL));
+    return user_status_cb_ != NULL;
   }
 
 protected:

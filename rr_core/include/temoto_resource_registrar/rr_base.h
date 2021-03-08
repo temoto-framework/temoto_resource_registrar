@@ -201,7 +201,7 @@ namespace temoto_resource_registrar
 
     bool unloadByServerAndQuery(const std::string &server, const std::string &id) { return servers_.unload(server, id); }
 
-    void sendStatus(const std::string &id, Status status, std::string &message)
+    virtual void sendStatus(const std::string &id, Status status, std::string &message)
     {
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
       std::cout << "!!!!!!!!!!!!!!!!!!!!!!! " << id << " START " << std::endl;
@@ -221,7 +221,7 @@ namespace temoto_resource_registrar
       std::cout << "!!!!!!!!!!!!!!!!!!!!!!! " << id << " END " << std::endl;
     }
 
-    void handleStatus(const std::string &id, Status status, std::string &message)
+    virtual void handleStatus(const std::string &id, Status status, std::string &message)
     {
       std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>" << std::endl;
 
@@ -288,17 +288,15 @@ namespace temoto_resource_registrar
         std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
         client->setCatalog(rr_catalog_);
 
-        //client->registerUserStatusCb(statusCallback);
-
         clients_.add(std::move(client));
       }
 
       auto &client = clients_.getElement(clientName);
       auto dynamicRef = dynamic_cast<const CallClientClass &>(client);
 
-      if (overwriteCb && dynamicRef.hasRegisteredCb())
+      if ((overwriteCb && dynamicRef.hasRegisteredCb()) || (!dynamicRef.hasRegisteredCb() && statusCallback != NULL))
       {
-        //dynamicRef.registerUserStatusCb(statusCallback);
+        dynamicRef.registerUserStatusCb(statusCallback);
       }
 
       dynamicRef.invoke(query);
@@ -340,7 +338,7 @@ namespace temoto_resource_registrar
       {
         std::cout << "executing client call, also setting rr to " << *(rr) << std::endl;
         query.setRr(*(rr));
-        handleClientCall<CallClientClass, QueryType>(*(rr), server, query, statusFunc, overrideFunc);
+        handleClientCall<CallClientClass, QueryType, StatusCallType>(*(rr), server, query, statusFunc, overrideFunc);
         std::cout << "query id: " << query.id() << std::endl;
       }
       else

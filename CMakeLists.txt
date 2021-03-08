@@ -26,6 +26,7 @@ add_service_files(
   FILES
   LoadComponent.srv
   UnloadComponent.srv
+  StatusComponent.srv
   CounterService.srv
 )
 

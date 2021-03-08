@@ -79,7 +79,14 @@ public:
 
       ROS_INFO_STREAM("Time for unload CB! " << serializedRequest.size());
       ROS_INFO_STREAM("Time for unload CB! " << serializedResponse.size());
-      typed_unload_callback_ptr_(request, response);
+      if (typed_unload_callback_ptr_ != NULL)
+      {
+        typed_unload_callback_ptr_(request, response);
+      }
+      else
+      {
+        member_unload_cb_(request, response);
+      }
     }
 
     return serializedResponse.size() > 0;
@@ -109,6 +116,7 @@ public:
     ROS_INFO_STREAM("checking existance..." << serializedRequest.size());
     std::string requestId = this->rr_catalog_->queryExists(name_, serializedRequest);
 
+    
     if (requestId.size() == 0)
     {
       ROS_INFO("NOPE, does not exist");
@@ -122,8 +130,6 @@ public:
       }
 
       ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
-
-      typed_load_callback_ptr_(req, res);
 
       rr_catalog_->storeQuery(name_,
                               wrappedQuery,

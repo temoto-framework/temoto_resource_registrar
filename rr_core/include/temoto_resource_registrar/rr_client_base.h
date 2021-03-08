@@ -45,6 +45,8 @@ namespace temoto_resource_registrar
     template <class UserStatusCb>
     void registerUserStatusCb(const UserStatusCb &user_status_cb);
 
+    void registerUserStatusCb(void *const &t);
+
     virtual bool hasRegisteredCb();
 
   protected:

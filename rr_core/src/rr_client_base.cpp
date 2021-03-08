@@ -50,6 +50,10 @@ namespace temoto_resource_registrar
   {
   }
 
+  void RrClientBase::registerUserStatusCb(void *const &t)
+  {
+  }
+
   bool RrClientBase::hasRegisteredCb()
   {
   }

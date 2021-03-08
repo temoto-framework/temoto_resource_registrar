@@ -483,7 +483,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   LOG(INFO) << "query : -------------------------------------------------------";
 
   //rr_m0.call<RrClientTemplate<Resource1>>("rr_m1", "R1_S", query);
-  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query, NULL, RRStatusFucntion);
+  //rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query, NULL, RRStatusFucntion);
+  rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S", query);
 
   EXPECT_EQ(loadCalls, 3);
   EXPECT_EQ(r1LoadCalls, 1);

@@ -79,8 +79,8 @@ int main(int argc, char **argv)
   ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
   
 
-  bool unloadRes = rr.unload("AgentRR", load1Id);
-  ROS_INFO_STREAM("Unload result: " << unloadRes);
+  //bool unloadRes = rr.unload("AgentRR", load1Id);
+  //ROS_INFO_STREAM("Unload result: " << unloadRes);
 
   //temoto_resource_registrar::LoadComponent loadCall2;
   //loadCall2.request.loadTarget = "TimeService";
@@ -92,6 +92,8 @@ int main(int argc, char **argv)
   //ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall2.response.loadMessage << "; id: " << load2Id);
 
   //rr.unload("AgentRR", load2Id);
+
+  ros::spin();
 
   ROS_INFO("Exiting consumer....");
 }

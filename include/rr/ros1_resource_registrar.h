@@ -6,6 +6,7 @@
 
 #include "temoto_resource_registrar/rr_base.h"
 
+#include "temoto_resource_registrar/StatusComponent.h"
 #include "temoto_resource_registrar/UnloadComponent.h"
 
 #include "rr/ros1_client.h"
@@ -25,7 +26,7 @@ namespace temoto_resource_registrar
   class ResourceRegistrarRos1 : public RrBase
   {
   public:
-  /**
+    /**
    * @brief Construct a new Resource Registrar Ros 1 object. Take into account that names need to be unique. 
    * They are used as adress fragments for inter-register communications.
    * 
@@ -41,7 +42,7 @@ namespace temoto_resource_registrar
      */
     void init()
     {
-      startUnloadService();
+      startServices();
     }
 
     /**
@@ -72,21 +73,22 @@ namespace temoto_resource_registrar
               const std::string &server,
               QueryType &query,
               RrQueryBase *parentQuery = NULL,
-              std::function<void(std::string, Status)> statusFunc = NULL,
+              std::function<void(QueryType, Status)> statusFunc = NULL,
               bool overrideStatus = false)
     {
       Ros1Query<QueryType> wrappedBaseQuery(query);
 
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
-                  Ros1Query<QueryType>>(&rr,
-                                        NULL,
-                                        server,
-                                        wrappedBaseQuery,
-                                        parentQuery,
-                                        NULL,
-                                        overrideStatus);
-                                        
+                  Ros1Query<QueryType>,
+                  std::function<void(QueryType, Status)>>(&rr,
+                                                          NULL,
+                                                          server,
+                                                          wrappedBaseQuery,
+                                                          parentQuery,
+                                                          statusFunc,
+                                                          overrideStatus);
+
       query = wrappedBaseQuery.rosQuery();
     }
 
@@ -124,10 +126,51 @@ namespace temoto_resource_registrar
       return res;
     }
 
+    virtual void sendStatus(const std::string &id, Status status, std::string &message)
+    {
+
+      ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " START");
+      std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
+
+      ros::NodeHandle nh;
+
+      ROS_INFO_STREAM("Notify ids---");
+      for (auto const &notId : notifyIds)
+      {
+        std::string originalId = rr_catalog_->getOriginQueryId(notId.first);
+        ROS_INFO_STREAM(notId.first << ": Original: " << originalId << ": serverId: " << notId.second);
+
+        std::string clientName = notId.second + "_status";
+
+        if (unload_clients_.count(clientName) == 0)
+        {
+          ROS_INFO_STREAM("creating unload client...");
+          auto sc = nh.serviceClient<StatusComponent>(clientName);
+          auto client = std::make_unique<ros::ServiceClient>(sc);
+          unload_clients_[clientName] = std::move(client);
+        }
+        temoto_resource_registrar::StatusComponent statusSrv;
+
+        statusSrv.request.target = notId.first;
+
+        unload_clients_[clientName] ->call(statusSrv);
+      }
+      ROS_INFO_STREAM("Notify ids---");
+
+      ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " END");
+    }
+
+    virtual void handleStatus(const std::string &id, Status status, std::string &message)
+    {
+      ROS_INFO_STREAM("handle...");
+    }
+
   protected:
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
+    std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> status_clients_;
 
-    virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency) {
+    virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
+    {
       bool unloadStatus = unload(dependency.second, dependency.first);
       if (unloadStatus)
       {
@@ -135,12 +178,15 @@ namespace temoto_resource_registrar
       }
     }
 
-    private : ros::ServiceServer service_;
+  private:
+    ros::ServiceServer unload_service_;
+    ros::ServiceServer status_service_;
 
-    void startUnloadService()
+    void startServices()
     {
       ros::NodeHandle nh;
-      service_ = nh.advertiseService(name() + "_unloader", &ResourceRegistrarRos1::unloadCallback, this);
+      unload_service_ = nh.advertiseService(name() + "_unloader", &ResourceRegistrarRos1::unloadCallback, this);
+      status_service_ = nh.advertiseService(name() + "_status", &ResourceRegistrarRos1::statusCallback, this);
     }
 
     bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
@@ -148,8 +194,13 @@ namespace temoto_resource_registrar
       ROS_INFO_STREAM("unloadCallback " << req.target);
       std::string id = req.target;
       ROS_INFO_STREAM("std::string id " << id);
-      status_callbacks_.erase(id);
       res.status = localUnload(id);
+      return true;
+    }
+
+    bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
+    {
+      ROS_INFO_STREAM("statusCallback " << req.target);
       return true;
     }
 
