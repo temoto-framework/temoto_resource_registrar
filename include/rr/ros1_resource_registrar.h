@@ -1,3 +1,6 @@
+#ifndef TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
+#define TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
+
 #include "ros/console.h"
 #include "ros/ros.h"
 
@@ -177,3 +180,4 @@ namespace temoto_resource_registrar
     }
   };
 }
+#endif

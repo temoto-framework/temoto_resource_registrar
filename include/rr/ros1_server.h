@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <functional>
 
 /**
  * @brief A wrapper class for the temoto_resource_registrar::RRServerBase. Provides templating to support multiple message types.
@@ -23,13 +24,13 @@ template <class ServiceClass>
 class Ros1Server : public temoto_resource_registrar::RrServerBase
 {
 public:
-/**
- * @brief Construct a new Ros 1 Server object. 
- * 
- * @param name - Name of the server being created. These need to be unique on a ResourceRegistrar basis.
- * @param loadCallback - Users load callback being executed when a unique resource is first requested.
- * @param unLoadCallback - User unload callback being executed when the final consumer of a resource is unloaded.
- */
+  /**
+   * @brief Construct a new Ros 1 Server object. 
+   * 
+   * @param name - Name of the server being created. These need to be unique on a ResourceRegistrar basis.
+   * @param loadCallback - Users load callback being executed when a unique resource is first requested.
+   * @param unLoadCallback - User unload callback being executed when the final consumer of a resource is unloaded.
+   */
   Ros1Server(const std::string &name,
              void (*loadCallback)(typename ServiceClass::Request &,
                                   typename ServiceClass::Response &),
@@ -38,9 +39,17 @@ public:
                                                                           typed_load_callback_ptr_(loadCallback),
                                                                           typed_unload_callback_ptr_(unLoadCallback)
   {
-    ROS_INFO_STREAM("Starting up server..." << name);
-    service_ = nh_.advertiseService(name, &Ros1Server::serverCallback, this);
-    ROS_INFO("Starting up server done!!!");
+    initialize();
+  }
+
+  Ros1Server(const std::string &name
+  , std::function<void(typename ServiceClass::Request&, typename ServiceClass::Response&)> member_load_cb
+  , std::function<void(typename ServiceClass::Request&, typename ServiceClass::Response&)> member_unload_cb)
+  : temoto_resource_registrar::RrServerBase(name, NULL, NULL)
+  , member_load_cb_(member_load_cb)
+  , member_unload_cb_(member_unload_cb)
+  {
+    initialize();
   }
 
 /**
@@ -95,7 +104,14 @@ public:
     if (requestId.size() == 0)
     {
       ROS_INFO("NOPE, does not exist");
-      typed_load_callback_ptr_(req, res);
+      if(typed_load_callback_ptr_ != NULL)
+      {
+        typed_load_callback_ptr_(req, res);
+      }
+      else
+      {
+        member_load_cb_(req, res);
+      }
 
       ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
 
@@ -135,9 +151,19 @@ protected:
   void (*typed_load_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
   void (*typed_unload_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
 
+  std::function<void(typename ServiceClass::Request&, typename ServiceClass::Response&)> member_load_cb_;
+  std::function<void(typename ServiceClass::Request&, typename ServiceClass::Response&)> member_unload_cb_;
+
 private:
   ros::NodeHandle nh_;
   ros::ServiceServer service_;
+
+  void initialize()
+  {
+    ROS_INFO_STREAM("Starting up server..." << name_);
+    service_ = nh_.advertiseService(name_, &Ros1Server::serverCallback, this);
+    ROS_INFO("Starting up server done!!!");
+  }
 
   void storeQuery(const std::string &rawRequest, Ros1Query<ServiceClass> query) const
   {
