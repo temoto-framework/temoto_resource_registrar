@@ -100,6 +100,10 @@ namespace temoto_resource_registrar
   {
   };
 
+/**
+ * @brief 
+ * 
+ */
   class RrBase
   {
   public:
@@ -260,7 +264,6 @@ namespace temoto_resource_registrar
 
       auto &client = clients_.getElement(clientName);
       auto dynamicRef = dynamic_cast<const CallClientClass &>(client);
-
       dynamicRef.invoke(query);
     }
 
@@ -280,9 +283,10 @@ namespace temoto_resource_registrar
       // In case we have a client call, not a internal call
       if ((rr != NULL) && (target == NULL))
       {
-        std::cout << "executing client call, also setting rr " << *(rr) << std::endl;
+        std::cout << "executing client call, also setting rr to " << *(rr) << std::endl;
         query.setRr(*(rr));
         handleClientCall<CallClientClass, QueryType>(*(rr), server, query);
+        std::cout << "query id: " << query.id() << std::endl;
       }
       else
       {
@@ -302,7 +306,7 @@ namespace temoto_resource_registrar
         std::cout << "statusFunc != NULL" << std::endl;
         if (writeCallback(query.id(), overrideFunc))
         {
-          std::cout << "writeCallback(query.id(), overrideFunc)" << std::endl;
+          std::cout << "writeCallback(query.id(), overrideFunc) " << std::endl;
           status_callbacks_[query.id()] = statusFunc;
         }
       }

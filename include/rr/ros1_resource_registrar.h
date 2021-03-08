@@ -69,13 +69,17 @@ namespace temoto_resource_registrar
               StatusFunction statusFunc = NULL,
               bool overrideStatus = false)
     {
+      //query.request.TemotoMetadata.servingRr = name();
 
-      query.response.TemotoMetadata.servingRr = name();
+      Ros1Query<QueryType> wrappedBaseQuery(query);
 
-      Ros1Query<QueryType> wrappedBaseQuery(query.request, query.response);
 
-      ROS_INFO_STREAM("-----call RES" << query.response.TemotoMetadata.requestId << " ; " << query.response.TemotoMetadata.servingRr << " ; " << query.response.TemotoMetadata.originRr);
-      ROS_INFO_STREAM("-----call REQ" << query.request.TemotoMetadata.requestId << " ; " << query.request.TemotoMetadata.servingRr << " ; " << query.request.TemotoMetadata.originRr);
+      if (parentQuery != NULL)
+      {
+        ROS_INFO_STREAM("DEPENDENCY SIZE?  " << parentQuery->dependencies().size());
+        for (const auto &el : parentQuery->dependencies())
+          ROS_INFO_STREAM(el.first << " :: " << el.second);
+      }
 
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
@@ -87,21 +91,15 @@ namespace temoto_resource_registrar
                                         statusFunc,
                                         overrideStatus);
 
-      ROS_INFO_STREAM("-----call RES" << query.response.TemotoMetadata.requestId << " ; " << query.response.TemotoMetadata.servingRr << " ; " << query.response.TemotoMetadata.originRr);
-      ROS_INFO_STREAM("-----call REQ" << query.request.TemotoMetadata.requestId << " ; " << query.request.TemotoMetadata.servingRr << " ; " << query.request.TemotoMetadata.originRr);
 
       if (parentQuery != NULL)
       {
         ROS_INFO_STREAM("DEPENDENCY SIZE?  " << parentQuery->dependencies().size());
         for (const auto &el : parentQuery->dependencies())
-          ROS_INFO_STREAM("" << el.first << "::" << el.second);
+          ROS_INFO_STREAM(el.first << " :: " << el.second);
       }
 
-      QueryType sc;
-      sc.request = wrappedBaseQuery.request();
-      sc.response = wrappedBaseQuery.response();
-      sc.response.TemotoMetadata.dependencies = convertDependencies(parentQuery);
-      query = sc;
+      query = wrappedBaseQuery.rosQuery();
     }
 
     /**

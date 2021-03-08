@@ -12,7 +12,62 @@ int main(int argc, char **argv)
 
   rr.init();
 
-  
+  /*std::vector<std::string> dependencies;
+  dependencies.push_back("rr1;;first");
+  dependencies.push_back("rr1;;second");
+  dependencies.push_back("rr1;;third");
+
+  temoto_resource_registrar::LoadComponent loadCall;
+  loadCall.request.loadTarget = "CounterService";
+  loadCall.request.TemotoMetadata.requestId = "requestId";
+  loadCall.request.TemotoMetadata.servingRr = "servingRr";
+  loadCall.request.TemotoMetadata.originRr = "originRr";
+  loadCall.request.TemotoMetadata.dependencies = dependencies;
+  loadCall.response.loadMessage = "OK";
+
+  ROS_INFO_STREAM("loadCall.request.loadTarget: " << loadCall.request.loadTarget);
+  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.requestId: " << loadCall.request.TemotoMetadata.requestId);
+  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.servingRr: " << loadCall.request.TemotoMetadata.servingRr);
+  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.originRr: " << loadCall.request.TemotoMetadata.originRr);
+  ROS_INFO_STREAM("loadCall.response.loadMessage: " << loadCall.response.loadMessage);
+
+  ROS_INFO_STREAM("dependency size: " << loadCall.request.TemotoMetadata.dependencies.size());
+  for (const auto &el : loadCall.request.TemotoMetadata.dependencies)
+  {
+    ROS_INFO_STREAM("dependency: " << el);
+  }
+
+  ROS_INFO_STREAM("------------------------------------------------------------");
+
+  Ros1Query<temoto_resource_registrar::LoadComponent> rosQuery(loadCall);
+
+  rosQuery.request().TemotoMetadata.requestId = "modified";
+
+  rosQuery.includeDependency("a", "b");
+  rosQuery.setId("actualId");
+  rosQuery.setRr("actualServingRr");
+  rosQuery.setOrigin("actualOriginRr");
+
+  temoto_resource_registrar::LoadComponent newLoadCall = rosQuery.rosQuery();
+
+  for (const auto &el : rosQuery.dependencies())
+  {
+    ROS_INFO_STREAM("dependency: " << el.first << " - " << el.second);
+  }
+
+  ROS_INFO_STREAM("------------------------------------------------------------");
+
+  ROS_INFO_STREAM("loadCall.request.loadTarget: " << newLoadCall.request.loadTarget);
+  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.requestId: " << newLoadCall.request.TemotoMetadata.requestId);
+  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.servingRr: " << newLoadCall.request.TemotoMetadata.servingRr);
+  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.originRr: " << newLoadCall.request.TemotoMetadata.originRr);
+  ROS_INFO_STREAM("loadCall.response.loadMessage: " << newLoadCall.response.loadMessage);
+
+  ROS_INFO_STREAM("dependency size: " << newLoadCall.request.TemotoMetadata.dependencies.size());
+  for (const auto &el : newLoadCall.request.TemotoMetadata.dependencies)
+  {
+    ROS_INFO_STREAM("dependency: " << el);
+  }*/
 
   temoto_resource_registrar::LoadComponent loadCall;
   loadCall.request.loadTarget = "CounterService";
@@ -22,10 +77,10 @@ int main(int argc, char **argv)
   std::string load1Id = loadCall.response.TemotoMetadata.requestId;
 
   ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
-
-  //bool unloadRes = rr.unload("AgentRR", load1Id);
-  //ROS_INFO_STREAM("Unload result: " << unloadRes);
   
+
+  bool unloadRes = rr.unload("AgentRR", load1Id);
+  ROS_INFO_STREAM("Unload result: " << unloadRes);
 
   //temoto_resource_registrar::LoadComponent loadCall2;
   //loadCall2.request.loadTarget = "TimeService";

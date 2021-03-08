@@ -1,6 +1,5 @@
-TemotoMetadata metadata
+TemotoMetadata TemotoMetadata
 string loadTarget
 ---
-#result
 TemotoMetadata TemotoMetadata
 string loadMessage

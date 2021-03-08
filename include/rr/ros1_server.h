@@ -23,7 +23,7 @@ template <class ServiceClass>
 class Ros1Server : public temoto_resource_registrar::RrServerBase
 {
 public:
-/**
+  /**
  * @brief Construct a new Ros 1 Server object. 
  * 
  * @param name - Name of the server being created. These need to be unique on a ResourceRegistrar basis.
@@ -43,7 +43,7 @@ public:
     ROS_INFO("Starting up server done!!!");
   }
 
-/**
+  /**
  * @brief Unloads a specific resource specified by the message id from the catalog.
  * 
  * @param id - ID of the message being unloaded
@@ -67,7 +67,7 @@ public:
     return serializedResponse.size() > 0;
   }
 
-/**
+  /**
  * @brief Executes the server message handling logic. A request and response are passed to the method. The request is checked
  * for uniqueness int he catalog. If it is unique, a new entry is created and the user load callback is executed. In case
  * it is not unique the corresponding request response is fetched from catalog storage and deserialized for the user.
@@ -80,14 +80,13 @@ public:
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
     ROS_INFO("In Server Handler!!!");
-    ROS_INFO_STREAM("--OK " << req.TemotoMetadata.requestId << " - " << req.TemotoMetadata.servingRr);
-    ROS_INFO_STREAM("--OK " << res.TemotoMetadata.requestId << " - " << res.TemotoMetadata.servingRr);
+
+    std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(req);
 
     std::string generatedId = generateId();
     res.TemotoMetadata.requestId = generatedId;
-    Ros1Query<ServiceClass> wrappedQuery = wrapQuery(req, res);
 
-    std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(req);
+    Ros1Query<ServiceClass> wrappedQuery = wrap(req, res);
 
     ROS_INFO_STREAM("checking existance..." << serializedRequest.size());
     std::string requestId = this->rr_catalog_->queryExists(name_, serializedRequest);
@@ -97,10 +96,6 @@ public:
       ROS_INFO("NOPE, does not exist");
       typed_load_callback_ptr_(req, res);
 
-      ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
-
-      ROS_INFO_STREAM("TIME TO STORE!!!");
-
       rr_catalog_->storeQuery(name_,
                               wrappedQuery,
                               serializedRequest,
@@ -108,15 +103,14 @@ public:
 
       ROS_INFO_STREAM("STORED!!!");
 
-      ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
+      Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
 
-      if (res.TemotoMetadata.dependencies.size() == 0)
-        ROS_INFO("Nothing to store :O");
-      else {
-        ROS_INFO_STREAM("Dependency size: " << res.TemotoMetadata.dependencies.size());
-        for (const auto element : res.TemotoMetadata.dependencies)
+      if (wrappedResponse.dependencies().size()) {
+        ROS_INFO("Dependency storage required:");
+        for (auto const &i : wrappedResponse.dependencies())
         {
-          ROS_INFO_STREAM("dependencies passed from CB: " << element);
+          ROS_INFO_STREAM("       dependency: " << i.first << " - " << i.second);
+          rr_catalog_->storeDependency(wrappedResponse.id(), i.second, i.first);
         }
       }
     }
@@ -127,7 +121,6 @@ public:
       ROS_INFO("Fetching done...");
       res = fetchedResponse;
     }
-
     return true;
   }
 
@@ -147,33 +140,33 @@ private:
                             sanitizeAndSerialize(query.response()));
   }
 
-  typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
+  Ros1Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
+  {
+    ServiceClass srvCall;
+    srvCall.request = req;
+    srvCall.response = res;
+
+    return Ros1Query<ServiceClass>(srvCall);
+  }
+
+      typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
   {
     std::string serializedResponse = rr_catalog_->processExisting(name_, requestId, query);
     typename ServiceClass::Response fetchedResponse = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
-    fetchedResponse.TemotoMetadata.requestId = query.id();
 
     return fetchedResponse;
   }
 
-  template <class SanitizeClass>
-  static SanitizeClass sanityzeRequest(SanitizeClass data)
+  static typename ServiceClass::Response sanityzeRequest(typename ServiceClass::Response data)
   {
-    SanitizeClass empty;
+    typename ServiceClass::Response empty;
     data.TemotoMetadata = empty.TemotoMetadata;
     return data;
   }
 
-  Ros1Query<ServiceClass> wrapQuery(typename ServiceClass::Request req, typename ServiceClass::Response res)
-  {
-    Ros1Query<ServiceClass> q(req, res);
-    q.setId(res.TemotoMetadata.requestId);
-    return q;
-  }
-
   std::string sanitizeAndSerialize(typename ServiceClass::Response res)
   {
-    std::string serialized = MessageSerializer::serializeMessage<typename ServiceClass::Response>(sanityzeRequest<typename ServiceClass::Response>(res));
+    std::string serialized = MessageSerializer::serializeMessage<typename ServiceClass::Response>(res);
 
     return serialized;
   }

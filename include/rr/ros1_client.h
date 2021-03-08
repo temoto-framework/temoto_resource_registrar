@@ -29,7 +29,7 @@ public:
   {
     if (client_.call(request))
     {
-      ROS_INFO_STREAM("OK");
+      ROS_INFO_STREAM("invoke OK " << request.response.TemotoMetadata.requestId);
     }
     else
     {
@@ -45,15 +45,11 @@ public:
  */
   void invoke(Ros1Query<ServiceClass> &wrappedRequest)
   {
+    ServiceClass servCall = wrappedRequest.rosQuery();
 
-    
-    ServiceClass sc;
-    sc.request = wrappedRequest.request();
-    sc.response = wrappedRequest.response();
-    invoke(sc);
+    invoke(servCall);
 
-    Ros1Query<ServiceClass> ref2(sc.request, sc.response);
-    wrappedRequest = ref2;
+    wrappedRequest = Ros1Query<ServiceClass>(servCall);
   }
 
 protected:
