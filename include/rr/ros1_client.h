@@ -71,6 +71,17 @@ public:
     return user_status_cb_ != NULL;
   }
 
+  void registerUserStatusCb(const UserStatusCb& user_status_cb)
+  {
+    user_status_cb_ = user_status_cb;
+  }
+
+  void internalStatusCallback(const temoto_resource_registrar::Status& status)
+  {
+    ServiceClass query; // TODO: get the query from the rr_catalog;
+    user_status_cb_(query, status); // TODO: needs exception handling
+  }
+
 protected:
 private:
 
