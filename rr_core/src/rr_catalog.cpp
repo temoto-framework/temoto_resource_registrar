@@ -133,6 +133,7 @@ namespace temoto_resource_registrar
 
   std::string RrCatalog::getIdServer(const std::string &id)
   {
+    std::cout << "getIdServer: " << id << std::endl;
     return findOriginalContainer(id).responsibleServer_;
   }
 

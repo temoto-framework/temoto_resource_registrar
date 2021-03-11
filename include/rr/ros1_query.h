@@ -1,6 +1,7 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_H
 #define TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_H
 
+#include "temoto_resource_registrar/TemotoMetadata.h"
 #include "temoto_resource_registrar/rr_query_container.h"
 
 /**
@@ -14,7 +15,27 @@ class Ros1Query : public temoto_resource_registrar::RrQueryBase
 public:
   Ros1Query() {}
 
-  explicit Ros1Query(ServiceClass query) : typed_query_(std::move(query))
+  Ros1Query(const temoto_resource_registrar::TemotoMetadata &metadata){
+    ROS_INFO_STREAM("Metadata constructor" << metadata.requestId);
+    setId(metadata.requestId);
+    setRr(metadata.servingRr);
+    setOrigin(metadata.originRr);
+
+    for (const auto &el : metadata.dependencies)
+    {
+      std::vector<std::string> splitDep = splitString(el, DELIMITER);
+      if (splitDep.size() == 2)
+      {
+        includeDependency(splitDep.at(0), splitDep.at(1));
+      }
+      else
+      {
+        ROS_INFO_STREAM(splitDep.size() << " " << splitDep.at(0));
+      }
+    }
+  }
+
+  Ros1Query(const ServiceClass &query) : typed_query_(query)
   {
     setId(selectNonEmpty(typed_query_.request.TemotoMetadata.requestId,
                          typed_query_.response.TemotoMetadata.requestId));

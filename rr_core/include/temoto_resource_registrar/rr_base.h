@@ -135,17 +135,22 @@ namespace temoto_resource_registrar
 
     bool unload(RrBase &target, const std::string &id)
     {
+
       status_callbacks_.erase(id);
       return target.localUnload(id);
     }
 
     bool localUnload(const std::string &id)
     {
+      std::cout << "localUnload id: " << id << std::endl;
       std::string serverId = rr_catalog_->getIdServer(id);
+
+      std::cout << "serverId id: " << serverId << std::endl;
 
       auto dependencyMap = rr_catalog_->getDependencies(id);
       if (dependencyMap.size() > 0)
       {
+        std::cout << "dependencyMap.size() > 0" << std::endl;
         for (auto const &dependency : dependencyMap)
         {
           unloadResource(id, dependency);
@@ -246,6 +251,7 @@ namespace temoto_resource_registrar
     RrServers servers_;
     RrClients clients_;
     RrCatalogPtr rr_catalog_;
+    std::unordered_map<std::string, StatusFunction> status_callbacks_;
 
     template <class CallClientClass, class QueryClass>
     void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query)
@@ -314,20 +320,10 @@ namespace temoto_resource_registrar
       mtx.unlock();
     }
 
-  private:
-    std::string name_;
-
-    std::unordered_map<std::string, StatusFunction> status_callbacks_;
-
-    std::unordered_map<std::string, RrBase *> rr_references_;
-
-    std::thread::id workId;
-    std::mutex mtx;
-
-    void
-    unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
-    {
+    virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency) {
+      std::cout << "private unloadResource() " << id << std::endl;
       std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
+      std::cout << "dependencyServer " << dependencyServer << std::endl;
       bool unloadStatus = rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
 
       if (unloadStatus)
@@ -335,6 +331,13 @@ namespace temoto_resource_registrar
         rr_catalog_->unloadDependency(id, dependency.first);
       }
     }
+
+        private : std::string name_;
+
+    std::unordered_map<std::string, RrBase *> rr_references_;
+
+    std::thread::id workId;
+    std::mutex mtx;
 
     bool writeCallback(const std::string &id, bool override)
     {

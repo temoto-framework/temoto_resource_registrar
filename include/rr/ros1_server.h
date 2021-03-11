@@ -94,6 +94,7 @@ public:
     if (requestId.size() == 0)
     {
       ROS_INFO("NOPE, does not exist");
+
       typed_load_callback_ptr_(req, res);
 
       rr_catalog_->storeQuery(name_,
@@ -109,7 +110,7 @@ public:
         ROS_INFO("Dependency storage required:");
         for (auto const &i : wrappedResponse.dependencies())
         {
-          ROS_INFO_STREAM("       dependency: " << i.first << " - " << i.second);
+          ROS_INFO_STREAM("       dependency: " << wrappedResponse.id() << " - " << i.first << " - " << i.second);
           rr_catalog_->storeDependency(wrappedResponse.id(), i.second, i.first);
         }
       }
@@ -121,6 +122,8 @@ public:
       ROS_INFO("Fetching done...");
       res = fetchedResponse;
     }
+
+    ROS_INFO_STREAM("server call end" << res.TemotoMetadata.requestId);
     return true;
   }
 

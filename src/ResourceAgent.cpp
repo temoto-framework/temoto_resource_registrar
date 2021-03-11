@@ -7,7 +7,8 @@ std::string rrName = "AgentRR";
 
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
-void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
+void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req,
+                temoto_resource_registrar::LoadComponent::Response &res)
 {
   ROS_INFO("------------------------");
   ROS_INFO("IN LOAD CB");
@@ -15,29 +16,13 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
   temoto_resource_registrar::CounterService counterSrv;
   counterSrv.request.startPoint = 1;
 
-  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.requestId: " << res.TemotoMetadata.requestId);
-  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.servingRr: " << res.TemotoMetadata.servingRr);
-  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.originRr: " << res.TemotoMetadata.originRr);
-  ROS_INFO_STREAM("loadCall.request.TemotoMetadata.dependencies: " << res.TemotoMetadata.dependencies.size());
-
-  temoto_resource_registrar::LoadComponent srvCall;
-  srvCall.request = req;
-  srvCall.response = res;
-  Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(srvCall);
-
-  ROS_INFO_STREAM("wrappedQuery.requestId: " << parentQuery.id());
-  ROS_INFO_STREAM("wrappedQuery.servingRr: " << parentQuery.rr());
-  ROS_INFO_STREAM("wrappedQuery.originRr: " << parentQuery.origin());
+  Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(res.TemotoMetadata);
 
   rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery));
-
-  ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!parentQuery.dependencies().size(): " << parentQuery.dependencies().size());
-  ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!parentQuery.dependencies().size(): " << counterSrv.response.TemotoMetadata.dependencies.size());
 
   temoto_resource_registrar::LoadComponent q = parentQuery.rosQuery();
   res = q.response;
   req = q.request;
-  
   res.loadMessage = req.loadTarget;
   ROS_INFO("------------------------");
 }

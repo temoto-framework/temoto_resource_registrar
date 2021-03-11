@@ -73,14 +73,6 @@ namespace temoto_resource_registrar
 
       Ros1Query<QueryType> wrappedBaseQuery(query);
 
-
-      if (parentQuery != NULL)
-      {
-        ROS_INFO_STREAM("DEPENDENCY SIZE?  " << parentQuery->dependencies().size());
-        for (const auto &el : parentQuery->dependencies())
-          ROS_INFO_STREAM(el.first << " :: " << el.second);
-      }
-
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
                   Ros1Query<QueryType>>(&rr,
@@ -91,13 +83,6 @@ namespace temoto_resource_registrar
                                         statusFunc,
                                         overrideStatus);
 
-
-      if (parentQuery != NULL)
-      {
-        ROS_INFO_STREAM("DEPENDENCY SIZE?  " << parentQuery->dependencies().size());
-        for (const auto &el : parentQuery->dependencies())
-          ROS_INFO_STREAM(el.first << " :: " << el.second);
-      }
 
       query = wrappedBaseQuery.rosQuery();
     }
@@ -114,7 +99,7 @@ namespace temoto_resource_registrar
      */
     bool unload(const std::string &rr, const std::string &id)
     {
-      ROS_INFO_STREAM("unload Called");
+      ROS_INFO_STREAM("unload Called  ");
 
       ros::NodeHandle nh;
 
@@ -143,8 +128,11 @@ namespace temoto_resource_registrar
   protected:
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
 
-  private:
-    ros::ServiceServer service_;
+    virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency) {
+      ROS_INFO_STREAM("unloadResource IN ROS");
+    }
+
+    private : ros::ServiceServer service_;
 
     void startUnloadService()
     {
@@ -154,7 +142,10 @@ namespace temoto_resource_registrar
 
     bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
     {
+      ROS_INFO_STREAM("unloadCallback " << req.target);
       std::string id = req.target;
+      ROS_INFO_STREAM("std::string id " << id);
+      status_callbacks_.erase(id);
       res.status = localUnload(id);
       return true;
     }
