@@ -7,6 +7,11 @@ std::string rrName = "AgentRR";
 
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
+void statusCallback(temoto_resource_registrar::CounterService query,temoto_resource_registrar::Status status)
+{
+  ROS_INFO_STREAM("IN " << __func__);
+}
+
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
 {
   ROS_INFO("------------------------");
@@ -17,7 +22,7 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
 
   Ros1Query<temoto_resource_registrar::LoadComponent> wrappedQuery(req, res);
 
-  rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(wrappedQuery));
+  rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(wrappedQuery), statusCallback);
 
   res.loadMessage = req.loadTarget;
   ROS_INFO("------------------------");

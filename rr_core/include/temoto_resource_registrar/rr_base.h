@@ -264,6 +264,24 @@ namespace temoto_resource_registrar
       dynamicRef.invoke(query);
     }
 
+    /**
+     * @brief TODO: requires a proper comment.
+     * Note: If your application has multiple client calls to different services, and each call has its unique status
+     * callback, then make sure that the appropriate callback is provided. Otherwise they get mixed and thats probably
+     * not the intended behavior.
+     * Since the status callback function is common across all client calls, make sure that 
+     * 
+     * @tparam CallClientClass 
+     * @tparam ServType 
+     * @tparam QueryType 
+     * @param rr 
+     * @param target 
+     * @param server 
+     * @param query 
+     * @param parentQuery 
+     * @param statusFunc 
+     * @param overrideFunc 
+     */
     template <class CallClientClass, class ServType, class QueryType>
     void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, StatusFunction statusFunc, bool overrideFunc)
     {

@@ -11,8 +11,11 @@
 #include "rr/ros1_client.h"
 #include "rr/ros1_server.h"
 
+#include <functional>
+
 namespace temoto_resource_registrar
 {
+
   /**
    * @brief Implementation of the temoto_resource_registrar::RrBase to work on ROS1. 
    * The init() function should be called once ROS is initialized. Else unload and other
@@ -69,7 +72,7 @@ namespace temoto_resource_registrar
               const std::string &server,
               QueryType &query,
               RrQueryBase *parentQuery = NULL,
-              StatusFunction statusFunc = NULL,
+              std::function<void(QueryType, Status)> statusFunc = NULL,
               bool overrideStatus = false)
     {
 
@@ -89,6 +92,9 @@ namespace temoto_resource_registrar
                                         parentQuery,
                                         statusFunc,
                                         overrideStatus);
+
+      // TODO: Register the "statusFunc" with the "Ros1Client" object that was created inside the "privateCall"
+      // use the Ros1Client::registerUserStatusCb() method
 
       ROS_INFO_STREAM("-----call RES" << query.response.TemotoMetadata.requestId << " ; " << query.response.TemotoMetadata.servingRr << " ; " << query.response.TemotoMetadata.originRr);
       ROS_INFO_STREAM("-----call REQ" << query.request.TemotoMetadata.requestId << " ; " << query.request.TemotoMetadata.servingRr << " ; " << query.request.TemotoMetadata.originRr);
