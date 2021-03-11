@@ -103,6 +103,13 @@ public:
     return typed_query_.response;
   }
 
+  void rosQuery(typename ServiceClass::Request &req, typename ServiceClass::Response &res){
+    ServiceClass sq = rosQuery();
+
+    req = sq.request;
+    res = sq.response;
+  }
+
   ServiceClass rosQuery()
   {
     typed_query_.response.TemotoMetadata.requestId = id();

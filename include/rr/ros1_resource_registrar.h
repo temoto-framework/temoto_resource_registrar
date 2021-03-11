@@ -116,11 +116,7 @@ namespace temoto_resource_registrar
       temoto_resource_registrar::UnloadComponent unloadSrv;
       unloadSrv.request.target = id;
 
-      ROS_INFO_STREAM("executing unload call");
-
       bool res = unload_clients_[clientName]->call(unloadSrv);
-
-      ROS_INFO_STREAM("executing unload call done " << res);
 
       return res;
     }
@@ -129,7 +125,11 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
 
     virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency) {
-      ROS_INFO_STREAM("unloadResource IN ROS");
+      bool unloadStatus = unload(dependency.second, dependency.first);
+      if (unloadStatus)
+      {
+        rr_catalog_->unloadDependency(id, dependency.first);
+      }
     }
 
     private : ros::ServiceServer service_;

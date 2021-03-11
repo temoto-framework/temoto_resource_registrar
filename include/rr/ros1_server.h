@@ -55,13 +55,18 @@ public:
     ROS_INFO_STREAM("Starting to unload id: " << id);
 
     ROS_INFO_STREAM("checkign for dependencies... ");
+    std::string serializedRequest = rr_catalog_->findOriginalContainer(id).rawRequest_;
     std::string serializedResponse = rr_catalog_->unload(name_, id);
+    typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serializedRequest);
     typename ServiceClass::Response response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
     ROS_INFO_STREAM("Unload result size: " << serializedResponse.size());
 
     if (rr_catalog_->canBeUnloaded(name_))
     {
-      ROS_INFO_STREAM("Time for unload CB!");
+
+      ROS_INFO_STREAM("Time for unload CB! " << serializedRequest.size());
+      ROS_INFO_STREAM("Time for unload CB! " << serializedResponse.size());
+      typed_unload_callback_ptr_(request, response);
     }
 
     return serializedResponse.size() > 0;

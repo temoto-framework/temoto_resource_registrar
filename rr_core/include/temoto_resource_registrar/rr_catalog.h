@@ -95,6 +95,8 @@ namespace temoto_resource_registrar
     void unloadDependency(const std::string &queryId, const std::string &dependencyId);
     std::string getOriginQueryId(const std::string &queryId);
 
+    QueryContainer<RawData> findOriginalContainer(const std::string &id);
+    
     void print();
 
   protected:
@@ -108,7 +110,7 @@ namespace temoto_resource_registrar
     std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
     std::unordered_map<std::string, DependencyContainer> id_dependency_map_;
 
-    QueryContainer<RawData> findOriginalContainer(const std::string &id);
+    
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;

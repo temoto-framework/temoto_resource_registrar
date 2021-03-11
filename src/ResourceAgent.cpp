@@ -20,9 +20,8 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req,
 
   rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery));
 
-  temoto_resource_registrar::LoadComponent q = parentQuery.rosQuery();
-  res = q.response;
-  req = q.request;
+  parentQuery.rosQuery(req, res);
+
   res.loadMessage = req.loadTarget;
   ROS_INFO("------------------------");
 }
