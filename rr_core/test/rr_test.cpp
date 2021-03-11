@@ -9,7 +9,6 @@
 
 #include "temoto_resource_registrar/rr_base.h"
 #include "temoto_resource_registrar/rr_client_base.h"
-#include "temoto_resource_registrar/rr_resource.h"
 #include "temoto_resource_registrar/rr_serializable.h"
 #include "temoto_resource_registrar/rr_server_base.h"
 
