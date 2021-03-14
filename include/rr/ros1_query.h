@@ -15,6 +15,11 @@ class Ros1Query : public temoto_resource_registrar::RrQueryBase
 public:
   Ros1Query() {}
 
+  /**
+   * @brief Construct a new Ros 1 Query object. Does not store existing field valus of the request.
+   * 
+   * @param metadata 
+   */
   Ros1Query(const temoto_resource_registrar::TemotoMetadata &metadata){
     ROS_INFO_STREAM("Metadata constructor" << metadata.requestId);
     setId(metadata.requestId);
@@ -35,6 +40,11 @@ public:
     }
   }
 
+  /**
+   * @brief Construct a new Ros 1 Query object. Stores existing request data.
+   * 
+   * @param query 
+   */
   Ros1Query(const ServiceClass &query) : typed_query_(query)
   {
     setId(selectNonEmpty(typed_query_.request.TemotoMetadata.requestId,
@@ -59,34 +69,9 @@ public:
   }
 
   /**
-   * @brief Construct a new Ros 1 Query object. Takes in a ROS1 srv type request and response object. 
-   * Also populates meta-fields used by the ResourceRegistrar, like message id, servingRr, originRr and dependencies.
-   * 
-   * @param req 
-   * @param res 
-   */
-  //Ros1Query(const typename ServiceClass::Request &req, const typename ServiceClass::Response &res) {}
-  /*Ros1Query(const typename ServiceClass::Request &req, const typename ServiceClass::Response &res) : typed_request_(req), typed_response_(res)
-  {
-    setId(req.TemotoMetadata.requestId);
-    setRr(req.TemotoMetadata.servingRr);
-    setOrigin(req.TemotoMetadata.originRr);
-
-    
-
-    ROS_INFO_STREAM("Ros1Query constructor");
-    for (const auto &el : req.TemotoMetadata.dependencies)
-    {
-      std::vector<std::string> splitDep = splitString(el, delimiter);
-      ROS_INFO_STREAM(splitDep.at(0) << " - " << splitDep.at(1));
-      //includeDependency(splitDep);
-    }
-  }*/
-
-  /**
    * @brief Returs the reference of the stored srv request.
    * 
-   * @return ServiceClass::Request& 
+   * @return ServiceClass::Request 
    */
   typename ServiceClass::Request request()
   {
@@ -96,20 +81,32 @@ public:
   /**
  * @brief Returs the reference of the stored srv response.
  * 
- * @return ServiceClass::Response& 
+ * @return ServiceClass::Response 
  */
   typename ServiceClass::Response response()
   {
     return typed_query_.response;
   }
 
-  void rosQuery(typename ServiceClass::Request &req, typename ServiceClass::Response &res){
+  /**
+   * @brief Modifies an existing request and response with metadata from the resourecRegistrar.
+   * 
+   * @param req - ServiceClass::Request that will be modified
+   * @param res - ServiceClass::Response that will be modified
+   */
+  void rosQuery(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
+  {
     ServiceClass sq = rosQuery();
 
     req = sq.request;
     res = sq.response;
   }
 
+  /**
+   * @brief Returns a new ServiceClass type object that has its metadata filled.
+   * 
+   * @return ServiceClass 
+   */
   ServiceClass rosQuery()
   {
     typed_query_.response.TemotoMetadata.requestId = id();

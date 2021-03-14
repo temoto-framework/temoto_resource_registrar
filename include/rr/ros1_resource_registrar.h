@@ -69,8 +69,6 @@ namespace temoto_resource_registrar
               StatusFunction statusFunc = NULL,
               bool overrideStatus = false)
     {
-      //query.request.TemotoMetadata.servingRr = name();
-
       Ros1Query<QueryType> wrappedBaseQuery(query);
 
       privateCall<Ros1Client<QueryType>,
@@ -82,8 +80,7 @@ namespace temoto_resource_registrar
                                         parentQuery,
                                         statusFunc,
                                         overrideStatus);
-
-
+                                        
       query = wrappedBaseQuery.rosQuery();
     }
 

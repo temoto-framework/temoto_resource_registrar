@@ -42,8 +42,6 @@ namespace temoto_resource_registrar
     template <class MT>
     void storeResponse(MT &resp);
 
-    RrQueryResponse response();
-
     void setId(const std::string &id) { requestId_ = id; };
 
     std::string id() const { return requestId_; }
