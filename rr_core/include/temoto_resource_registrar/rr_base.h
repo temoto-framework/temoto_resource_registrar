@@ -288,6 +288,8 @@ namespace temoto_resource_registrar
         std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
         client->setCatalog(rr_catalog_);
 
+        //client->registerUserStatusCb(statusCallback);
+
         clients_.add(std::move(client));
       }
 
