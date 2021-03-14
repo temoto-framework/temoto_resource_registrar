@@ -8,7 +8,6 @@
 #include <unordered_map>
 
 #include "temoto_resource_registrar/rr_base.h"
-#include "temoto_resource_registrar/rr_client_base.h"
 #include "temoto_resource_registrar/rr_serializable.h"
 #include "temoto_resource_registrar/rr_server_base.h"
 
@@ -170,24 +169,6 @@ protected:
   {
     ar &requestId_ &typed_request_ &typed_response_;
   }
-};
-
-template <class MessageType>
-class RrClientTemplate : public RrClientBase, Serializable<MessageType>
-{
-public:
-  RrClientTemplate(const std::string &name) : RrClientBase(name){};
-
-  void invoke(const RrQueryBase &query) const
-  {
-    LOG(INFO) << "invoke done - override";
-  }
-
-  std::string serialize(MessageType message) const {};
-  MessageType deserialize(const std::string &data) const {};
-
-protected:
-private:
 };
 
 template <class MessageType>
@@ -433,6 +414,17 @@ void RRStatusFucntion(const std::string &id, Status status, std::string &message
   statusCalls++;
 };
 
+template <typename T>
+bool contains(std::vector<T> vec, const T &elem)
+{
+  bool result = false;
+  if (find(vec.begin(), vec.end(), elem) != vec.end())
+  {
+    result = true;
+  }
+  return result;
+}
+
 TEST_F(RrBaseTest, ResourceRegistrarTest)
 {
 
@@ -501,7 +493,7 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   LOG(INFO) << "registered callback for query with id: " << query.id();
   EXPECT_EQ(rr_m0.callbacks().size(), 1);
-  EXPECT_EQ(rr_m0.callbacks().count(query.id()), 1);
+  EXPECT_EQ(contains(rr_m0.callbacks(), query.id()), true);
 
   ids.push_back(query.id());
 
@@ -612,3 +604,5 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r1LoadCalls, 3);
   EXPECT_EQ(r2LoadCalls, 4);
 }
+
+

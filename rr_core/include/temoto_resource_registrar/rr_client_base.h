@@ -20,6 +20,7 @@
 #include "rr_catalog.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
+#include "rr_status.h"
 
 #include <iostream>
 #include <string>
@@ -38,6 +39,13 @@ namespace temoto_resource_registrar
     void setCatalog(const RrCatalogPtr &reg);
 
     virtual void invoke(const RrQueryBase &query) const;
+
+    virtual void internalStatusCallback(const Status &status);
+
+    template <class UserStatusCb>
+    void registerUserStatusCb(const UserStatusCb &user_status_cb);
+
+    virtual bool hasRegisteredCb();
 
   protected:
     std::string name_;

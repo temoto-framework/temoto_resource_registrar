@@ -31,7 +31,7 @@
 
 namespace temoto_resource_registrar
 {
-  typedef void (*StatusFunction)(const std::string &id, Status status, std::string &message);
+  //typedef void (*StatusFunction)(const std::string &id, Status status, std::string &message);
 
   template <class ContentClass>
   class MapContainer
@@ -87,6 +87,15 @@ namespace temoto_resource_registrar
       return false;
     }
 
+    const bool hasCallback(const std::string &key) {
+      auto it = rr_contents_.find(key);
+      if (it != rr_contents_.end())
+      {
+        return (it->second.get())->hasRegisteredCb();
+      }
+      return false;
+    }
+
   protected:
     std::unordered_map<std::string, std::unique_ptr<ContentClass>>
         rr_contents_;
@@ -100,7 +109,7 @@ namespace temoto_resource_registrar
   {
   };
 
-/**
+  /**
  * @brief 
  * 
  */
@@ -118,15 +127,24 @@ namespace temoto_resource_registrar
       call<CallClientClass>(&rr, NULL, server, query);
     }
 
-    template <class ServType, class QueryType>
+    template <class ServType, class QueryType, class StatusCallType>
     void call(RrBase &target,
               const std::string &server,
               QueryType &query,
               RrQueryBase *parentQuery = NULL,
-              StatusFunction statusFunc = NULL,
+              StatusCallType statusFunc = NULL,
               bool overrideStatus = false)
     {
-      privateCall<RrClientBase, ServType, QueryType>(NULL, &(target), server, query, parentQuery, statusFunc, overrideStatus);
+      privateCall<RrClientBase, ServType, QueryType, StatusCallType>(NULL, &(target), server, query, parentQuery, statusFunc, overrideStatus);
+    }
+
+    template <class ServType, class QueryType>
+    void call(RrBase &target,
+              const std::string &server,
+              QueryType &query,
+              RrQueryBase *parentQuery = NULL)
+    {
+      privateCall<RrClientBase, ServType, QueryType, void *>(NULL, &(target), server, query, parentQuery, NULL, false);
     }
 
     size_t serverCount() { return servers_.getIds().size(); }
@@ -135,8 +153,6 @@ namespace temoto_resource_registrar
 
     bool unload(RrBase &target, const std::string &id)
     {
-
-      status_callbacks_.erase(id);
       return target.localUnload(id);
     }
 
@@ -226,11 +242,11 @@ namespace temoto_resource_registrar
       std::cout << "in handleStatus " << id << std::endl;
       std::cout << "rr - " << name_ << std::endl;
 
-      if (status_callbacks_.count(id))
+      /*if (status_callbacks_.count(id))
       {
         auto callback = status_callbacks_[id];
         callback(id, status, message);
-      }
+      }*/
 
       std::string originQueryId = rr_catalog_->getOriginQueryId(id);
 
@@ -242,19 +258,26 @@ namespace temoto_resource_registrar
       std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusEND>>>>>>>>>>>>>>>>>>>" << std::endl;
     }
 
-    std::unordered_map<std::string, StatusFunction> callbacks()
+    std::vector<std::string> callbacks()
     {
-      return status_callbacks_;
+      std::vector<std::string> cbVector;
+      int counter = 0;
+      for (const std::string &id : clients_.getIds())
+      {
+        if (clients_.hasCallback(id))
+          cbVector.push_back(id);
+      }
+
+      return cbVector;
     }
 
   protected:
     RrServers servers_;
     RrClients clients_;
     RrCatalogPtr rr_catalog_;
-    std::unordered_map<std::string, StatusFunction> status_callbacks_;
 
-    template <class CallClientClass, class QueryClass>
-    void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query)
+    template <class CallClientClass, class QueryClass, class StatusCallType>
+    void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
     {
       std::string clientName = rr + "_" + server;
 
@@ -265,11 +288,19 @@ namespace temoto_resource_registrar
         std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
         client->setCatalog(rr_catalog_);
 
+        //client->registerUserStatusCb(statusCallback);
+
         clients_.add(std::move(client));
       }
 
       auto &client = clients_.getElement(clientName);
       auto dynamicRef = dynamic_cast<const CallClientClass &>(client);
+
+      if (overwriteCb && dynamicRef.hasRegisteredCb())
+      {
+        //dynamicRef.registerUserStatusCb(statusCallback);
+      }
+
       dynamicRef.invoke(query);
     }
 
@@ -291,8 +322,8 @@ namespace temoto_resource_registrar
      * @param statusFunc 
      * @param overrideFunc 
      */
-    template <class CallClientClass, class ServType, class QueryType>
-    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, StatusFunction statusFunc, bool overrideFunc)
+    template <class CallClientClass, class ServType, class QueryType, class StatusCallType>
+    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, const StatusCallType &statusFunc, bool overrideFunc)
     {
       mtx.lock();
 
@@ -309,7 +340,7 @@ namespace temoto_resource_registrar
       {
         std::cout << "executing client call, also setting rr to " << *(rr) << std::endl;
         query.setRr(*(rr));
-        handleClientCall<CallClientClass, QueryType>(*(rr), server, query);
+        handleClientCall<CallClientClass, QueryType>(*(rr), server, query, statusFunc, overrideFunc);
         std::cout << "query id: " << query.id() << std::endl;
       }
       else
@@ -325,20 +356,11 @@ namespace temoto_resource_registrar
         parentQuery->includeDependency(query.rr(), query.id());
       }
 
-      if (statusFunc != NULL)
-      {
-        std::cout << "statusFunc != NULL" << std::endl;
-        if (writeCallback(query.id(), overrideFunc))
-        {
-          std::cout << "writeCallback(query.id(), overrideFunc) " << std::endl;
-          status_callbacks_[query.id()] = statusFunc;
-        }
-      }
-
       mtx.unlock();
     }
 
-    virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency) {
+    virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
+    {
       std::cout << "private unloadResource() " << id << std::endl;
       std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
       std::cout << "dependencyServer " << dependencyServer << std::endl;
@@ -350,21 +372,13 @@ namespace temoto_resource_registrar
       }
     }
 
-        private : std::string name_;
+  private:
+    std::string name_;
 
     std::unordered_map<std::string, RrBase *> rr_references_;
 
     std::thread::id workId;
     std::mutex mtx;
-
-    bool writeCallback(const std::string &id, bool override)
-    {
-      if (override)
-        return true;
-      if (!status_callbacks_.count(id))
-        return true;
-      return false;
-    }
   };
 
 } // namespace temoto_resource_registrar

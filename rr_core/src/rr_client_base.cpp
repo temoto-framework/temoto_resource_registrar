@@ -40,4 +40,17 @@ namespace temoto_resource_registrar
   void RrClientBase::invoke(const RrQueryBase &query) const
   {
   }
+
+  void RrClientBase::internalStatusCallback(const Status &status)
+  {
+  }
+
+  template <class UserStatusCb>
+  void RrClientBase::registerUserStatusCb(const UserStatusCb &user_status_cb)
+  {
+  }
+
+  bool RrClientBase::hasRegisteredCb()
+  {
+  }
 } // namespace temoto_resource_registrar
