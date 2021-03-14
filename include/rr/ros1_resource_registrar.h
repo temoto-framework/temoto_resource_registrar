@@ -1,3 +1,6 @@
+#ifndef TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
+#define TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
+
 #include "ros/console.h"
 #include "ros/ros.h"
 
@@ -8,8 +11,11 @@
 #include "rr/ros1_client.h"
 #include "rr/ros1_server.h"
 
+#include <functional>
+
 namespace temoto_resource_registrar
 {
+
   /**
    * @brief Implementation of the temoto_resource_registrar::RrBase to work on ROS1. 
    * The init() function should be called once ROS is initialized. Else unload and other
@@ -66,7 +72,7 @@ namespace temoto_resource_registrar
               const std::string &server,
               QueryType &query,
               RrQueryBase *parentQuery = NULL,
-              StatusFunction statusFunc = NULL,
+              std::function<void(std::string, Status)> statusFunc = NULL,
               bool overrideStatus = false)
     {
       Ros1Query<QueryType> wrappedBaseQuery(query);
@@ -78,7 +84,7 @@ namespace temoto_resource_registrar
                                         server,
                                         wrappedBaseQuery,
                                         parentQuery,
-                                        statusFunc,
+                                        NULL,
                                         overrideStatus);
                                         
       query = wrappedBaseQuery.rosQuery();
@@ -163,3 +169,4 @@ namespace temoto_resource_registrar
     }
   };
 }
+#endif

@@ -9,6 +9,7 @@
 #include "rr/ros1_client.h"
 #include "rr/ros1_query.h"
 
+#include <functional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -38,9 +39,21 @@ public:
                                                                           typed_load_callback_ptr_(loadCallback),
                                                                           typed_unload_callback_ptr_(unLoadCallback)
   {
-    ROS_INFO_STREAM("Starting up server..." << name);
-    service_ = nh_.advertiseService(name, &Ros1Server::serverCallback, this);
-    ROS_INFO("Starting up server done!!!");
+    initialize();
+  }
+
+  Ros1Server(const std::string &name,
+             std::function<void(typename ServiceClass::Request &,
+                                typename ServiceClass::Response &)>
+                 member_load_cb,
+             std::function<void(typename ServiceClass::Request &,
+                                typename ServiceClass::Response &)>
+                 member_unload_cb)
+      : temoto_resource_registrar::RrServerBase(name, NULL, NULL),
+        member_load_cb_(member_load_cb),
+        member_unload_cb_(member_unload_cb)
+  {
+    initialize();
   }
 
   /**
@@ -99,6 +112,16 @@ public:
     if (requestId.size() == 0)
     {
       ROS_INFO("NOPE, does not exist");
+      if (typed_load_callback_ptr_ != NULL)
+      {
+        typed_load_callback_ptr_(req, res);
+      }
+      else
+      {
+        member_load_cb_(req, res);
+      }
+
+      ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
 
       typed_load_callback_ptr_(req, res);
 
@@ -111,7 +134,8 @@ public:
 
       Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
 
-      if (wrappedResponse.dependencies().size()) {
+      if (wrappedResponse.dependencies().size())
+      {
         ROS_INFO("Dependency storage required:");
         for (auto const &i : wrappedResponse.dependencies())
         {
@@ -136,9 +160,19 @@ protected:
   void (*typed_load_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
   void (*typed_unload_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
 
+  std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &)> member_load_cb_;
+  std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &)> member_unload_cb_;
+
 private:
   ros::NodeHandle nh_;
   ros::ServiceServer service_;
+
+  void initialize()
+  {
+    ROS_INFO_STREAM("Starting up server..." << name_);
+    service_ = nh_.advertiseService(name_, &Ros1Server::serverCallback, this);
+    ROS_INFO("Starting up server done!!!");
+  }
 
   void storeQuery(const std::string &rawRequest, Ros1Query<ServiceClass> query) const
   {
@@ -157,7 +191,7 @@ private:
     return Ros1Query<ServiceClass>(srvCall);
   }
 
-      typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
+  typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
   {
     std::string serializedResponse = rr_catalog_->processExisting(name_, requestId, query);
     typename ServiceClass::Response fetchedResponse = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
