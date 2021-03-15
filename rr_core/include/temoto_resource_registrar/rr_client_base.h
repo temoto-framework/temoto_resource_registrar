@@ -40,7 +40,7 @@ namespace temoto_resource_registrar
 
     virtual void invoke(const RrQueryBase &query) const;
 
-    virtual void internalStatusCallback(const Status &status);
+    virtual void internalStatusCallback(const StatusTodo &status);
 
     template <class UserStatusCb>
     void registerUserStatusCb(const UserStatusCb &user_status_cb);

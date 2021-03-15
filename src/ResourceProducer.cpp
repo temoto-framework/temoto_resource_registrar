@@ -16,7 +16,7 @@ std::string id = "";
 
 void caller()
 {
-  for (int n = 0; n < 10; ++n)
+  for (int n = 0; n < 1; ++n)
   {
     std::string message = "";
     ROS_INFO("caller...");

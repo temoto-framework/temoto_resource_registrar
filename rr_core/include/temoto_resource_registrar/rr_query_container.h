@@ -3,18 +3,19 @@
 
 namespace temoto_resource_registrar
 {
-  template<class RawData>
+  template <class RawData>
   class QueryContainer
   {
   public:
-    QueryContainer(){};
+    QueryContainer() : empty_(true){};
     QueryContainer(RrQueryBase q,
                    RawData req,
                    RawData data,
                    const std::string &server) : q_(q),
                                                 rawRequest_(req),
                                                 rawQuery_(data),
-                                                responsibleServer_(server)
+                                                responsibleServer_(server),
+                                                empty_(false)
     {
       storeNewId(q.id(), q.origin());
     };
@@ -37,6 +38,8 @@ namespace temoto_resource_registrar
     std::string responsibleServer_;
 
     std::unordered_map<std::string, std::string> rr_ids_;
+
+    bool empty_;
 
   protected:
     friend class boost::serialization::access;

@@ -22,7 +22,7 @@ namespace temoto_resource_registrar
   void RrCatalog::storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData)
   {
     print();
-    std::cout << "in store query..." << std::endl;
+    std::cout << "in store query.." << std::endl;
 
     id_query_map_[reqData] = QueryContainer<RawData>(q, reqData, qData, server);
     server_id_map_[server].insert(q.id());
@@ -181,6 +181,22 @@ namespace temoto_resource_registrar
       if (dependencyEntry.second.dependencies().count(queryId))
       {
         return dependencyEntry.first;
+      }
+    }
+    return "";
+  }
+
+  void RrCatalog::storeClientCallRecord(const std::string &client, const std::string &id)
+  {
+    client_id_map_[client].insert(id);
+  }
+
+  std::string RrCatalog::getIdClient(const std::string &id)
+  {
+    for (auto const &clientQueries : client_id_map_)
+    {
+      if (clientQueries.second.count(id)) {
+        return clientQueries.first;
       }
     }
     return "";

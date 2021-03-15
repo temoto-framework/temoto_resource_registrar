@@ -5,6 +5,7 @@
 #include "ros/ros.h"
 
 #include "temoto_resource_registrar/rr_base.h"
+#include "temoto_resource_registrar/rr_status.h"
 
 #include "temoto_resource_registrar/StatusComponent.h"
 #include "temoto_resource_registrar/UnloadComponent.h"
@@ -73,7 +74,7 @@ namespace temoto_resource_registrar
               const std::string &server,
               QueryType &query,
               RrQueryBase *parentQuery = NULL,
-              std::function<void(QueryType, Status)> statusFunc = NULL,
+              std::function<void(QueryType, StatusTodo)> statusFunc = NULL,
               bool overrideStatus = false)
     {
       Ros1Query<QueryType> wrappedBaseQuery(query);
@@ -81,13 +82,13 @@ namespace temoto_resource_registrar
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
                   Ros1Query<QueryType>,
-                  std::function<void(QueryType, Status)>>(&rr,
-                                                          NULL,
-                                                          server,
-                                                          wrappedBaseQuery,
-                                                          parentQuery,
-                                                          statusFunc,
-                                                          overrideStatus);
+                  std::function<void(QueryType, StatusTodo)>>(&rr,
+                                                              NULL,
+                                                              server,
+                                                              wrappedBaseQuery,
+                                                              parentQuery,
+                                                              statusFunc,
+                                                              overrideStatus);
 
       query = wrappedBaseQuery.rosQuery();
     }
@@ -104,7 +105,7 @@ namespace temoto_resource_registrar
      */
     bool unload(const std::string &rr, const std::string &id)
     {
-      ROS_INFO_STREAM("unload Called  ");
+      ROS_INFO_STREAM("unload Called ");
 
       ros::NodeHandle nh;
 
@@ -129,7 +130,7 @@ namespace temoto_resource_registrar
     virtual void sendStatus(const std::string &id, Status status, std::string &message)
     {
 
-      ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " START");
+      ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " STARTT");
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
 
       ros::NodeHandle nh;
@@ -144,7 +145,7 @@ namespace temoto_resource_registrar
 
         if (unload_clients_.count(clientName) == 0)
         {
-          ROS_INFO_STREAM("creating unload client...");
+          ROS_INFO_STREAM("creating status client...");
           auto sc = nh.serviceClient<StatusComponent>(clientName);
           auto client = std::make_unique<ros::ServiceClient>(sc);
           unload_clients_[clientName] = std::move(client);
@@ -153,8 +154,9 @@ namespace temoto_resource_registrar
 
         statusSrv.request.target = notId.first;
 
-        unload_clients_[clientName] ->call(statusSrv);
+        unload_clients_[clientName]->call(statusSrv);
       }
+
       ROS_INFO_STREAM("Notify ids---");
 
       ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " END");
@@ -162,7 +164,42 @@ namespace temoto_resource_registrar
 
     virtual void handleStatus(const std::string &id, Status status, std::string &message)
     {
-      ROS_INFO_STREAM("handle...");
+
+      ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>");
+      std::string originalId = rr_catalog_->getOriginQueryId(id);
+      auto originalQueryWrapper = rr_catalog_->findOriginalContainer(id);
+      if (originalId.size())
+      {
+        std::unordered_map<std::string, std::string> dependencyMap = rr_catalog_->getDependencies(originalId);
+        std::string firstId = dependencyMap.begin()->first;
+        // stop attempt if dependency
+        if (id != firstId)
+        {
+          return;
+        }
+      }
+
+      std::string clientName = rr_catalog_->getIdClient(id);
+
+      if (clients_.exists(clientName))
+      {
+        ROS_INFO_STREAM("executing user callback, if it exists " << clients_.hasCallback(clientName));
+
+        temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, id, ""};
+
+        clients_.runCallback(clientName, statusInfo);
+      }
+      else
+      {
+        ROS_ERROR_STREAM("THIS IS BAD; NO CLIENT FOR QUERY");
+      }
+
+      if (originalId.size())
+      {
+        sendStatus(originalId, status, message);
+      }
+
+      ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<<handleStatusEND>>>>>>>>>>>>>>>>>>>");
     }
 
   protected:
@@ -201,6 +238,8 @@ namespace temoto_resource_registrar
     bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
     {
       ROS_INFO_STREAM("statusCallback " << req.target);
+      std::string message = "";
+      handleStatus(req.target, temoto_resource_registrar::Status::UPDATE, message);
       return true;
     }
 

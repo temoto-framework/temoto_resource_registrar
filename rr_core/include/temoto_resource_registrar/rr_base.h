@@ -96,6 +96,15 @@ namespace temoto_resource_registrar
       return false;
     }
 
+    const void runCallback(const std::string &key, const StatusTodo &statusInfo)
+    {
+      auto it = rr_contents_.find(key);
+      if (it != rr_contents_.end())
+      {
+        (it->second.get())->internalStatusCallback(statusInfo);
+      }
+    }
+
   protected:
     std::unordered_map<std::string, std::unique_ptr<ContentClass>>
         rr_contents_;
@@ -302,6 +311,8 @@ namespace temoto_resource_registrar
       }
 
       dynamicRef.invoke(query);
+
+      rr_catalog_->storeClientCallRecord(clientName, query.id());
     }
 
     /**

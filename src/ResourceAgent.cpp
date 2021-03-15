@@ -7,9 +7,10 @@ std::string rrName = "AgentRR";
 
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
-void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::Status status)
+void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::StatusTodo status)
 {
-  ROS_INFO_STREAM("IN " << __func__);
+  ROS_INFO_STREAM("-----------------------------------IN " << __func__);
+  
 }
 
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
@@ -22,7 +23,11 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
 
   Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(res.TemotoMetadata);
 
-  std::function<void(temoto_resource_registrar::CounterService, temoto_resource_registrar::Status)> fnCb = statusCallback;
+  auto fnCb = statusCallback;
+
+  temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, "id", ""};
+
+  fnCb(counterSrv, statusInfo);
 
   rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), fnCb);
 
@@ -39,7 +44,7 @@ void RtM1UnloadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto
 
 int main(int argc, char **argv)
 {
-  ROS_INFO("Starting up agent...");
+  ROS_INFO("Starting up agent.........");
   ros::init(argc, argv, "agent_thing");
 
   rr.init();

@@ -96,7 +96,10 @@ namespace temoto_resource_registrar
     std::string getOriginQueryId(const std::string &queryId);
 
     QueryContainer<RawData> findOriginalContainer(const std::string &id);
-    
+
+    void storeClientCallRecord(const std::string &client, const std::string &id);
+    std::string getIdClient(const std::string &id);
+
     void print();
 
   protected:
@@ -106,6 +109,7 @@ namespace temoto_resource_registrar
     void serialize(Archive &ar, const unsigned int /* version */);
 
   private:
+    std::unordered_map<std::string, std::set<std::string>> client_id_map_;
     std::unordered_map<std::string, std::set<std::string>> server_id_map_;
     std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
     std::unordered_map<std::string, DependencyContainer> id_dependency_map_;

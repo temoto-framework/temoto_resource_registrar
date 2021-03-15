@@ -10,7 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS system)
 
-find_library(rr_core REQUIRED)
+#set(rr_core_DIR /usr/local/share/cmake)
+#find_package(rr_core REQUIRED)
 
 add_message_files(
   FILES

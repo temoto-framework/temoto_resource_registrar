@@ -47,6 +47,8 @@ public:
    */
   Ros1Query(const ServiceClass &query) : typed_query_(query)
   {
+    ROS_INFO_STREAM("standard constructor");
+
     setId(selectNonEmpty(typed_query_.request.TemotoMetadata.requestId,
                          typed_query_.response.TemotoMetadata.requestId));
     setRr(selectNonEmpty(typed_query_.request.TemotoMetadata.servingRr,

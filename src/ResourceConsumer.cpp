@@ -71,6 +71,7 @@ int main(int argc, char **argv)
 
   temoto_resource_registrar::LoadComponent loadCall;
   loadCall.request.loadTarget = "CounterService";
+  
 
   rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall);
 

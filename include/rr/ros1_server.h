@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+
 /**
  * @brief A wrapper class for the temoto_resource_registrar::RRServerBase. Provides templating to support multiple message types.
  * This class is responsible for executing resource loading and unloading related logic.
@@ -105,7 +106,6 @@ public:
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
     ROS_INFO("In Server Handler!!!");
-
     std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(req);
 
     std::string generatedId = generateId();
@@ -132,13 +132,16 @@ public:
       ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
 
       rr_catalog_->storeQuery(name_,
-                              wrappedQuery,
-                              serializedRequest,
-                              sanitizeAndSerialize(res));
+                                 wrappedQuery,
+                                 serializedRequest,
+                                 sanitizeAndSerialize(res));
 
       ROS_INFO_STREAM("STORED!!!");
 
+
       Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
+
+      ROS_INFO_STREAM("WRAPPED!!!");
 
       if (wrappedResponse.dependencies().size())
       {
@@ -180,19 +183,13 @@ private:
     ROS_INFO("Starting up server done!!!");
   }
 
-  void storeQuery(const std::string &rawRequest, Ros1Query<ServiceClass> query) const
-  {
-    rr_catalog_->storeQuery(name_,
-                            query,
-                            rawRequest,
-                            sanitizeAndSerialize(query.response()));
-  }
-
   Ros1Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
     ServiceClass srvCall;
     srvCall.request = req;
     srvCall.response = res;
+
+    ROS_INFO_STREAM("wrap start!!!");
 
     return Ros1Query<ServiceClass>(srvCall);
   }
