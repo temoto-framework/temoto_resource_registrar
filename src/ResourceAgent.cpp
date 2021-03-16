@@ -29,7 +29,7 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
 
   fnCb(counterSrv, statusInfo);
 
-  rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), fnCb);
+  rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), statusCallback);
 
   parentQuery.rosQuery(req, res);
 

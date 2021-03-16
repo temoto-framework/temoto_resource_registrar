@@ -289,7 +289,7 @@ namespace temoto_resource_registrar
     void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
     {
       std::string clientName = rr + "_" + server;
-
+      bool oldClient = true;
       if (!clients_.exists(clientName))
       {
         std::cout << "creating client! " << clientName << std::endl;
@@ -297,18 +297,21 @@ namespace temoto_resource_registrar
         std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
         client->setCatalog(rr_catalog_);
 
-        //client->registerUserStatusCb(statusCallback);
+        client->registerUserStatusCb(statusCallback);
 
         clients_.add(std::move(client));
+
+        oldClient = false;
       }
 
       auto &client = clients_.getElement(clientName);
       auto dynamicRef = dynamic_cast<const CallClientClass &>(client);
 
-      if ((overwriteCb && dynamicRef.hasRegisteredCb()) || (!dynamicRef.hasRegisteredCb() && statusCallback != NULL))
+      if (overwriteCb && (statusCallback != NULL) && oldClient)
       {
         dynamicRef.registerUserStatusCb(statusCallback);
       }
+      
 
       dynamicRef.invoke(query);
 

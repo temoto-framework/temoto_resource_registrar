@@ -65,9 +65,11 @@ public:
   void internalStatusCallback(const temoto_resource_registrar::StatusTodo &status)
   {
     ROS_INFO_STREAM("internalStatusCallback"
+    
                     << " - " << id());
     if (hasRegisteredCb())
     {
+
       auto idstr = rr_catalog_->getOriginQueryId(status.id_);
 
       ROS_INFO_STREAM("CB exists " << status.id_ << " --- " << idstr);
@@ -92,7 +94,7 @@ public:
   {
     ROS_INFO_STREAM("hasRegisteredCb "
                     << " - " << id());
-    return user_status_cb_ == NULL;
+    return user_status_cb_ != NULL;
   }
 
 protected:

@@ -79,6 +79,7 @@ namespace temoto_resource_registrar
     {
       Ros1Query<QueryType> wrappedBaseQuery(query);
 
+
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
                   Ros1Query<QueryType>,
