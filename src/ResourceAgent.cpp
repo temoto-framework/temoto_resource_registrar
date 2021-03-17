@@ -7,7 +7,7 @@ std::string rrName = "AgentRR";
 
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
-void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::StatusTodo status)
+void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::Status status)
 {
   ROS_INFO_STREAM("-----------------------------------IN " << __func__);
   

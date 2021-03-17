@@ -41,7 +41,7 @@ namespace temoto_resource_registrar
   {
   }
 
-  void RrClientBase::internalStatusCallback(const StatusTodo &status)
+  void RrClientBase::internalStatusCallback(const Status &status)
   {
   }
 

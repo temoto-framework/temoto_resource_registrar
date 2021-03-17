@@ -405,15 +405,6 @@ void RtM2UnloadCB(RrQueryTemplate<Resource2> &query)
   LOG(INFO) << "RtM2UnloadCB called";
 };
 
-void RRStatusFucntion(const std::string &id, Status status, std::string &message)
-{
-  LOG(INFO) << "RRStatusFucntion called " << id;
-  EXPECT_EQ(status, Status::UPDATE);
-  EXPECT_EQ(message, "All OK");
-
-  statusCalls++;
-};
-
 template <typename T>
 bool contains(std::vector<T> vec, const T &elem)
 {

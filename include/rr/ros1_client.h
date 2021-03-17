@@ -15,7 +15,7 @@ template <class ServiceClass>
 class Ros1Client : public temoto_resource_registrar::RrClientBase
 {
 public:
-  typedef std::function<void(ServiceClass, temoto_resource_registrar::StatusTodo)> UserStatusCb;
+  typedef std::function<void(ServiceClass, temoto_resource_registrar::Status)> UserStatusCb;
 
   Ros1Client(const std::string &name) : temoto_resource_registrar::RrClientBase(name)
   {
@@ -62,10 +62,10 @@ public:
     user_status_cb_ = user_status_cb;
   }
 
-  void internalStatusCallback(const temoto_resource_registrar::StatusTodo &status)
+  void internalStatusCallback(const temoto_resource_registrar::Status &status)
   {
     ROS_INFO_STREAM("internalStatusCallback"
-    
+
                     << " - " << id());
     if (hasRegisteredCb())
     {

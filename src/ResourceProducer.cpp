@@ -20,8 +20,7 @@ void caller()
   {
     std::string message = "some message i need to see";
     ROS_INFO("caller...");
-    //rr.sendStatus({temoto_resource_registrar::StatusTodo::State::FATAL, id, message});
-    rr.sendStatus(id, temoto_resource_registrar::Status::FATAL, message);
+    rr.sendStatus({temoto_resource_registrar::Status::State::FATAL, id, message});
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }

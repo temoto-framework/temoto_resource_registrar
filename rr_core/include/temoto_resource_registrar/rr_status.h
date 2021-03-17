@@ -6,9 +6,7 @@
 namespace temoto_resource_registrar
 {
 
-
-  // TODO: Has to be renamed to "Status", after the enum below this struct is removed
-  struct StatusTodo
+  struct Status
   {
 
     enum class State
@@ -23,25 +21,6 @@ namespace temoto_resource_registrar
     State state_;
     std::string id_;
     std::string message_;
-  };
-
-  // TODO: Deprecated, remove this enum
-  enum class Status
-  {
-    OK,
-    UPDATE,
-    WARNING,
-    ERROR,
-    FATAL
-  };
-
-  class StatusMessage {
-    public:
-    protected:
-    private:
-      std::string queryId_;
-      Status status_;
-      std::string message_;
   };
 } // namespace temoto_resource_registrar
 #endif

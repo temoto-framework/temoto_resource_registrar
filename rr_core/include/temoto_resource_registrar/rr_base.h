@@ -96,7 +96,7 @@ namespace temoto_resource_registrar
       return false;
     }
 
-    const void runCallback(const std::string &key, const StatusTodo &statusInfo)
+    const void runCallback(const std::string &key, const Status &statusInfo)
     {
       auto it = rr_contents_.find(key);
       if (it != rr_contents_.end())
@@ -210,44 +210,41 @@ namespace temoto_resource_registrar
 
     bool unloadByServerAndQuery(const std::string &server, const std::string &id) { return servers_.unload(server, id); }
 
-    //virtual void sendStatus(const StatusTodo &status){};
-    virtual void sendStatus(const std::string &id, Status status, const std::string &message)
+    virtual void sendStatus(Status statusData)
     {
-      std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
+      std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(statusData.id_);
       for (auto const &notId : notifyIds)
       {
         std::string clientName = notId.second + "_status";
-        callStatusClient(clientName, notId.first, status, message);
+        callStatusClient(clientName, statusData);
       }
     }
 
-    //virtual void handleStatus(const StatusTodo &status){};
-    virtual void handleStatus(const std::string &id, Status status, const std::string &message)
+    virtual void handleStatus(Status statusData)
     {
-      std::string originalId = rr_catalog_->getOriginQueryId(id);
+      std::string originalId = rr_catalog_->getOriginQueryId(statusData.id_);
       if (originalId.size())
       {
         std::unordered_map<std::string, std::string> dependencyMap = rr_catalog_->getDependencies(originalId);
         std::string firstId = dependencyMap.begin()->first;
         // stop attempt if dependency
-        if (id != firstId)
+        if (statusData.id_ != firstId)
         {
           return;
         }
       }
 
-      std::string clientName = rr_catalog_->getIdClient(id);
+      std::string clientName = rr_catalog_->getIdClient(statusData.id_);
 
       if (clients_.exists(clientName))
       {
-        temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, id, message};
-
-        clients_.runCallback(clientName, statusInfo);
+        clients_.runCallback(clientName, statusData);
       }
 
       if (originalId.size())
       {
-        sendStatus(originalId, status, message);
+        statusData.id_ = originalId;
+        sendStatus(statusData);
       }
     }
 
@@ -269,7 +266,7 @@ namespace temoto_resource_registrar
     RrClients clients_;
     RrCatalogPtr rr_catalog_;
 
-    virtual bool callStatusClient(const std::string &clientName, const std::string &id, Status status, const std::string &message) {};
+    virtual bool callStatusClient(const std::string &clientName, Status statusData) {};
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
     void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)

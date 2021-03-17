@@ -74,16 +74,15 @@ namespace temoto_resource_registrar
               const std::string &server,
               QueryType &query,
               RrQueryBase *parentQuery = NULL,
-              std::function<void(QueryType, StatusTodo)> statusFunc = NULL,
+              std::function<void(QueryType, Status)> statusFunc = NULL,
               bool overrideStatus = false)
     {
       Ros1Query<QueryType> wrappedBaseQuery(query);
 
-
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
                   Ros1Query<QueryType>,
-                  std::function<void(QueryType, StatusTodo)>>(&rr,
+                  std::function<void(QueryType, Status)>>(&rr,
                                                               NULL,
                                                               server,
                                                               wrappedBaseQuery,
@@ -127,13 +126,22 @@ namespace temoto_resource_registrar
 
       return res;
     }
-    
 
   protected:
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> status_clients_;
 
-    virtual bool callStatusClient(const std::string &clientName, const std::string &id, Status status, const std::string &message) {
+    /**
+ * @brief Virtual method that needs to be implemented on every extension of RR_CORE. This method creates and sends the status
+ * callback to a target that is defined in the statusData.
+ * 
+ * @param clientName 
+ * @param statusData 
+ * @return true 
+ * @return false 
+ */
+    virtual bool callStatusClient(const std::string &clientName, Status statusData)
+    {
       ros::NodeHandle nh;
 
       if (unload_clients_.count(clientName) == 0)
@@ -145,9 +153,9 @@ namespace temoto_resource_registrar
       }
       temoto_resource_registrar::StatusComponent statusSrv;
 
-      statusSrv.request.target = id;
-      statusSrv.request.status = static_cast<int>(status);
-      statusSrv.request.message = message;
+      statusSrv.request.target = statusData.id_;
+      statusSrv.request.status = static_cast<int>(statusData.state_);
+      statusSrv.request.message = statusData.message_;
 
       return unload_clients_[clientName]->call(statusSrv);
     };
@@ -185,7 +193,7 @@ namespace temoto_resource_registrar
     {
       ROS_INFO_STREAM("statusCallback " << req.target);
       std::string message = "";
-      handleStatus(req.target, static_cast<Status>(req.status), req.message);
+      handleStatus({static_cast<Status::State>(req.status), req.target, req.message});
       return true;
     }
 
