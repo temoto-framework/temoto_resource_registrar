@@ -131,7 +131,7 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> status_clients_;
 
-    /**
+  /**
  * @brief Virtual method that needs to be implemented on every extension of RR_CORE. This method creates and sends the status
  * callback to a target that is defined in the statusData.
  * 

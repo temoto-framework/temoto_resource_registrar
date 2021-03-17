@@ -261,15 +261,21 @@ namespace temoto_resource_registrar
       return cbVector;
     }
 
-  protected:
-    RrServers servers_;
-    RrClients clients_;
-    RrCatalogPtr rr_catalog_;
-
-    virtual bool callStatusClient(const std::string &clientName, Status statusData) {};
-
+/**
+ * @brief Create a Client object. Used to initializing clients for a RR. If a client is created it will be used for calls to target servers
+ * and a client entity is not created when a call is executed.
+ * 
+ * @tparam CallClientClass 
+ * @tparam QueryClass 
+ * @tparam StatusCallType 
+ * @param rr 
+ * @param server 
+ * @param query 
+ * @param statusCallback 
+ * @param overwriteCb 
+ */
     template <class CallClientClass, class QueryClass, class StatusCallType>
-    void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
+    void createClient(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
     {
       std::string clientName = rr + "_" + server;
       bool oldClient = true;
@@ -294,9 +300,24 @@ namespace temoto_resource_registrar
       {
         dynamicRef.registerUserStatusCb(statusCallback);
       }
-      
+    }
 
-      dynamicRef.invoke(query);
+  protected:
+    RrServers servers_;
+    RrClients clients_;
+    RrCatalogPtr rr_catalog_;
+
+    virtual bool callStatusClient(const std::string &clientName, Status statusData) {};
+
+    template <class CallClientClass, class QueryClass, class StatusCallType>
+    void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
+    {
+      std::string clientName = rr + "_" + server;
+
+      createClient<CallClientClass, QueryClass, StatusCallType>(rr, server, query, statusCallback, overwriteCb);
+
+      auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientName));
+      client.invoke(query);
 
       rr_catalog_->storeClientCallRecord(clientName, query.id());
     }
