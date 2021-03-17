@@ -154,6 +154,8 @@ namespace temoto_resource_registrar
         temoto_resource_registrar::StatusComponent statusSrv;
 
         statusSrv.request.target = notId.first;
+        statusSrv.request.status = static_cast<int>(status);
+        statusSrv.request.message = message;
 
         unload_clients_[clientName]->call(statusSrv);
       }
@@ -163,10 +165,13 @@ namespace temoto_resource_registrar
       ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " END");
     }
 
+    //virtual void handleStatus(StatusTodo status)
     virtual void handleStatus(const std::string &id, Status status, std::string &message)
     {
 
       ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>");
+
+      ROS_INFO_STREAM("GOT FOLLOWING MESSAGE: " << id << " - " << static_cast<int>(status) << " - " << message);
       std::string originalId = rr_catalog_->getOriginQueryId(id);
       auto originalQueryWrapper = rr_catalog_->findOriginalContainer(id);
       if (originalId.size())
@@ -186,7 +191,7 @@ namespace temoto_resource_registrar
       {
         ROS_INFO_STREAM("executing user callback, if it exists " << clients_.hasCallback(clientName));
 
-        temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, id, ""};
+        temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, id, message};
 
         clients_.runCallback(clientName, statusInfo);
       }
@@ -240,7 +245,7 @@ namespace temoto_resource_registrar
     {
       ROS_INFO_STREAM("statusCallback " << req.target);
       std::string message = "";
-      handleStatus(req.target, temoto_resource_registrar::Status::UPDATE, message);
+      handleStatus(req.target, static_cast<Status>(req.status), req.message);
       return true;
     }
 

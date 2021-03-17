@@ -230,6 +230,7 @@ namespace temoto_resource_registrar
       std::cout << "!!!!!!!!!!!!!!!!!!!!!!! " << id << " END " << std::endl;
     }
 
+    //virtual void handleStatus(StatusTodo status)
     virtual void handleStatus(const std::string &id, Status status, std::string &message)
     {
       std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>" << std::endl;
