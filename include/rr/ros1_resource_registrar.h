@@ -127,90 +127,30 @@ namespace temoto_resource_registrar
 
       return res;
     }
-
-    virtual void sendStatus(const std::string &id, Status status, std::string &message)
-    {
-
-      ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " STARTT");
-      std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
-
-      ros::NodeHandle nh;
-
-      ROS_INFO_STREAM("Notify ids---");
-      for (auto const &notId : notifyIds)
-      {
-        std::string originalId = rr_catalog_->getOriginQueryId(notId.first);
-        ROS_INFO_STREAM(notId.first << ": Original: " << originalId << ": serverId: " << notId.second);
-
-        std::string clientName = notId.second + "_status";
-
-        if (unload_clients_.count(clientName) == 0)
-        {
-          ROS_INFO_STREAM("creating status client...");
-          auto sc = nh.serviceClient<StatusComponent>(clientName);
-          auto client = std::make_unique<ros::ServiceClient>(sc);
-          unload_clients_[clientName] = std::move(client);
-        }
-        temoto_resource_registrar::StatusComponent statusSrv;
-
-        statusSrv.request.target = notId.first;
-        statusSrv.request.status = static_cast<int>(status);
-        statusSrv.request.message = message;
-
-        unload_clients_[clientName]->call(statusSrv);
-      }
-
-      ROS_INFO_STREAM("Notify ids---");
-
-      ROS_INFO_STREAM("!!!!!!!!!!!!!!!!!!!!!! sendStatus " << id << " END");
-    }
-
-    //virtual void handleStatus(StatusTodo status)
-    virtual void handleStatus(const std::string &id, Status status, std::string &message)
-    {
-
-      ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>");
-
-      ROS_INFO_STREAM("GOT FOLLOWING MESSAGE: " << id << " - " << static_cast<int>(status) << " - " << message);
-      std::string originalId = rr_catalog_->getOriginQueryId(id);
-      auto originalQueryWrapper = rr_catalog_->findOriginalContainer(id);
-      if (originalId.size())
-      {
-        std::unordered_map<std::string, std::string> dependencyMap = rr_catalog_->getDependencies(originalId);
-        std::string firstId = dependencyMap.begin()->first;
-        // stop attempt if dependency
-        if (id != firstId)
-        {
-          return;
-        }
-      }
-
-      std::string clientName = rr_catalog_->getIdClient(id);
-
-      if (clients_.exists(clientName))
-      {
-        ROS_INFO_STREAM("executing user callback, if it exists " << clients_.hasCallback(clientName));
-
-        temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, id, message};
-
-        clients_.runCallback(clientName, statusInfo);
-      }
-      else
-      {
-        ROS_ERROR_STREAM("THIS IS BAD; NO CLIENT FOR QUERY");
-      }
-
-      if (originalId.size())
-      {
-        sendStatus(originalId, status, message);
-      }
-
-      ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<<handleStatusEND>>>>>>>>>>>>>>>>>>>");
-    }
+    
 
   protected:
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> status_clients_;
+
+    virtual bool callStatusClient(const std::string &clientName, const std::string &id, Status status, const std::string &message) {
+      ros::NodeHandle nh;
+
+      if (unload_clients_.count(clientName) == 0)
+      {
+        ROS_INFO_STREAM("creating status client...");
+        auto sc = nh.serviceClient<StatusComponent>(clientName);
+        auto client = std::make_unique<ros::ServiceClient>(sc);
+        unload_clients_[clientName] = std::move(client);
+      }
+      temoto_resource_registrar::StatusComponent statusSrv;
+
+      statusSrv.request.target = id;
+      statusSrv.request.status = static_cast<int>(status);
+      statusSrv.request.message = message;
+
+      return unload_clients_[clientName]->call(statusSrv);
+    };
 
     virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
     {

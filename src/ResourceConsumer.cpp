@@ -94,6 +94,8 @@ int main(int argc, char **argv)
 
   //rr.unload("AgentRR", load2Id);
 
+  rr.printCatalog();
+
   ros::spin();
 
   ROS_INFO("Exiting consumer....");

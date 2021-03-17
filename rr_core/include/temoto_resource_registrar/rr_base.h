@@ -210,34 +210,21 @@ namespace temoto_resource_registrar
 
     bool unloadByServerAndQuery(const std::string &server, const std::string &id) { return servers_.unload(server, id); }
 
-    virtual void sendStatus(const std::string &id, Status status, std::string &message)
+    //virtual void sendStatus(const StatusTodo &status){};
+    virtual void sendStatus(const std::string &id, Status status, const std::string &message)
     {
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(id);
-      std::cout << "!!!!!!!!!!!!!!!!!!!!!!! " << id << " START " << std::endl;
-
-      std::cout << "notifyIds: ";
       for (auto const &notId : notifyIds)
       {
-        std::cout << notId.first << ", ";
+        std::string clientName = notId.second + "_status";
+        callStatusClient(clientName, notId.first, status, message);
       }
-      std::cout << "\n";
-
-      for (auto const &notId : notifyIds)
-      {
-        rr_references_[notId.second]->handleStatus(notId.first, status, message);
-      }
-
-      std::cout << "!!!!!!!!!!!!!!!!!!!!!!! " << id << " END " << std::endl;
     }
 
-    //virtual void handleStatus(StatusTodo status)
-    virtual void handleStatus(const std::string &id, Status status, std::string &message)
+    //virtual void handleStatus(const StatusTodo &status){};
+    virtual void handleStatus(const std::string &id, Status status, const std::string &message)
     {
-      std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusSTART>>>>>>>>>>>>>>>>>>>" << std::endl;
-
-      // need to check if status is part of a dependency chain. This is to avoid double-status calling
       std::string originalId = rr_catalog_->getOriginQueryId(id);
-
       if (originalId.size())
       {
         std::unordered_map<std::string, std::string> dependencyMap = rr_catalog_->getDependencies(originalId);
@@ -249,23 +236,19 @@ namespace temoto_resource_registrar
         }
       }
 
-      std::cout << "in handleStatus " << id << std::endl;
-      std::cout << "rr - " << name_ << std::endl;
+      std::string clientName = rr_catalog_->getIdClient(id);
 
-      /*if (status_callbacks_.count(id))
+      if (clients_.exists(clientName))
       {
-        auto callback = status_callbacks_[id];
-        callback(id, status, message);
-      }*/
+        temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, id, message};
 
-      std::string originQueryId = rr_catalog_->getOriginQueryId(id);
-
-      if (originQueryId.size())
-      {
-        std::cout << "found upward id- " << originQueryId << std::endl;
-        sendStatus(originQueryId, status, message);
+        clients_.runCallback(clientName, statusInfo);
       }
-      std::cout << "<<<<<<<<<<<<<<<<<<<handleStatusEND>>>>>>>>>>>>>>>>>>>" << std::endl;
+
+      if (originalId.size())
+      {
+        sendStatus(originalId, status, message);
+      }
     }
 
     std::vector<std::string> callbacks()
@@ -285,6 +268,8 @@ namespace temoto_resource_registrar
     RrServers servers_;
     RrClients clients_;
     RrCatalogPtr rr_catalog_;
+
+    virtual bool callStatusClient(const std::string &clientName, const std::string &id, Status status, const std::string &message) {};
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
     void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)

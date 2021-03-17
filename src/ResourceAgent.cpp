@@ -23,12 +23,6 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
 
   Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(res.TemotoMetadata);
 
-  auto fnCb = statusCallback;
-
-  temoto_resource_registrar::StatusTodo statusInfo = {temoto_resource_registrar::StatusTodo::State::OK, "id", ""};
-
-  fnCb(counterSrv, statusInfo);
-
   rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), statusCallback);
 
   parentQuery.rosQuery(req, res);
