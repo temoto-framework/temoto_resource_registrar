@@ -217,8 +217,9 @@ namespace temoto_resource_registrar
       for (auto const &notId : notifyIds)
       {
         std::string clientName = notId.second + "_status";
-        std::cout << "\t\t callStatusClient for client name" << clientName << std::endl;
-        callStatusClient(clientName, statusData);
+        std::cout << "\t callStatusClient for client name" << clientName << std::endl;
+        bool statusResult = callStatusClient(clientName, statusData);
+        std::cout << "\t call result: " << statusResult << std::endl;
       }
     }
 
