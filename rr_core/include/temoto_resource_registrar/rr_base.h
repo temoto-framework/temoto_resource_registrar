@@ -212,16 +212,19 @@ namespace temoto_resource_registrar
 
     virtual void sendStatus(Status statusData)
     {
+      std::cout << "core sendStatus " << statusData.id_ << std::endl;
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(statusData.id_);
       for (auto const &notId : notifyIds)
       {
         std::string clientName = notId.second + "_status";
+        std::cout << "\t\t callStatusClient for client name" << clientName << std::endl;
         callStatusClient(clientName, statusData);
       }
     }
 
     virtual void handleStatus(Status statusData)
     {
+      std::cout << "-----entered handleStatus " << statusData.id_ << std::endl;
       std::string originalId = rr_catalog_->getOriginQueryId(statusData.id_);
       if (originalId.size())
       {
@@ -238,14 +241,17 @@ namespace temoto_resource_registrar
 
       if (clients_.exists(clientName))
       {
+        std::cout << "\t\tcalling callback of client " << clientName << std::endl;
         clients_.runCallback(clientName, statusData);
       }
 
       if (originalId.size())
       {
         statusData.id_ = originalId;
+        std::cout << "\t\tsendStatus to target " << statusData.id_ << std::endl;
         sendStatus(statusData);
       }
+      std::cout << "-----exited handleStatus " << statusData.id_ << std::endl;
     }
 
     std::vector<std::string> callbacks()

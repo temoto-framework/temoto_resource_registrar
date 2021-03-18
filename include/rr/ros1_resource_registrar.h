@@ -144,12 +144,13 @@ namespace temoto_resource_registrar
     {
       ros::NodeHandle nh;
 
-      if (unload_clients_.count(clientName) == 0)
+      if (status_clients_.count(clientName) == 0)
       {
         ROS_INFO_STREAM("creating status client...");
         auto sc = nh.serviceClient<StatusComponent>(clientName);
         auto client = std::make_unique<ros::ServiceClient>(sc);
-        unload_clients_[clientName] = std::move(client);
+        status_clients_[clientName] = std::move(client);
+        ROS_INFO_STREAM("client " << clientName << " created");
       }
       temoto_resource_registrar::StatusComponent statusSrv;
 
@@ -157,7 +158,9 @@ namespace temoto_resource_registrar
       statusSrv.request.status = static_cast<int>(statusData.state_);
       statusSrv.request.message = statusData.message_;
 
-      return unload_clients_[clientName]->call(statusSrv);
+      ROS_INFO_STREAM("calling status client " << clientName << " target id: " <<  statusData.id_);
+
+      return status_clients_[clientName]->call(statusSrv);
     };
 
     virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
@@ -192,7 +195,6 @@ namespace temoto_resource_registrar
     bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
     {
       ROS_INFO_STREAM("statusCallback " << req.target);
-      std::string message = "";
       handleStatus({static_cast<Status::State>(req.status), req.target, req.message});
       return true;
     }
