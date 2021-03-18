@@ -64,29 +64,16 @@ public:
 
   void internalStatusCallback(const temoto_resource_registrar::Status &status)
   {
-    ROS_INFO_STREAM("internalStatusCallback"
-
-                    << " - " << id());
+    ROS_INFO_STREAM("internalStatusCallback" << " - " << id());
     if (hasRegisteredCb())
     {
+      typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialisedRequest_);
+      typename ServiceClass::Response response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialisedRsponse_);
 
-      auto idstr = rr_catalog_->getOriginQueryId(status.id_);
-
-      ROS_INFO_STREAM("CB exists " << status.id_ << " --- " << idstr);
-
-      auto container = rr_catalog_->findOriginalContainer(idstr);
-      if (!container.empty_) {
-        typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(container.rawRequest_);
-        typename ServiceClass::Response response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(container.rawQuery_);
-
-        ServiceClass query; // TODO: get the query from the rr_catalog;
-        query.request = request;
-        query.response = response;
-        user_status_cb_(query, status); // TODO: needs exception handling
-      } else {
-        ROS_INFO_STREAM("NO CONTAINER");
-      }
-        
+      ServiceClass query; // TODO: get the query from the rr_catalog;
+      query.request = request;
+      query.response = response;
+      user_status_cb_(query, status); // TODO: needs exception handling
     }
   }
 

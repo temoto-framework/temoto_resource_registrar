@@ -5,6 +5,11 @@
 std::string rrName = "ConsumerRR";
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
+void statusCallback(temoto_resource_registrar::LoadComponent msg, temoto_resource_registrar::Status status)
+{
+  ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialisedRequest_.size() << " - " << msg.request.TemotoMetadata.originRr);
+}
+
 int main(int argc, char **argv)
 {
   ROS_INFO("Starting up consumer...");
@@ -71,9 +76,8 @@ int main(int argc, char **argv)
 
   temoto_resource_registrar::LoadComponent loadCall;
   loadCall.request.loadTarget = "CounterService";
-  
 
-  rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall);
+  rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, NULL, statusCallback);
 
   std::string load1Id = loadCall.response.TemotoMetadata.requestId;
 

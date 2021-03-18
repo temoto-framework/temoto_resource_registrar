@@ -9,8 +9,7 @@ temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
 void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::Status status)
 {
-  ROS_INFO_STREAM("-----------------------------------IN " << __func__);
-  
+  ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialisedRequest_.size() << " - " << msg.request.TemotoMetadata.originRr);
 }
 
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)

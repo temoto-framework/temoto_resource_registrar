@@ -249,6 +249,19 @@ namespace temoto_resource_registrar
       if (originalId.size())
       {
         statusData.id_ = originalId;
+
+        auto container = rr_catalog_->findOriginalContainer(statusData.id_);
+        if (!container.empty_)
+        {
+          std::cout << "\t\t\t!container.empty_" << std::endl;
+          statusData.serialisedRequest_ = container.rawRequest_;
+          statusData.serialisedRsponse_ = container.rawQuery_;
+        }
+        else
+        {
+          std::cout << "\t\t\tcontainer.empty_" << std::endl;
+        }
+
         std::cout << "\t\tsendStatus to target " << statusData.id_ << std::endl;
         sendStatus(statusData);
       }

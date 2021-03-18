@@ -154,11 +154,23 @@ namespace temoto_resource_registrar
       }
       temoto_resource_registrar::StatusComponent statusSrv;
 
+      auto container = rr_catalog_->findOriginalContainer(statusData.id_);
+      if (!container.empty_)
+      {
+        ROS_WARN_STREAM("CONTAINER EXISTS");
+        statusSrv.request.serialisedRequest = container.rawRequest_;
+        statusSrv.request.serialisedResponse = container.rawQuery_;
+      }
+      else
+      {
+        ROS_WARN_STREAM("CONTAINER does not EXISTS");
+      }
+
       statusSrv.request.target = statusData.id_;
       statusSrv.request.status = static_cast<int>(statusData.state_);
       statusSrv.request.message = statusData.message_;
 
-      ROS_INFO_STREAM("calling status client " << clientName << " target id: " <<  statusData.id_);
+      ROS_INFO_STREAM("calling status client " << clientName << " target id: " << statusData.id_);
 
       return status_clients_[clientName]->call(statusSrv);
     };
@@ -198,7 +210,7 @@ namespace temoto_resource_registrar
     bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
     {
       ROS_INFO_STREAM("statusCallback " << req.target);
-      handleStatus({static_cast<Status::State>(req.status), req.target, req.message});
+      handleStatus({static_cast<Status::State>(req.status), req.target, req.message, req.serialisedRequest, req.serialisedResponse});
       return true;
     }
 
