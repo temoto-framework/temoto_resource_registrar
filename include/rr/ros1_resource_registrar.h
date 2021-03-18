@@ -178,11 +178,11 @@ namespace temoto_resource_registrar
 
     void startServices()
     {
-      ROS_INFO_STREAM("Starting up services...")
+      ROS_INFO_STREAM("Starting up services...");
       ros::NodeHandle nh;
-      ROS_INFO_STREAM("Starting unload_service_...")
+      ROS_INFO_STREAM("Starting unload_service_... " << name() + "_unloader");
       unload_service_ = nh.advertiseService(name() + "_unloader", &ResourceRegistrarRos1::unloadCallback, this);
-      ROS_INFO_STREAM("Starting status_service_...")
+      ROS_INFO_STREAM("Starting status_service_... " << name() + "_status");
       status_service_ = nh.advertiseService(name() + "_status", &ResourceRegistrarRos1::statusCallback, this);
     }
 
