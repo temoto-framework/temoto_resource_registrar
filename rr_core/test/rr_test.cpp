@@ -639,7 +639,7 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
       ->setSaveOnModify(true);
 
   EXPECT_EQ(config.name(), "testName");
-  EXPECT_EQ(config.location(), "./backup/catalog.backup");
+  EXPECT_EQ(config.location(), "./catalogBackup.backup");
   EXPECT_EQ(config.saveInterval(), 100);
   EXPECT_TRUE(config.saveOnModify());
 
