@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <stdio.h>
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
@@ -644,14 +645,23 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
   str1.reserve(s1.tellg());
   s1.seekg(0, std::ios::beg);
   str1.assign((std::istreambuf_iterator<char>(s1)),
-             std::istreambuf_iterator<char>());
+              std::istreambuf_iterator<char>());
 
   s2.seekg(0, std::ios::end);
   str2.reserve(s2.tellg());
   s2.seekg(0, std::ios::beg);
   str2.assign((std::istreambuf_iterator<char>(s2)),
-             std::istreambuf_iterator<char>());
+              std::istreambuf_iterator<char>());
 
   LOG(INFO) << "comparing results";
   EXPECT_EQ(str1, str2);
+
+  if (remove("./comparison.backup") != 0)
+  {
+    EXPECT_NO_FATAL_FAILURE("File ./comparison.backup deletion failed.");
+  }
+  if (remove("./catalogBackup.backup") != 0)
+  {
+    EXPECT_NO_FATAL_FAILURE("File ./catalogBackup.backup deletion failed.");
+  }
 }
