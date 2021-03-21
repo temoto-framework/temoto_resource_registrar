@@ -23,16 +23,19 @@
 
 #include "rr_catalog.h"
 #include "rr_client_base.h"
+#include "rr_configuration.h"
 #include "rr_query_base.h"
 #include "rr_server_base.h"
 #include "rr_status.h"
+
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <fstream>
 
 #include <mutex>
 
 namespace temoto_resource_registrar
 {
-  //typedef void (*StatusFunction)(const std::string &id, Status status, std::string &message);
-
   template <class ContentClass>
   class MapContainer
   {
@@ -87,7 +90,8 @@ namespace temoto_resource_registrar
       return false;
     }
 
-    const bool hasCallback(const std::string &key) {
+    const bool hasCallback(const std::string &key)
+    {
       auto it = rr_contents_.find(key);
       if (it != rr_contents_.end())
       {
@@ -125,10 +129,48 @@ namespace temoto_resource_registrar
   class RrBase
   {
   public:
+    RrBase(Configuration config) : RrBase(config.name())
+    {
+      configuration_ = config;
+    };
+
     RrBase(std::string name) : name_(name),
                                rr_catalog_(std::make_shared<RrCatalog>()){};
 
     const std::string id();
+
+    void updateCatalog(const RrCatalog &catalog)
+    {
+      rr_catalog_ = std::make_shared<RrCatalog>(catalog);
+    }
+
+    std::string serializeCatalog()
+    {
+      std::stringstream ss;
+      boost::archive::binary_oarchive oa(ss);
+      oa << *(rr_catalog_.get());
+      return ss.str();
+    }
+
+    void saveCatalog()
+    {
+      std::cout << "saving catalog to: " << configuration_.location() << std::endl;
+      std::ofstream ofs(configuration_.location());
+      boost::archive::binary_oarchive oa(ofs);
+      oa << *(rr_catalog_.get());
+      ofs.close();
+    }
+
+    void loadCatalog()
+    {
+      std::cout << "loading catalog from: " << configuration_.location() << std::endl;
+      std::ifstream ifs(configuration_.location(), std::ios::binary);
+      boost::archive::binary_iarchive ia(ifs);
+      RrCatalog catalog;
+      ia >> catalog;
+
+      updateCatalog(catalog);
+    }
 
     template <class CallClientClass>
     void call(const std::string &rr, const std::string &server, RrQueryBase &query)
@@ -281,7 +323,7 @@ namespace temoto_resource_registrar
       return cbVector;
     }
 
-/**
+    /**
  * @brief Create a Client object. Used to initializing clients for a RR. If a client is created it will be used for calls to target servers
  * and a client entity is not created when a call is executed.
  * 
@@ -327,7 +369,10 @@ namespace temoto_resource_registrar
     RrClients clients_;
     RrCatalogPtr rr_catalog_;
 
-    virtual bool callStatusClient(const std::string &clientName, Status statusData) {};
+    Configuration configuration_;
+
+    virtual bool
+    callStatusClient(const std::string &clientName, Status statusData){};
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
     void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
@@ -412,9 +457,7 @@ namespace temoto_resource_registrar
 
   private:
     std::string name_;
-
     std::unordered_map<std::string, RrBase *> rr_references_;
-
     std::thread::id workId;
     std::mutex mtx;
   };

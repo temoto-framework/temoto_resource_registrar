@@ -19,13 +19,9 @@
 
 #include "rr_query_request.h"
 #include "rr_query_response.h"
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/access.hpp>
-#include <boost/serialization/set.hpp>
-#include <boost/serialization/vector.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #include <iostream>
-#include <map>
 #include <string>
 #include <unordered_map>
 
@@ -63,6 +59,14 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, std::string> dependentQueryIds_;
     std::string servingRr_;
     std::string originRr_;
+
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &requestId_ &dependentQueryIds_ &servingRr_ &originRr_;
+    }
 
   private:
   };

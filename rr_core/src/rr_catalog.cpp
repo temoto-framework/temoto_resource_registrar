@@ -21,14 +21,12 @@ namespace temoto_resource_registrar
 
   void RrCatalog::storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData)
   {
-    print();
     std::cout << "in store query.." << std::endl;
 
     id_query_map_[reqData] = QueryContainer<RawData>(q, reqData, qData, server);
     server_id_map_[server].insert(q.id());
 
     std::cout << "storage done..." << std::endl;
-    print();
   }
 
   std::string RrCatalog::queryExists(const std::string &server, RawData reqData)
@@ -241,12 +239,6 @@ namespace temoto_resource_registrar
       std::cout << std::endl;
       std::cout << "}" << std::endl;
     }
-  }
-
-  template <class Archive>
-  void RrCatalog::serialize(Archive &ar, const unsigned int /* version */)
-  {
-    ar &server_id_map_ &id_query_map_ &id_dependency_map_;
   }
 
 } // namespace temoto_resource_registrar

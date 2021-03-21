@@ -21,7 +21,9 @@
 #include "rr_query_container.h"
 
 #include <algorithm>
-#include <boost/functional/hash.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/set.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #include <map>
 #include <memory>
 #include <set>
@@ -106,15 +108,16 @@ namespace temoto_resource_registrar
     friend class boost::serialization::access;
 
     template <class Archive>
-    void serialize(Archive &ar, const unsigned int /* version */);
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &server_id_map_ &client_id_map_ &id_query_map_ &id_dependency_map_;
+    }
 
   private:
     std::unordered_map<std::string, std::set<std::string>> client_id_map_;
     std::unordered_map<std::string, std::set<std::string>> server_id_map_;
     std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
     std::unordered_map<std::string, DependencyContainer> id_dependency_map_;
-
-    
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;

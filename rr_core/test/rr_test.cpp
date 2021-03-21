@@ -8,6 +8,7 @@
 #include <unordered_map>
 
 #include "temoto_resource_registrar/rr_base.h"
+#include "temoto_resource_registrar/rr_configuration.h"
 #include "temoto_resource_registrar/rr_serializable.h"
 #include "temoto_resource_registrar/rr_server_base.h"
 
@@ -278,7 +279,7 @@ public:
 protected:
   void (*typed_load_callback_ptr_)(RrQueryTemplate<MessageType> &);
   void (*typed_unload_callback_ptr_)(RrQueryTemplate<MessageType> &);
-  
+
 private:
   void storeQuery(const std::string &rawRequest, RrQueryTemplate<MessageType> query) const
   {
@@ -597,4 +598,54 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r2LoadCalls, 4);
 }
 
+TEST_F(RrBaseTest, RegistrarSerializationTest)
+{
+  RrCatalog catalog;
+  RrQueryBase query;
+  query.setId("queryId1");
+  query.setOrigin("originRR");
+  query.setRr("RR");
 
+  catalog.storeQuery("server1", query, "reqData", "qData");
+  catalog.storeClientCallRecord("clientName", "queryId2");
+  catalog.storeDependency("queryId1", "rr2", "dependencyId1");
+
+  LOG(INFO) << "Creating new Rr";
+  RrBase baseRr("testRr");
+  std::string baseCatalog = baseRr.serializeCatalog();
+  LOG(INFO) << "overWriting Catalog";
+  baseRr.updateCatalog(catalog);
+  std::string updatedCatalog = baseRr.serializeCatalog();
+  LOG(INFO) << "checking Catalog";
+  EXPECT_NE(baseCatalog, updatedCatalog);
+
+  std::stringstream ss2(updatedCatalog);
+  boost::archive::binary_iarchive ia(ss2);
+  RrCatalog newCatalog;
+  ia >> newCatalog;
+
+  baseRr.updateCatalog(newCatalog);
+  std::string updatedCatalogNew = baseRr.serializeCatalog();
+
+  EXPECT_EQ(updatedCatalogNew.size(), updatedCatalog.size());
+}
+
+TEST_F(RrBaseTest, RegistrarConfigurationTest)
+{
+  Configuration config;
+  config.setName("testName")
+      ->setLocation("./catalogBackup.backup")
+      ->setSaveInterval(100)
+      ->setSaveOnModify(true);
+
+  EXPECT_EQ(config.name(), "testName");
+  EXPECT_EQ(config.location(), "./backup/catalog.backup");
+  EXPECT_EQ(config.saveInterval(), 100);
+  EXPECT_TRUE(config.saveOnModify());
+
+  RrBase rr(config);
+  EXPECT_EQ(rr.name(), "testName");
+
+  rr.saveCatalog();
+  rr.loadCatalog();
+}
