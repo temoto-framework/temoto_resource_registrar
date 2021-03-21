@@ -598,38 +598,6 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(r2LoadCalls, 4);
 }
 
-TEST_F(RrBaseTest, RegistrarSerializationTest)
-{
-  RrCatalog catalog;
-  RrQueryBase query;
-  query.setId("queryId1");
-  query.setOrigin("originRR");
-  query.setRr("RR");
-
-  catalog.storeQuery("server1", query, "reqData", "qData");
-  catalog.storeClientCallRecord("clientName", "queryId2");
-  catalog.storeDependency("queryId1", "rr2", "dependencyId1");
-
-  LOG(INFO) << "Creating new Rr";
-  RrBase baseRr("testRr");
-  std::string baseCatalog = baseRr.serializeCatalog();
-  LOG(INFO) << "overWriting Catalog";
-  baseRr.updateCatalog(catalog);
-  std::string updatedCatalog = baseRr.serializeCatalog();
-  LOG(INFO) << "checking Catalog";
-  EXPECT_NE(baseCatalog, updatedCatalog);
-
-  std::stringstream ss2(updatedCatalog);
-  boost::archive::binary_iarchive ia(ss2);
-  RrCatalog newCatalog;
-  ia >> newCatalog;
-
-  baseRr.updateCatalog(newCatalog);
-  std::string updatedCatalogNew = baseRr.serializeCatalog();
-
-  EXPECT_EQ(updatedCatalogNew.size(), updatedCatalog.size());
-}
-
 TEST_F(RrBaseTest, RegistrarConfigurationTest)
 {
   Configuration config;
@@ -643,9 +611,47 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
   EXPECT_EQ(config.saveInterval(), 100);
   EXPECT_TRUE(config.saveOnModify());
 
+  RrCatalog catalog;
+  RrQueryBase query;
+  query.setId("queryId1");
+  query.setOrigin("originRR");
+  query.setRr("RR");
+
+  catalog.storeQuery("server1", query, "reqData", "qData");
+  catalog.storeClientCallRecord("clientName", "queryId2");
+  catalog.storeDependency("queryId1", "rr2", "dependencyId1");
+
   RrBase rr(config);
   EXPECT_EQ(rr.name(), "testName");
 
+  rr.updateCatalog(catalog);
+
   rr.saveCatalog();
   rr.loadCatalog();
+
+  std::ofstream ofs("./comparison.backup");
+  boost::archive::binary_oarchive oa(ofs);
+  oa << catalog;
+  ofs.close();
+
+  std::ifstream s1("./catalogBackup.backup");
+  std::ifstream s2("./comparison.backup");
+
+  std::string str1;
+  std::string str2;
+
+  s1.seekg(0, std::ios::end);
+  str1.reserve(s1.tellg());
+  s1.seekg(0, std::ios::beg);
+  str1.assign((std::istreambuf_iterator<char>(s1)),
+             std::istreambuf_iterator<char>());
+
+  s2.seekg(0, std::ios::end);
+  str2.reserve(s2.tellg());
+  s2.seekg(0, std::ios::beg);
+  str2.assign((std::istreambuf_iterator<char>(s2)),
+             std::istreambuf_iterator<char>());
+
+  LOG(INFO) << "comparing results";
+  EXPECT_EQ(str1, str2);
 }
