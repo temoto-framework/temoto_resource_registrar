@@ -15,29 +15,31 @@ void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resour
   for (temoto_resource_registrar::LoadComponent const &i : rr.getServerQueries<temoto_resource_registrar::LoadComponent>(n))
   {
     ROS_INFO_STREAM(i.response.TemotoMetadata.requestId);
+    ROS_INFO_STREAM(i.response.loadMessage);
   }
 }
 
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
 {
-  ROS_INFO("------------------------");
-  ROS_INFO("IN LOAD CB");
+  ROS_INFO("IN LOAD CB ------------------------");
 
+  ROS_INFO_STREAM("1" << req.loadTarget);
   if (req.loadTarget == "CounterService")
   {
-
+    ROS_INFO_STREAM("2" << req.loadTarget);
     temoto_resource_registrar::CounterService counterSrv;
     counterSrv.request.startPoint = 1;
 
     Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(res.TemotoMetadata);
 
     rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), statusCallback);
-
+    ROS_INFO_STREAM("3" << req.loadTarget);
     parentQuery.rosQuery(req, res);
+    ROS_INFO_STREAM("4" << req.loadTarget);
   }
-
+  ROS_INFO_STREAM("5" << req.loadTarget);
   res.loadMessage = req.loadTarget;
-  ROS_INFO("------------------------");
+  ROS_INFO("IN LOAD CB------------------------");
 }
 
 void RtM1UnloadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)

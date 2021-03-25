@@ -100,8 +100,8 @@ public:
   {
     ServiceClass sq = rosQuery();
 
-    req = sq.request;
-    res = sq.response;
+    req.TemotoMetadata = sq.request.TemotoMetadata;
+    res.TemotoMetadata = sq.response.TemotoMetadata;
   }
 
   /**

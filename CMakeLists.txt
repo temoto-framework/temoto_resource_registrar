@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation)
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
 
 #set(rr_core_DIR /usr/local/share/cmake)
 #find_package(rr_core REQUIRED)
@@ -49,6 +49,7 @@ target_link_libraries(
   resource_producer
   ${catkin_LIBRARIES}
   rr_core
+  ${Boost_LIBRARIES}
 )
 
 add_dependencies(
@@ -64,6 +65,7 @@ target_link_libraries(
   resource_consumer
   ${catkin_LIBRARIES}
   rr_core
+  ${Boost_LIBRARIES}
 )
 
 add_dependencies(
@@ -79,6 +81,7 @@ target_link_libraries(
   resource_agent
   ${catkin_LIBRARIES}
   rr_core
+  ${Boost_LIBRARIES}
 )
 
 add_dependencies(
