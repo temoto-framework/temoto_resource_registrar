@@ -605,74 +605,79 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
 TEST_F(RrBaseTest, RegistrarConfigurationTest)
 {
-  Configuration config;
-  config.setName("testName")
-      ->setLocation("./catalogBackup.backup")
-      ->setSaveInterval(100)
-      ->setSaveOnModify(true);
 
-  EXPECT_EQ(config.name(), "testName");
-  EXPECT_EQ(config.location(), "./catalogBackup.backup");
-  EXPECT_EQ(config.saveInterval(), 100);
-  EXPECT_TRUE(config.saveOnModify());
+  {
+    Configuration config;
+    config.setName("testName")
+        ->setLocation("./catalogBackup.backup")
+        ->setSaveInterval(100)
+        ->setSaveOnModify(true)
+        ->setEraseOnDestruct(true);
 
-  RrCatalog catalog;
-  RrQueryBase query;
-  query.setId("queryId1");
-  query.setOrigin("originRR");
-  query.setRr("RR");
+    EXPECT_EQ(config.name(), "testName");
+    EXPECT_EQ(config.location(), "./catalogBackup.backup");
+    EXPECT_EQ(config.saveInterval(), 100);
+    EXPECT_TRUE(config.saveOnModify());
 
-  catalog.storeQuery("server1", query, "reqData", "qData");
-  catalog.storeClientCallRecord("clientName", "queryId2");
-  catalog.storeDependency("queryId1", "rr2", "dependencyId1");
+    RrCatalog catalog;
+    RrQueryBase query;
+    query.setId("queryId1");
+    query.setOrigin("originRR");
+    query.setRr("RR");
 
-  RrBase rr(config);
-  EXPECT_EQ(rr.name(), "testName");
+    catalog.storeQuery("server1", query, "reqData", "qData");
+    catalog.storeClientCallRecord("clientName", "queryId2");
+    catalog.storeDependency("queryId1", "rr2", "dependencyId1");
 
-  rr.updateCatalog(catalog);
+    RrBase rr(config);
+    EXPECT_EQ(rr.name(), "testName");
 
-  rr.saveCatalog();
-  rr.loadCatalog();
+    rr.updateCatalog(catalog);
 
-  rr.saveCatalog();
-  rr.loadCatalog();
+    rr.saveCatalog();
+    rr.loadCatalog();
 
-  config.setLocation("./catalogBackup.backup2");
-  rr.updateConfiguration(config);
+    rr.saveCatalog();
+    rr.loadCatalog();
 
-  rr.saveCatalog();
-  rr.loadCatalog();
+    config.setLocation("./catalogBackup.backup2");
+    rr.updateConfiguration(config);
 
-  rr.saveCatalog();
-  rr.loadCatalog();
+    rr.saveCatalog();
+    rr.loadCatalog();
 
-  std::ifstream s1("./catalogBackup.backup");
-  std::ifstream s2("./catalogBackup.backup2");
+    rr.saveCatalog();
+    rr.loadCatalog();
 
-  std::string str1;
-  std::string str2;
+    std::ifstream s1("./catalogBackup.backup");
+    std::ifstream s2("./catalogBackup.backup2");
 
-  s1.seekg(0, std::ios::end);
-  str1.reserve(s1.tellg());
-  s1.seekg(0, std::ios::beg);
-  str1.assign((std::istreambuf_iterator<char>(s1)),
-              std::istreambuf_iterator<char>());
+    std::string str1;
+    std::string str2;
 
-  s2.seekg(0, std::ios::end);
-  str2.reserve(s2.tellg());
-  s2.seekg(0, std::ios::beg);
-  str2.assign((std::istreambuf_iterator<char>(s2)),
-              std::istreambuf_iterator<char>());
+    s1.seekg(0, std::ios::end);
+    str1.reserve(s1.tellg());
+    s1.seekg(0, std::ios::beg);
+    str1.assign((std::istreambuf_iterator<char>(s1)),
+                std::istreambuf_iterator<char>());
 
-  LOG(INFO) << "comparing results";
-  EXPECT_EQ(str1.size(), str2.size());
+    s2.seekg(0, std::ios::end);
+    str2.reserve(s2.tellg());
+    s2.seekg(0, std::ios::beg);
+    str2.assign((std::istreambuf_iterator<char>(s2)),
+                std::istreambuf_iterator<char>());
+
+    LOG(INFO) << "comparing results";
+    EXPECT_EQ(str1.size(), str2.size());    
+  }
+  LOG(INFO) << "Destroy delete test";
 
   if (remove("./catalogBackup.backup") != 0)
   {
-    EXPECT_NO_FATAL_FAILURE("File ./catalogBackup.backup deletion failed.");
+    FAIL() << "File ./catalogBackup.backup deletion failed.";
   }
-  if (remove("./catalogBackup.backup2") != 0)
+  if (remove("./catalogBackup.backup2") == 0)
   {
-    EXPECT_NO_FATAL_FAILURE("File ./catalogBackup.backup2 deletion failed.");
+    FAIL() << "File ./catalogBackup.backup2 was not deleted by destructor.";
   }
 }

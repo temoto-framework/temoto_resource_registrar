@@ -25,10 +25,16 @@ namespace temoto_resource_registrar
       save_interval_ = interval;
       return this;
     }
-    // TODO - implement
-    Configuration *setSaveOnModify(const int &saveOnModify)
+
+    Configuration *setSaveOnModify(const bool &saveOnModify)
     {
       save_on_modify_ = saveOnModify;
+      return this;
+    }
+
+    Configuration *setEraseOnDestruct(const bool &eraseOnDestruct)
+    {
+      erase_on_destruct_ = eraseOnDestruct;
       return this;
     }
 
@@ -52,12 +58,18 @@ namespace temoto_resource_registrar
       return save_on_modify_;
     }
 
+    bool eraseOnDestruct()
+    {
+      return erase_on_destruct_;
+    }
+
   protected:
   private:
     std::string name_ = "untitled";
     std::string location_ = "./catalog.backup";
     int save_interval_ = 60;
     bool save_on_modify_ = false;
+    bool erase_on_destruct_ = false;
   };
 } // namespace temoto_resource_registrar
 

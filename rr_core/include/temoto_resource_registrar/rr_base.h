@@ -18,8 +18,11 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
 #include <iostream>
+#include <stdio.h>
 #include <thread>
 #include <unordered_map>
+#include <fstream>
+#include <mutex>
 
 #include "rr_catalog.h"
 #include "rr_client_base.h"
@@ -28,11 +31,9 @@
 #include "rr_server_base.h"
 #include "rr_status.h"
 
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <fstream>
+#include <boost/archive/binary_oarchive.hpp>
 
-#include <mutex>
 
 namespace temoto_resource_registrar
 {
@@ -138,7 +139,13 @@ namespace temoto_resource_registrar
                                rr_catalog_(std::make_shared<RrCatalog>()){
     };
 
-    void updateConfiguration(const Configuration &config) {
+    ~RrBase() {
+      if (configuration_.eraseOnDestruct()) {
+        eraseSerializedCatalog();
+      }
+    }
+
+    void updateConfiguration(Configuration config) {
       configuration_ = config;
       name_ = config.name();
     }
@@ -369,6 +376,16 @@ namespace temoto_resource_registrar
 
     Configuration configuration_;
 
+    void autoSaveCatalog() {
+      if (configuration_.saveOnModify()) {
+        saveCatalog();
+      }
+    }
+
+    void eraseSerializedCatalog() {
+      remove(configuration_.location().c_str());
+    }
+
     virtual bool callStatusClient(const std::string &clientName, Status statusData){};
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
@@ -436,6 +453,7 @@ namespace temoto_resource_registrar
         parentQuery->includeDependency(query.rr(), query.id());
       }
 
+      autoSaveCatalog();
       mtx.unlock();
     }
 
@@ -450,6 +468,7 @@ namespace temoto_resource_registrar
       {
         rr_catalog_->unloadDependency(id, dependency.first);
       }
+      autoSaveCatalog();
     }
 
   private:
