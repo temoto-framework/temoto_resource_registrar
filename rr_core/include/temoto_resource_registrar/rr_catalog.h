@@ -85,6 +85,7 @@ namespace temoto_resource_registrar
     RrCatalog() = default;
 
     void storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData);
+    void updateResponse(const std::string &server, RawData request, RawData response);
     UUID queryExists(const std::string &server, RawData qData);
     RawData processExisting(const std::string &server, const std::string &id, RrQueryBase q);
     UUID getInitialId(const std::string &id);

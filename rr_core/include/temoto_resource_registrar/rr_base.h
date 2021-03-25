@@ -17,12 +17,12 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
+#include <fstream>
 #include <iostream>
+#include <mutex>
 #include <stdio.h>
 #include <thread>
 #include <unordered_map>
-#include <fstream>
-#include <mutex>
 
 #include "rr_catalog.h"
 #include "rr_client_base.h"
@@ -33,7 +33,6 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-
 
 namespace temoto_resource_registrar
 {
@@ -130,22 +129,24 @@ namespace temoto_resource_registrar
   class RrBase
   {
   public:
-    RrBase(Configuration config) : RrBase(config.name())
+    RrBase(const Configuration &config) : RrBase(config.name())
     {
       updateConfiguration(config);
     };
 
     RrBase(std::string name) : name_(name),
-                               rr_catalog_(std::make_shared<RrCatalog>()){
-    };
+                               rr_catalog_(std::make_shared<RrCatalog>()){};
 
-    ~RrBase() {
-      if (configuration_.eraseOnDestruct()) {
+    ~RrBase()
+    {
+      if (configuration_.eraseOnDestruct())
+      {
         eraseSerializedCatalog();
       }
     }
 
-    void updateConfiguration(Configuration config) {
+    void updateConfiguration(const Configuration &config)
+    {
       configuration_ = config;
       name_ = config.name();
     }
@@ -376,13 +377,23 @@ namespace temoto_resource_registrar
 
     Configuration configuration_;
 
-    void autoSaveCatalog() {
-      if (configuration_.saveOnModify()) {
+    void updateQuery(const std::string &server,
+                     const std::string &request,
+                     const std::string &response)
+    {
+      rr_catalog_->updateResponse(server, request, response);
+    }
+
+    void autoSaveCatalog()
+    {
+      if (configuration_.saveOnModify())
+      {
         saveCatalog();
       }
     }
 
-    void eraseSerializedCatalog() {
+    void eraseSerializedCatalog()
+    {
       remove(configuration_.location().c_str());
     }
 

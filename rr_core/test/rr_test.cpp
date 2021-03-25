@@ -668,7 +668,7 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
                 std::istreambuf_iterator<char>());
 
     LOG(INFO) << "comparing results";
-    EXPECT_EQ(str1.size(), str2.size());    
+    EXPECT_EQ(str1.size(), str2.size());
   }
   LOG(INFO) << "Destroy delete test";
 
@@ -680,4 +680,28 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
   {
     FAIL() << "File ./catalogBackup.backup2 was not deleted by destructor.";
   }
+}
+
+TEST_F(RrBaseTest, CatalogResponseUpdateTest)
+{
+  RrCatalog catalog;
+
+  RrQueryBase query;
+  query.setId("queryId1");
+  query.setOrigin("originRR");
+  query.setRr("RR");
+
+  catalog.storeQuery("server", query, "request", "");
+
+  QueryContainer<std::string> orig = catalog.findOriginalContainer("queryId1");
+
+  EXPECT_EQ(orig.rawQuery_, "");
+
+  catalog.updateResponse("server", "request", "updatedResponse");
+
+  EXPECT_EQ(catalog.queryExists("server", "request"), "queryId1");
+
+  QueryContainer<std::string> container = catalog.findOriginalContainer("queryId1");
+
+  EXPECT_EQ(container.rawQuery_, "updatedResponse");
 }

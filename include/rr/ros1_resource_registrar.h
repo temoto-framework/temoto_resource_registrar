@@ -155,6 +155,15 @@ namespace temoto_resource_registrar
       return out;
     }
 
+    template <class QueryType>
+    void updateQueryResponse(const std::string &server,
+                             const QueryType &call)
+    {
+      std::string serializedRequest = MessageSerializer::serializeMessage<typename QueryType::Request>(call.request);
+      std::string serializedResponse = MessageSerializer::serializeMessage<typename QueryType::Response>(call.response);
+      updateQuery(server, serializedRequest, serializedResponse);
+    }
+
   protected:
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> status_clients_;

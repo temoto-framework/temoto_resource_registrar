@@ -29,6 +29,24 @@ namespace temoto_resource_registrar
     std::cout << "storage done..." << std::endl;
   }
 
+  void RrCatalog::updateResponse(const std::string &server, RawData request, RawData response)
+  {
+    RawData key = "";
+    for (auto const &query : id_query_map_)
+    {
+      QueryContainer<RawData> wrapper = query.second;
+      if (wrapper.rawRequest_ == request && wrapper.responsibleServer_ == server) {
+        key = query.first;
+        break;
+      }
+    }
+
+    if (key.size()) {
+      id_query_map_[key].rawQuery_ = response;
+    }
+      
+  }
+
   UUID RrCatalog::queryExists(const std::string &server, RawData reqData)
   {
     for (auto const &query : id_query_map_)

@@ -38,27 +38,27 @@ namespace temoto_resource_registrar
       return this;
     }
 
-    std::string name()
+    std::string name() const
     {
       return name_;
     }
 
-    std::string location()
+    std::string location() const
     {
       return location_;
     }
 
-    int saveInterval()
+    int saveInterval() const
     {
       return save_interval_;
     }
 
-    bool saveOnModify()
+    bool saveOnModify() const
     {
       return save_on_modify_;
     }
 
-    bool eraseOnDestruct()
+    bool eraseOnDestruct() const
     {
       return erase_on_destruct_;
     }
