@@ -81,6 +81,7 @@ add_executable(resource_producer
 add_dependencies(resource_producer
   ${catkin_EXPORTED_TARGETS}
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  rr_core001
 )
 
 target_link_libraries(resource_producer
@@ -97,6 +98,7 @@ add_executable(resource_consumer
 add_dependencies(resource_consumer
   ${catkin_EXPORTED_TARGETS}
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  rr_core001
 )
 
 target_link_libraries(resource_consumer
@@ -114,6 +116,7 @@ add_executable(resource_agent
 add_dependencies(resource_agent
   ${catkin_EXPORTED_TARGETS}
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  rr_core001
 )
 
 target_link_libraries(resource_agent
