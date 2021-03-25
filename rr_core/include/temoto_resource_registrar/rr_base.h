@@ -144,14 +144,6 @@ namespace temoto_resource_registrar
       rr_catalog_ = std::make_shared<RrCatalog>(catalog);
     }
 
-    std::string serializeCatalog()
-    {
-      std::stringstream ss;
-      boost::archive::binary_oarchive oa(ss);
-      oa << *(rr_catalog_.get());
-      return ss.str();
-    }
-
     void saveCatalog()
     {
       std::cout << "saving catalog to: " << configuration_.location() << std::endl;
@@ -171,6 +163,36 @@ namespace temoto_resource_registrar
 
       updateCatalog(catalog);
     }
+
+/*
+    template <class QueryType>
+    QueryType deSerializeBaseQuery(const QueryContainer<RawData> &container)
+    {
+      std::cout << " --deSerializeBaseQuery-- " << std::endl;
+
+      std::stringstream ss(container.rawQuery_);
+      boost::archive::binary_iarchive ia(ss);
+
+      QueryType obj;
+      ia >> obj;
+
+      return obj;
+    }
+
+    template <class QueryType>
+    std::vector<QueryType> getServerQueries(const std::string &server)
+    {
+      std::vector<QueryType> out;
+      
+      for (auto const &queryContainer : rr_catalog_->getUniqueServerQueries(server))
+      {
+        std::cout << " --1111111111111-- " << queryContainer.q_.id() << std::endl;
+        out.push_back(deSerializeBaseQuery<QueryType>(queryContainer));
+      }
+      
+      return out;
+    }
+    */
 
     template <class CallClientClass>
     void call(const std::string &rr, const std::string &server, RrQueryBase &query)
@@ -371,8 +393,7 @@ namespace temoto_resource_registrar
 
     Configuration configuration_;
 
-    virtual bool
-    callStatusClient(const std::string &clientName, Status statusData){};
+    virtual bool callStatusClient(const std::string &clientName, Status statusData){};
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
     void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)

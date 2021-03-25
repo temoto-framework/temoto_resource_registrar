@@ -29,7 +29,7 @@ namespace temoto_resource_registrar
     std::cout << "storage done..." << std::endl;
   }
 
-  std::string RrCatalog::queryExists(const std::string &server, RawData reqData)
+  UUID RrCatalog::queryExists(const std::string &server, RawData reqData)
   {
     for (auto const &query : id_query_map_)
     {
@@ -61,7 +61,7 @@ namespace temoto_resource_registrar
     return "";
   }
 
-  std::string RrCatalog::getInitialId(const std::string &id)
+  UUID RrCatalog::getInitialId(const std::string &id)
   {
     //QueryContainer cotnainer = findOriginalContainer(id);
     //std::cout << cotnainer.getIdCount() << std::endl;
@@ -129,13 +129,13 @@ namespace temoto_resource_registrar
     return QueryContainer<RawData>();
   }
 
-  std::string RrCatalog::getIdServer(const std::string &id)
+  ServerName RrCatalog::getIdServer(const std::string &id)
   {
     std::cout << "getIdServer: " << id << std::endl;
     return findOriginalContainer(id).responsibleServer_;
   }
 
-  std::unordered_map<std::string, std::string> RrCatalog::getAllQueryIds(const std::string &id)
+  std::unordered_map<UUID, std::string> RrCatalog::getAllQueryIds(const std::string &id)
   {
     for (auto const &queryEntry : id_query_map_)
     {
@@ -144,7 +144,7 @@ namespace temoto_resource_registrar
         return queryEntry.second.rr_ids_;
       }
     }
-    std::unordered_map<std::string, std::string> emptyMap;
+    std::unordered_map<UUID, std::string> emptyMap;
     return emptyMap;
   }
 
@@ -153,7 +153,7 @@ namespace temoto_resource_registrar
     id_dependency_map_[queryId].registerDependency(dependencySource, dependencyId);
   }
 
-  std::unordered_map<std::string, std::string> RrCatalog::getDependencies(const std::string &queryId)
+  std::unordered_map<UUID, std::string> RrCatalog::getDependencies(const std::string &queryId)
   {
     if (id_dependency_map_.count(queryId))
       return id_dependency_map_[queryId].dependencies();
@@ -172,7 +172,7 @@ namespace temoto_resource_registrar
     }
   }
 
-  std::string RrCatalog::getOriginQueryId(const std::string &queryId)
+  UUID RrCatalog::getOriginQueryId(const std::string &queryId)
   {
     for (auto const &dependencyEntry : id_dependency_map_)
     {
@@ -189,7 +189,7 @@ namespace temoto_resource_registrar
     client_id_map_[client].insert(id);
   }
 
-  std::string RrCatalog::getIdClient(const std::string &id)
+  ClientName RrCatalog::getIdClient(const std::string &id)
   {
     for (auto const &clientQueries : client_id_map_)
     {
@@ -198,6 +198,23 @@ namespace temoto_resource_registrar
       }
     }
     return "";
+  }
+
+  std::vector<QueryContainer<RawData>> RrCatalog::getUniqueServerQueries(const std::string &server)
+  {
+    std::vector<QueryContainer<RawData>> output;
+    std::set<UUID> addedMessages;
+    for (auto const &queryId : server_id_map_[server])
+    {
+      QueryContainer<RawData> container = findOriginalContainer(queryId);
+      if (addedMessages.count(container.q_.id()) == 0)
+      {
+        output.push_back(container);
+        addedMessages.insert(container.q_.id());
+      }
+    }
+
+    return output;
   }
 
   void RrCatalog::print()

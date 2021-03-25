@@ -554,6 +554,10 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
 
   //EXPECT_EQ(statusCalls, 1);
 
+  LOG(INFO) << "--------------------------------------------------";
+  //rr_m1.getServerQueries<Resource1>("R1_S");
+  LOG(INFO) << "--------------------------------------------------";
+
   LOG(INFO) << "status test for id end: " << idForStatus;
   LOG(INFO) << "--------------------------------------------------";
   LOG(INFO) << "Unloading results!";

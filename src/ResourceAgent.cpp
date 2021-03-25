@@ -10,6 +10,12 @@ temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::Status status)
 {
   ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialisedRequest_.size() << " - " << msg.request.TemotoMetadata.originRr);
+
+  std::string n = rrName + "_resourceServer";
+  for (temoto_resource_registrar::LoadComponent const &i : rr.getServerQueries<temoto_resource_registrar::LoadComponent>(n))
+  {
+    ROS_INFO_STREAM(i.response.TemotoMetadata.requestId);
+  }
 }
 
 void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
@@ -17,14 +23,18 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
   ROS_INFO("------------------------");
   ROS_INFO("IN LOAD CB");
 
-  temoto_resource_registrar::CounterService counterSrv;
-  counterSrv.request.startPoint = 1;
+  if (req.loadTarget == "CounterService")
+  {
 
-  Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(res.TemotoMetadata);
+    temoto_resource_registrar::CounterService counterSrv;
+    counterSrv.request.startPoint = 1;
 
-  rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), statusCallback);
+    Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(res.TemotoMetadata);
 
-  parentQuery.rosQuery(req, res);
+    rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), statusCallback);
+
+    parentQuery.rosQuery(req, res);
+  }
 
   res.loadMessage = req.loadTarget;
   ROS_INFO("------------------------");

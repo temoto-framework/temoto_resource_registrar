@@ -10,6 +10,7 @@
 #include "temoto_resource_registrar/StatusComponent.h"
 #include "temoto_resource_registrar/UnloadComponent.h"
 
+#include "rr/message_serializer.h"
 #include "rr/ros1_client.h"
 #include "rr/ros1_server.h"
 
@@ -83,12 +84,12 @@ namespace temoto_resource_registrar
                   Ros1Server<QueryType>,
                   Ros1Query<QueryType>,
                   std::function<void(QueryType, Status)>>(&rr,
-                                                              NULL,
-                                                              server,
-                                                              wrappedBaseQuery,
-                                                              parentQuery,
-                                                              statusFunc,
-                                                              overrideStatus);
+                                                          NULL,
+                                                          server,
+                                                          wrappedBaseQuery,
+                                                          parentQuery,
+                                                          statusFunc,
+                                                          overrideStatus);
 
       query = wrappedBaseQuery.rosQuery();
     }
@@ -127,11 +128,38 @@ namespace temoto_resource_registrar
       return res;
     }
 
+    template <class QueryType>
+    QueryType deSerializeQuery(const QueryContainer<RawData> &container)
+    {
+      ROS_INFO_STREAM("deSerializeBaseQuery ROS ");
+      QueryType q;
+
+      q.request = MessageSerializer::deSerializeMessage<typename QueryType::Request>(container.rawRequest_);
+      q.response = MessageSerializer::deSerializeMessage<typename QueryType::Response>(container.rawQuery_);
+
+      q.response.TemotoMetadata.requestId = container.q_.id();
+
+      return q;
+    }
+
+    template <class QueryType>
+    std::vector<QueryType> getServerQueries(const std::string &server)
+    {
+      std::vector<QueryType> out;
+
+      for (auto const &queryContainer : rr_catalog_->getUniqueServerQueries(server))
+      {
+        out.push_back(deSerializeQuery<QueryType>(queryContainer));
+      }
+
+      return out;
+    }
+
   protected:
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
     std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> status_clients_;
 
-  /**
+    /**
  * @brief Virtual method that needs to be implemented on every extension of RR_CORE. This method creates and sends the status
  * callback to a target that is defined in the statusData.
  * 

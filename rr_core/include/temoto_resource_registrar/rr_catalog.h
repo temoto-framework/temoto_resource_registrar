@@ -33,6 +33,9 @@
 namespace temoto_resource_registrar
 {
   using RawData = std::string;
+  using ServerName = std::string;
+  using ClientName = std::string;
+  using UUID = std::string;
 
   class DependencyContainer
   {
@@ -82,25 +85,27 @@ namespace temoto_resource_registrar
     RrCatalog() = default;
 
     void storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData);
-    std::string queryExists(const std::string &server, RawData qData);
+    UUID queryExists(const std::string &server, RawData qData);
     RawData processExisting(const std::string &server, const std::string &id, RrQueryBase q);
-    std::string getInitialId(const std::string &id);
+    UUID getInitialId(const std::string &id);
 
     RawData unload(const std::string &server, const std::string &id);
     bool canBeUnloaded(const std::string &server);
 
-    std::string getIdServer(const std::string &id);
-    std::unordered_map<std::string, std::string> getAllQueryIds(const std::string &id);
+    ServerName getIdServer(const std::string &id);
+    std::unordered_map<UUID, std::string> getAllQueryIds(const std::string &id);
 
-    std::unordered_map<std::string, std::string> getDependencies(const std::string &queryId);
+    std::unordered_map<UUID, std::string> getDependencies(const std::string &queryId);
     void storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId);
     void unloadDependency(const std::string &queryId, const std::string &dependencyId);
-    std::string getOriginQueryId(const std::string &queryId);
+    UUID getOriginQueryId(const std::string &queryId);
 
     QueryContainer<RawData> findOriginalContainer(const std::string &id);
 
     void storeClientCallRecord(const std::string &client, const std::string &id);
-    std::string getIdClient(const std::string &id);
+    ClientName getIdClient(const std::string &id);
+
+    std::vector<QueryContainer<RawData>> getUniqueServerQueries(const std::string &server);
 
     void print();
 
@@ -114,10 +119,10 @@ namespace temoto_resource_registrar
     }
 
   private:
-    std::unordered_map<std::string, std::set<std::string>> client_id_map_;
-    std::unordered_map<std::string, std::set<std::string>> server_id_map_;
+    std::unordered_map<ClientName, std::set<UUID>> client_id_map_;
+    std::unordered_map<ServerName, std::set<UUID>> server_id_map_;
     std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
-    std::unordered_map<std::string, DependencyContainer> id_dependency_map_;
+    std::unordered_map<UUID, DependencyContainer> id_dependency_map_;
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;
