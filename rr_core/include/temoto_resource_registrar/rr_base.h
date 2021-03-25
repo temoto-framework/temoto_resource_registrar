@@ -131,11 +131,17 @@ namespace temoto_resource_registrar
   public:
     RrBase(Configuration config) : RrBase(config.name())
     {
-      configuration_ = config;
+      updateConfiguration(config);
     };
 
     RrBase(std::string name) : name_(name),
-                               rr_catalog_(std::make_shared<RrCatalog>()){};
+                               rr_catalog_(std::make_shared<RrCatalog>()){
+    };
+
+    void updateConfiguration(const Configuration &config) {
+      configuration_ = config;
+      name_ = config.name();
+    }
 
     const std::string id();
 
@@ -163,36 +169,6 @@ namespace temoto_resource_registrar
 
       updateCatalog(catalog);
     }
-
-/*
-    template <class QueryType>
-    QueryType deSerializeBaseQuery(const QueryContainer<RawData> &container)
-    {
-      std::cout << " --deSerializeBaseQuery-- " << std::endl;
-
-      std::stringstream ss(container.rawQuery_);
-      boost::archive::binary_iarchive ia(ss);
-
-      QueryType obj;
-      ia >> obj;
-
-      return obj;
-    }
-
-    template <class QueryType>
-    std::vector<QueryType> getServerQueries(const std::string &server)
-    {
-      std::vector<QueryType> out;
-      
-      for (auto const &queryContainer : rr_catalog_->getUniqueServerQueries(server))
-      {
-        std::cout << " --1111111111111-- " << queryContainer.q_.id() << std::endl;
-        out.push_back(deSerializeBaseQuery<QueryType>(queryContainer));
-      }
-      
-      return out;
-    }
-    */
 
     template <class CallClientClass>
     void call(const std::string &rr, const std::string &server, RrQueryBase &query)

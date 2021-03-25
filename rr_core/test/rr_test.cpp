@@ -634,13 +634,20 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
   rr.saveCatalog();
   rr.loadCatalog();
 
-  std::ofstream ofs("./comparison.backup");
-  boost::archive::binary_oarchive oa(ofs);
-  oa << catalog;
-  ofs.close();
+  rr.saveCatalog();
+  rr.loadCatalog();
+
+  config.setLocation("./catalogBackup.backup2");
+  rr.updateConfiguration(config);
+
+  rr.saveCatalog();
+  rr.loadCatalog();
+
+  rr.saveCatalog();
+  rr.loadCatalog();
 
   std::ifstream s1("./catalogBackup.backup");
-  std::ifstream s2("./comparison.backup");
+  std::ifstream s2("./catalogBackup.backup2");
 
   std::string str1;
   std::string str2;
@@ -658,14 +665,14 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
               std::istreambuf_iterator<char>());
 
   LOG(INFO) << "comparing results";
-  EXPECT_EQ(str1, str2);
+  EXPECT_EQ(str1.size(), str2.size());
 
-  if (remove("./comparison.backup") != 0)
-  {
-    EXPECT_NO_FATAL_FAILURE("File ./comparison.backup deletion failed.");
-  }
   if (remove("./catalogBackup.backup") != 0)
   {
     EXPECT_NO_FATAL_FAILURE("File ./catalogBackup.backup deletion failed.");
+  }
+  if (remove("./catalogBackup.backup2") != 0)
+  {
+    EXPECT_NO_FATAL_FAILURE("File ./catalogBackup.backup2 deletion failed.");
   }
 }
