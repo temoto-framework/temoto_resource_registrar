@@ -73,6 +73,9 @@ public:
       ServiceClass query; // TODO: get the query from the rr_catalog;
       query.request = request;
       query.response = response;
+
+      query.request.TemotoMetadata.requestId = status.id_;
+      query.response.TemotoMetadata.requestId = status.id_;
       user_status_cb_(query, status); // TODO: needs exception handling
     }
   }
