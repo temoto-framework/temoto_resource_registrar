@@ -6,6 +6,8 @@
 #include <iostream>
 #include <ros/serialization.h>
 
+#include <temoto_resource_registrar/rr_exceptions.h>
+
 namespace ser = ros::serialization;
 
 /**
@@ -56,6 +58,10 @@ public:
   static PayloadType deSerializeMessage(std::string payload_in)
   {
     uint32_t payload_size = payload_in.size();
+
+    if (payload_size == 0)
+      throw temoto_resource_registrar::DeserializationException("Can not deserialize empty payload");
+
     boost::shared_array<uint8_t> buffer(new uint8_t[payload_size]);
 
     // Fill buffer with the serialized payload

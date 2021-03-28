@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
   ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall2.response.loadMessage << "; id: " << load2Id);
 
-  //rr.unload("AgentRR", load2Id);
+  rr.unload("AgentRR", load2Id);
 
   rr.printCatalog();
 

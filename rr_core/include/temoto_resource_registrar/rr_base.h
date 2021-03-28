@@ -229,7 +229,9 @@ namespace temoto_resource_registrar
           unloadResource(id, dependency);
         }
       }
-      return unloadByServerAndQuery(serverId, id);
+      bool res = unloadByServerAndQuery(serverId, id);
+      autoSaveCatalog();
+      return res;
     }
 
     void registerServer(std::unique_ptr<RrServerBase> serverPtr)
@@ -479,7 +481,6 @@ namespace temoto_resource_registrar
       {
         rr_catalog_->unloadDependency(id, dependency.first);
       }
-      autoSaveCatalog();
     }
 
   private:

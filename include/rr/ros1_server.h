@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 
-
 /**
  * @brief A wrapper class for the temoto_resource_registrar::RRServerBase. Provides templating to support multiple message types.
  * This class is responsible for executing resource loading and unloading related logic.
@@ -71,8 +70,20 @@ public:
     ROS_INFO_STREAM("checkign for dependencies... ");
     std::string serializedRequest = rr_catalog_->findOriginalContainer(id).rawRequest_;
     std::string serializedResponse = rr_catalog_->unload(name_, id);
-    typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serializedRequest);
-    typename ServiceClass::Response response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
+
+    typename ServiceClass::Request request;
+    typename ServiceClass::Response response;
+    
+    try
+    {
+      request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serializedRequest);
+      response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>("");
+    }
+    catch (const temoto_resource_registrar::DeserializationException &e)
+    {
+      ROS_WARN_STREAM("Some serialization/deserialization issue in server unload");
+    }
+
     ROS_INFO_STREAM("Unload result size: " << serializedResponse.size());
 
     if (rr_catalog_->canBeUnloaded(name_))
@@ -116,7 +127,6 @@ public:
     ROS_INFO_STREAM("checking existance..." << serializedRequest.size());
     std::string requestId = this->rr_catalog_->queryExists(name_, serializedRequest);
 
-    
     if (requestId.size() == 0)
     {
       ROS_INFO("NOPE, does not exist");
@@ -132,12 +142,11 @@ public:
       ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
 
       rr_catalog_->storeQuery(name_,
-                                 wrappedQuery,
-                                 serializedRequest,
-                                 sanitizeAndSerialize(res));
+                              wrappedQuery,
+                              serializedRequest,
+                              sanitizeAndSerialize(res));
 
       ROS_INFO_STREAM("STORED!!!");
-
 
       Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
 

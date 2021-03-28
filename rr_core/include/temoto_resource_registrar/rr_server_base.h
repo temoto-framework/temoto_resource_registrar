@@ -21,6 +21,7 @@
 #include "rr_client_base.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
+#include "rr_exceptions.h"
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
