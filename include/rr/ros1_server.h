@@ -77,7 +77,7 @@ public:
     try
     {
       request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serializedRequest);
-      response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>("");
+      response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
     }
     catch (const temoto_resource_registrar::DeserializationException &e)
     {
