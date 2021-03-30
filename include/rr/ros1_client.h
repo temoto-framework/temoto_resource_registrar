@@ -30,6 +30,7 @@ public:
  */
   void invoke(ServiceClass &request)
   {
+    ROS_INFO_STREAM("invoke for ServiceClass started");
     if (client_.call(request))
     {
       ROS_INFO_STREAM("invoke OK " << request.response.TemotoMetadata.requestId);
@@ -38,6 +39,7 @@ public:
     {
       ROS_INFO("FAIL");
     }
+    ROS_INFO_STREAM("invoke for ServiceClass completed");
   }
 
   /**
@@ -48,11 +50,13 @@ public:
  */
   void invoke(Ros1Query<ServiceClass> &wrappedRequest)
   {
+    ROS_INFO_STREAM("invoke for Ros1Query wrapper started");
     ServiceClass servCall = wrappedRequest.rosQuery();
 
     invoke(servCall);
 
     wrappedRequest = Ros1Query<ServiceClass>(servCall);
+    ROS_INFO_STREAM("invoke for Ros1Query wrapper completed");
   }
 
   void registerUserStatusCb(const UserStatusCb &user_status_cb)

@@ -78,6 +78,7 @@ namespace temoto_resource_registrar
               std::function<void(QueryType, Status)> statusFunc = NULL,
               bool overrideStatus = false)
     {
+      ROS_INFO_STREAM("calling " << rr << " server " << server);
       Ros1Query<QueryType> wrappedBaseQuery(query);
 
       privateCall<Ros1Client<QueryType>,
@@ -92,6 +93,8 @@ namespace temoto_resource_registrar
                                                           overrideStatus);
 
       query = wrappedBaseQuery.rosQuery();
+
+      ROS_INFO_STREAM("calling " << rr << " server " << server << " done");
     }
 
     /**
@@ -106,7 +109,7 @@ namespace temoto_resource_registrar
      */
     bool unload(const std::string &rr, const std::string &id)
     {
-      ROS_INFO_STREAM("unload Called ");
+      ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id);
 
       ros::NodeHandle nh;
 
@@ -125,6 +128,7 @@ namespace temoto_resource_registrar
 
       bool res = unload_clients_[clientName]->call(unloadSrv);
 
+      ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id << " result: " << res);
       return res;
     }
 
@@ -159,8 +163,10 @@ namespace temoto_resource_registrar
     void updateQueryResponse(const std::string &server,
                              const QueryType &call)
     {
-      std::string serializedRequest = MessageSerializer::serializeMessage<typename QueryType::Request>(call.request);
-      std::string serializedResponse = MessageSerializer::serializeMessage<typename QueryType::Response>(call.response);
+      ROS_INFO_STREAM("updateQueryResponse for server " << server);
+
+      std::string serializedRequest = MessageSerializer::serializeMessage<typename QueryType::Request>(sanityzeData<typename QueryType::Request>(call.request));
+      std::string serializedResponse = MessageSerializer::serializeMessage<typename QueryType::Response>(sanityzeData<typename QueryType::Response>(call.response));
       updateQuery(server, serializedRequest, serializedResponse);
     }
 
@@ -264,6 +270,14 @@ namespace temoto_resource_registrar
         }
       }
       return dependencies;
+    }
+
+    template <class MsgClass>
+    static MsgClass sanityzeData(MsgClass data)
+    {
+      MsgClass empty;
+      data.TemotoMetadata = empty.TemotoMetadata;
+      return data;
     }
   };
 }

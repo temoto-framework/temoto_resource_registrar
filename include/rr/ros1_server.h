@@ -67,9 +67,16 @@ public:
   {
     ROS_INFO_STREAM("Starting to unload id: " << id);
 
-    ROS_INFO_STREAM("checkign for dependencies... ");
+    ROS_INFO_STREAM("------------------ Catalog");
+    rr_catalog_->print();
+    ROS_INFO_STREAM("------------------ Catalog");
+
+    ROS_INFO_STREAM("loading serialized request and response from catalog.. ");
     std::string serializedRequest = rr_catalog_->findOriginalContainer(id).rawRequest_;
-    std::string serializedResponse = rr_catalog_->unload(name_, id);
+
+    bool canUnload = false;
+
+    std::string serializedResponse = rr_catalog_->unload(name_, id, canUnload);
 
     typename ServiceClass::Request request;
     typename ServiceClass::Response response;
@@ -78,19 +85,21 @@ public:
     {
       request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serializedRequest);
       response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
+
+      ROS_INFO_STREAM("Found response with legth: " << serializedResponse.size());
     }
     catch (const temoto_resource_registrar::DeserializationException &e)
     {
       ROS_WARN_STREAM("Some serialization/deserialization issue in server unload");
     }
 
-    ROS_INFO_STREAM("Unload result size: " << serializedResponse.size());
-
-    if (rr_catalog_->canBeUnloaded(name_))
+    if (canUnload)
     {
 
-      ROS_INFO_STREAM("Time for unload CB! " << serializedRequest.size());
-      ROS_INFO_STREAM("Time for unload CB! " << serializedResponse.size());
+      ROS_INFO_STREAM("Resource can be unloaded. Executing callback.");
+      ROS_INFO_STREAM("req: " << request);
+      ROS_INFO_STREAM("res: " << response);
+
       if (typed_unload_callback_ptr_ != NULL)
       {
         typed_unload_callback_ptr_(request, response);
@@ -99,8 +108,13 @@ public:
       {
         member_unload_cb_(request, response);
       }
+    } else {
+      ROS_INFO_STREAM("Resource can not be unloaded. Printing catalog for debug");
     }
 
+    rr_catalog_->print();
+
+    ROS_INFO_STREAM("unload done for id: " << id << " result: " << (serializedResponse.size() > 0));
     return serializedResponse.size() > 0;
   }
 
@@ -116,20 +130,27 @@ public:
  */
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
-    ROS_INFO("In Server Handler!!!");
-    std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(req);
+    ROS_INFO_STREAM("Starting serverCallback");
+
+    typename ServiceClass::Request sanitizedReq = sanityzeRequest(req);
+    std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(sanitizedReq);
 
     std::string generatedId = generateId();
     res.TemotoMetadata.requestId = generatedId;
 
+    ROS_INFO_STREAM("Generated request id: " << generatedId);
+
     Ros1Query<ServiceClass> wrappedQuery = wrap(req, res);
 
-    ROS_INFO_STREAM("checking existance..." << serializedRequest.size());
+    ROS_INFO_STREAM("checking existance of request in catalog... ");
+
+    ROS_INFO_STREAM("Message: " << req);
+    ROS_INFO_STREAM("sanitized Message: " << sanitizedReq);
     std::string requestId = this->rr_catalog_->queryExists(name_, serializedRequest);
 
     if (requestId.size() == 0)
     {
-      ROS_INFO("NOPE, does not exist");
+      ROS_INFO("Query is unique. executing callback");
       if (typed_load_callback_ptr_ != NULL)
       {
         typed_load_callback_ptr_(req, res);
@@ -139,18 +160,18 @@ public:
         member_load_cb_(req, res);
       }
 
-      ROS_INFO_STREAM("GOTTA DO DEPENDENCY STUFF! " << res.TemotoMetadata.dependencies.size());
+      ROS_INFO_STREAM("Storing query in catalog...");
 
       rr_catalog_->storeQuery(name_,
                               wrappedQuery,
                               serializedRequest,
                               sanitizeAndSerialize(res));
 
-      ROS_INFO_STREAM("STORED!!!");
+      ROS_INFO_STREAM("Stored!");
 
+      ROS_INFO_STREAM("Wrapping response...");
       Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
 
-      ROS_INFO_STREAM("WRAPPED!!!");
 
       if (wrappedResponse.dependencies().size())
       {
@@ -198,8 +219,6 @@ private:
     srvCall.request = req;
     srvCall.response = res;
 
-    ROS_INFO_STREAM("wrap start!!!");
-
     return Ros1Query<ServiceClass>(srvCall);
   }
 
@@ -211,15 +230,18 @@ private:
     return fetchedResponse;
   }
 
-  static typename ServiceClass::Response sanityzeRequest(typename ServiceClass::Response data)
+  static typename ServiceClass::Request sanityzeRequest(typename ServiceClass::Request data)
   {
-    typename ServiceClass::Response empty;
+    typename ServiceClass::Request empty;
     data.TemotoMetadata = empty.TemotoMetadata;
     return data;
   }
 
   std::string sanitizeAndSerialize(typename ServiceClass::Response res)
   {
+    typename ServiceClass::Response empty;
+    res.TemotoMetadata = empty.TemotoMetadata;
+    
     std::string serialized = MessageSerializer::serializeMessage<typename ServiceClass::Response>(res);
 
     return serialized;

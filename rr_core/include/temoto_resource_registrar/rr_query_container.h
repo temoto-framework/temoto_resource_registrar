@@ -47,7 +47,7 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &q_ &rawRequest_ &rawQuery_ &rr_ids_ &responsibleServer_;
+      ar &q_ &rawRequest_ &rawQuery_ &rr_ids_ &responsibleServer_ &empty_;
     }
   };
 } // namespace temoto_resource_registrar

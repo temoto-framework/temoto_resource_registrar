@@ -84,29 +84,28 @@ namespace temoto_resource_registrar
   public:
     RrCatalog() = default;
 
-    void storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData);
-    void updateResponse(const std::string &server, RawData request, RawData response);
-    UUID queryExists(const std::string &server, RawData qData);
-    RawData processExisting(const std::string &server, const std::string &id, RrQueryBase q);
-    UUID getInitialId(const std::string &id);
+    void storeQuery(const ServerName &server, RrQueryBase q, RawData reqData, RawData qData);
+    void updateResponse(const ServerName &server, RawData request, RawData response);
+    UUID queryExists(const ServerName &server, RawData qData);
+    RawData processExisting(const ServerName &server, const UUID &id, RrQueryBase q);
+    UUID getInitialId(const UUID &id);
 
-    RawData unload(const std::string &server, const std::string &id);
-    bool canBeUnloaded(const std::string &server);
+    RawData unload(const ServerName &server, const UUID &id, bool &unloadable);
 
-    ServerName getIdServer(const std::string &id);
+    ServerName getIdServer(const UUID &id);
     std::unordered_map<UUID, std::string> getAllQueryIds(const std::string &id);
 
     std::unordered_map<UUID, std::string> getDependencies(const std::string &queryId);
-    void storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId);
-    void unloadDependency(const std::string &queryId, const std::string &dependencyId);
-    UUID getOriginQueryId(const std::string &queryId);
+    void storeDependency(const UUID &queryId, const ServerName &dependencySource, const UUID &dependencyId);
+    void unloadDependency(const UUID &queryId, const UUID &dependencyId);
+    UUID getOriginQueryId(const UUID &queryId);
 
-    QueryContainer<RawData> findOriginalContainer(const std::string &id);
+    QueryContainer<RawData> findOriginalContainer(const UUID &id);
 
-    void storeClientCallRecord(const std::string &client, const std::string &id);
-    ClientName getIdClient(const std::string &id);
+    void storeClientCallRecord(const ClientName &client, const UUID &id);
+    ClientName getIdClient(const UUID &id);
 
-    std::vector<QueryContainer<RawData>> getUniqueServerQueries(const std::string &server);
+    std::vector<QueryContainer<RawData>> getUniqueServerQueries(const ServerName &server);
 
     void print();
 

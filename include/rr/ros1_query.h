@@ -21,7 +21,6 @@ public:
    * @param metadata 
    */
   Ros1Query(const temoto_resource_registrar::TemotoMetadata &metadata){
-    ROS_INFO_STREAM("Metadata constructor" << metadata.requestId);
     setId(metadata.requestId);
     setRr(metadata.servingRr);
     setOrigin(metadata.originRr);
@@ -47,7 +46,6 @@ public:
    */
   Ros1Query(const ServiceClass &query) : typed_query_(query)
   {
-    ROS_INFO_STREAM("standard constructor");
 
     setId(selectNonEmpty(typed_query_.request.TemotoMetadata.requestId,
                          typed_query_.response.TemotoMetadata.requestId));

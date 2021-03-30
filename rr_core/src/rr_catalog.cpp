@@ -87,7 +87,7 @@ namespace temoto_resource_registrar
     return getOriginQueryId(id);
   }
 
-  RawData RrCatalog::unload(const std::string &server, const std::string &id)
+  RawData RrCatalog::unload(const std::string &server, const std::string &id, bool &unloadable)
   {
 
     auto vec = server_id_map_[server];
@@ -107,6 +107,7 @@ namespace temoto_resource_registrar
 
         if (!qc.getIdCount())
         {
+          unloadable = true;
           id_query_map_.erase(qc.rawRequest_);
         }
         else
@@ -122,24 +123,14 @@ namespace temoto_resource_registrar
     return queryResp;
   }
 
-  bool RrCatalog::canBeUnloaded(const std::string &server)
-  {
-    int serverCount = server_id_map_.count(server);
-
-    if (!serverCount)
-    {
-      return true;
-    }
-
-    return server_id_map_[server].size() == 0;
-  }
-
   QueryContainer<RawData> RrCatalog::findOriginalContainer(const std::string &id)
   {
+    std::cout << "findOriginalContainer: " << id << std::endl;
     for (auto const &queryEntry : id_query_map_)
     {
       if (queryEntry.second.rr_ids_.count(id))
       {
+        std::cout << "Found!: " << queryEntry.second.q_.id() << std::endl;
         return queryEntry.second;
       }
     }

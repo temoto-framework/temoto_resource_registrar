@@ -390,7 +390,9 @@ namespace temoto_resource_registrar
     {
       if (configuration_.saveOnModify())
       {
+        mtx.lock();
         saveCatalog();
+        mtx.unlock();
       }
     }
 
@@ -411,7 +413,9 @@ namespace temoto_resource_registrar
       auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientName));
       client.invoke(query);
 
+      mtx.lock();
       rr_catalog_->storeClientCallRecord(clientName, query.id());
+      mtx.unlock();
     }
 
     /**
@@ -435,7 +439,7 @@ namespace temoto_resource_registrar
     template <class CallClientClass, class ServType, class QueryType, class StatusCallType>
     void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, const StatusCallType &statusFunc, bool overrideFunc)
     {
-      mtx.lock();
+      
 
       workId = std::this_thread::get_id();
 
@@ -467,7 +471,6 @@ namespace temoto_resource_registrar
       }
 
       autoSaveCatalog();
-      mtx.unlock();
     }
 
     virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)

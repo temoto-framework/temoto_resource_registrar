@@ -237,13 +237,15 @@ public:
 
     LOG(INFO) << "checkign for dependencies... ";
 
-    std::string query = rr_catalog_->unload(name_, id);
+    bool canUnload = false;
+
+    std::string query = rr_catalog_->unload(name_, id, canUnload);
 
     RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);
 
     LOG(INFO) << "Unload result size: " << query.size();
 
-    if (rr_catalog_->canBeUnloaded(name_))
+    if (canUnload)
     {
       RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);
       LOG(INFO) << "Time for unload CB!";
@@ -669,6 +671,31 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
 
     LOG(INFO) << "comparing results";
     EXPECT_EQ(str1.size(), str2.size());
+
+    LOG(INFO) << "loading backup contents...";
+    std::ifstream ifs("./catalogBackup.backup", std::ios::binary);
+    boost::archive::binary_iarchive ia(ifs);
+    RrCatalog loadedCatalog;
+    ia >> loadedCatalog;
+
+    LOG(INFO) << "checking backup catalog contents...";
+    QueryContainer<std::string> cont = loadedCatalog.findOriginalContainer("queryId1");
+    EXPECT_EQ(cont.rawQuery_, "qData");
+    EXPECT_EQ(cont.rawRequest_, "reqData");
+    EXPECT_EQ(cont.responsibleServer_, "server1");
+    EXPECT_EQ(cont.getIdCount(), 1);
+
+    EXPECT_EQ(cont.q_.id(), query.id());
+    EXPECT_EQ(cont.q_.origin(), query.origin());
+    EXPECT_EQ(cont.q_.rr(), query.rr());
+
+    std::unordered_map<UUID, std::string> dep = loadedCatalog.getDependencies("queryId1");
+    EXPECT_EQ(dep.size(), 1);
+    EXPECT_EQ(dep.count("dependencyId1"), 1);
+    EXPECT_EQ(dep["dependencyId1"], "rr2");
+
+    std::string clientId = loadedCatalog.getIdClient("queryId2");
+    EXPECT_EQ(clientId, "clientName");
   }
   LOG(INFO) << "Destroy delete test";
 
