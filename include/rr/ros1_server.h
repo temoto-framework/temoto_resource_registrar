@@ -72,7 +72,13 @@ public:
     ROS_INFO_STREAM("------------------ Catalog");
 
     ROS_INFO_STREAM("loading serialized request and response from catalog.. ");
-    std::string serializedRequest = rr_catalog_->findOriginalContainer(id).rawRequest_;
+    
+    temoto_resource_registrar::QueryContainer<std::string> originalContainer = rr_catalog_->findOriginalContainer(id);
+    std::string serializedRequest = originalContainer.rawRequest_;
+    ROS_INFO_STREAM("Catalog data... isEmpty: " << originalContainer.empty_);
+    ROS_INFO_STREAM("Catalog data... q_.id(): " << originalContainer.q_.id());
+    ROS_INFO_STREAM("Catalog data... rawQuery_: " << originalContainer.rawQuery_);
+    ROS_INFO_STREAM("Catalog data... rawRequest_: " << originalContainer.rawRequest_);
 
     bool canUnload = false;
 
@@ -90,6 +96,8 @@ public:
     }
     catch (const temoto_resource_registrar::DeserializationException &e)
     {
+      ROS_WARN_STREAM("Request length: " << serializedRequest.size());
+      ROS_WARN_STREAM("Response length: " << serializedResponse.size());
       ROS_WARN_STREAM("Some serialization/deserialization issue in server unload");
     }
 

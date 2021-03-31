@@ -156,6 +156,8 @@ namespace temoto_resource_registrar
     void updateCatalog(const RrCatalog &catalog)
     {
       rr_catalog_ = std::make_shared<RrCatalog>(catalog);
+
+      rr_catalog_->print();
     }
 
     void saveCatalog()
@@ -165,6 +167,8 @@ namespace temoto_resource_registrar
       boost::archive::binary_oarchive oa(ofs);
       oa << *(rr_catalog_.get());
       ofs.close();
+
+      rr_catalog_->print();
     }
 
     void loadCatalog()
