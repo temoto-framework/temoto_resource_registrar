@@ -30,7 +30,7 @@ namespace temoto_resource_registrar
   class RrClientBase : public Identifiable<std::string>
   {
   public:
-    RrClientBase(const std::string &name);
+    RrClientBase(const std::string &rr, const std::string &name);
 
     virtual void wrappedCallback();
 
@@ -49,7 +49,10 @@ namespace temoto_resource_registrar
 
     virtual bool hasRegisteredCb();
 
+    std::string rr() const;
+
   protected:
+    std::string rr_;
     std::string name_;
     RrCatalogPtr rr_catalog_;
 

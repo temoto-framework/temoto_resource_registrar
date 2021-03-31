@@ -30,6 +30,7 @@
 #include "rr_query_base.h"
 #include "rr_server_base.h"
 #include "rr_status.h"
+#include "rr_exceptions.h"
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -78,6 +79,8 @@ namespace temoto_resource_registrar
       {
         return *(it->second.get());
       }
+      std::string error = "element '" + key + "' not found";
+      throw ElementNotFoundException(error.c_str());
     }
 
     const bool unload(const std::string &key, const std::string &id)
@@ -142,6 +145,14 @@ namespace temoto_resource_registrar
       {
         eraseSerializedCatalog();
       }
+
+      for (const std::string &clientId : clients_.getIds()) {
+        try
+        {
+          unloadClient(clientId);
+        } catch (const ElementNotFoundException &e)
+        {}
+      }      
     }
 
     void updateConfiguration(const Configuration &config)
@@ -208,8 +219,12 @@ namespace temoto_resource_registrar
     }
 
     size_t serverCount() { return servers_.getIds().size(); }
+    size_t clientCount() { return clients_.getIds().size(); }
 
-    bool unload(const std::string &rr, const std::string &id);
+    virtual bool unload(const std::string &rr, const std::string &id)
+    {
+      return false;
+    }
 
     bool unload(RrBase &target, const std::string &id)
     {
@@ -352,28 +367,51 @@ namespace temoto_resource_registrar
     void createClient(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
     {
       std::string clientName = rr + "_" + server;
+
       bool oldClient = true;
       if (!clients_.exists(clientName))
       {
         std::cout << "creating client! " << clientName << std::endl;
 
-        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(clientName);
+        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(rr, server);
+        std::cout << "client created! " << clientName << std::endl;
         client->setCatalog(rr_catalog_);
-
+        std::cout << "Catalog set." << std::endl;
         client->registerUserStatusCb(statusCallback);
-
+        std::cout << "CB registered." << std::endl;
         clients_.add(std::move(client));
-
+        std::cout << "Client registered." << std::endl;
         oldClient = false;
       }
 
       auto &client = clients_.getElement(clientName);
+      std::cout << "Getting client from storage." << std::endl;
       auto dynamicRef = dynamic_cast<const CallClientClass &>(client);
-
+      std::cout << "dynamicRef done." << std::endl;
       if (overwriteCb && (statusCallback != NULL) && oldClient)
       {
         dynamicRef.registerUserStatusCb(statusCallback);
       }
+    }
+
+    void unloadClient(const std::string &client)
+    {
+      try {
+        std::string targetRr = clients_.getElement(client).rr();
+        clients_.remove(client);
+
+        for (const std::string &id : rr_catalog_->getClientIds(client))
+        {
+          unload(targetRr, id);
+        }
+      } catch (const ElementNotFoundException &e) {
+        throw ElementNotFoundException("Client not found");
+      }
+    }
+
+    void unloadServer(const std::string &server)
+    {
+      rr_catalog_->getServerIds(server);
     }
 
   protected:

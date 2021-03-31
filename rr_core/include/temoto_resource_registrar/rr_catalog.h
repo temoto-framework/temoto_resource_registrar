@@ -19,6 +19,7 @@
 
 #include "rr_query_base.h"
 #include "rr_query_container.h"
+#include "rr_exceptions.h"
 
 #include <algorithm>
 #include <boost/serialization/access.hpp>
@@ -88,7 +89,7 @@ namespace temoto_resource_registrar
     std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
     std::unordered_map<UUID, DependencyContainer> id_dependency_map_;
 
-    mutable std::mutex modify_mutex_;
+    mutable std::recursive_mutex modify_mutex_;
 
   public:
     RrCatalog() = default;
@@ -116,12 +117,15 @@ namespace temoto_resource_registrar
 
     std::vector<QueryContainer<RawData>> getUniqueServerQueries(const ServerName &server);
 
+    std::set<UUID> getClientIds(const ClientName &client);
+    std::set<UUID> getServerIds(const ServerName &server);
+
     void print();
 
     // Move initialization
     RrCatalog(RrCatalog &&other)
     {
-      std::lock_guard<std::mutex> lock(other.modify_mutex_);
+      std::lock_guard<std::recursive_mutex> lock(other.modify_mutex_);
       client_id_map_ = std::move(other.client_id_map_);
       server_id_map_ = std::move(other.server_id_map_);
       id_query_map_ = std::move(other.id_query_map_);
@@ -132,7 +136,7 @@ namespace temoto_resource_registrar
     RrCatalog(const RrCatalog &other)
     {
       other.modify_mutex_;
-      std::lock_guard<std::mutex> lock(other.modify_mutex_);
+      std::lock_guard<std::recursive_mutex> lock(other.modify_mutex_);
       client_id_map_ = other.client_id_map_;
       server_id_map_ = other.server_id_map_;
       id_query_map_ = other.id_query_map_;
@@ -142,8 +146,8 @@ namespace temoto_resource_registrar
     RrCatalog &operator=(RrCatalog &&other)
     {
       std::lock(modify_mutex_, other.modify_mutex_);
-      std::lock_guard<std::mutex> self_lock(modify_mutex_, std::adopt_lock);
-      std::lock_guard<std::mutex> other_lock(other.modify_mutex_, std::adopt_lock);
+      std::lock_guard<std::recursive_mutex> self_lock(modify_mutex_, std::adopt_lock);
+      std::lock_guard<std::recursive_mutex> other_lock(other.modify_mutex_, std::adopt_lock);
       client_id_map_ = std::move(other.client_id_map_);
       server_id_map_ = std::move(other.server_id_map_);
       id_query_map_ = std::move(other.id_query_map_);
@@ -154,8 +158,8 @@ namespace temoto_resource_registrar
     RrCatalog &operator=(const RrCatalog &other)
     {
       std::lock(modify_mutex_, other.modify_mutex_);
-      std::lock_guard<std::mutex> self_lock(modify_mutex_, std::adopt_lock);
-      std::lock_guard<std::mutex> other_lock(other.modify_mutex_, std::adopt_lock);
+      std::lock_guard<std::recursive_mutex> self_lock(modify_mutex_, std::adopt_lock);
+      std::lock_guard<std::recursive_mutex> other_lock(other.modify_mutex_, std::adopt_lock);
       client_id_map_ = other.client_id_map_;
       server_id_map_ = other.server_id_map_;
       id_query_map_ = other.id_query_map_;

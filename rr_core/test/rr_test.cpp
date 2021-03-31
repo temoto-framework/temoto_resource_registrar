@@ -732,3 +732,80 @@ TEST_F(RrBaseTest, CatalogResponseUpdateTest)
 
   EXPECT_EQ(container.rawQuery_, "updatedResponse");
 }
+
+TEST_F(RrBaseTest, ClientUnloadTest)
+{
+
+  std::map<std::string, int> unloadCounter;
+
+  class UnloadTestRr : public RrBase
+  {
+  public:
+    UnloadTestRr(const std::string &name, std::map<std::string, int> &map) : RrBase(name), map(map) {}
+
+    bool unload(const std::string &rr, const std::string &id)
+    {
+      LOG(INFO) << "UNLOADING";
+      map[rr]++;
+      return true;
+    }
+
+  private:
+    std::map<std::string, int> &map;
+  };
+
+  UnloadTestRr rr("rr", unloadCounter);
+
+  RrCatalog catalog;
+  catalog.storeClientCallRecord("targetRr_targetServer", "id1");
+  catalog.storeClientCallRecord("targetRr_targetServer", "id2");
+  catalog.storeClientCallRecord("targetRr_targetServer", "id3");
+  catalog.storeClientCallRecord("targetRr2_targetServer2", "id4");
+
+  rr.updateCatalog(catalog);
+
+  EXPECT_EQ(rr.clientCount(), 0);
+
+  std::string targetRr = "targetRr";
+  std::string targetServer = "targetServer";
+  std::string targetQuery = "targetQuery";
+  rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
+
+  EXPECT_EQ(rr.clientCount(), 1);
+
+  std::string targetRr2 = "targetRr2";
+  std::string targetServer2 = "targetServer2";
+  std::string targetQuery2 = "targetQuery2";
+  rr.createClient<RrClientBase, std::string, void *const>(targetRr2, targetServer2, targetQuery2, NULL, false);
+
+  EXPECT_EQ(rr.clientCount(), 2);
+
+  std::string unloadTarget = "targetRr_targetServer";
+  rr.unloadClient(unloadTarget);
+
+  EXPECT_EQ(rr.clientCount(), 1);
+  EXPECT_EQ(unloadCounter["targetRr"], 3);
+
+  unloadTarget = "targetRr2_targetServer2";
+  rr.unloadClient(unloadTarget);
+
+  EXPECT_EQ(rr.clientCount(), 0);
+  EXPECT_EQ(unloadCounter["targetRr2"], 1);
+
+  LOG(INFO) << "checking invalid client scenario";
+
+  EXPECT_THROW({
+    try
+    {
+      unloadTarget = "targetRr2_targetServer3";
+      rr.unloadClient(unloadTarget);
+    }
+    catch (const ElementNotFoundException &e)
+    {
+      EXPECT_STREQ("Client not found", e.what());
+      throw;
+    }
+  }, ElementNotFoundException);
+
+  EXPECT_EQ(rr.clientCount(), 0);
+}

@@ -21,11 +21,10 @@ namespace temoto_resource_registrar
 
   void RrCatalog::storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData)
   {
-    
 
     std::cout << "in store query.." << std::endl;
 
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     id_query_map_[reqData] = QueryContainer<RawData>(q, reqData, qData, server);
     server_id_map_[server].insert(q.id());
 
@@ -34,7 +33,7 @@ namespace temoto_resource_registrar
 
   void RrCatalog::updateResponse(const std::string &server, RawData request, RawData response)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
 
     RawData key = "";
     for (auto const &query : id_query_map_)
@@ -55,7 +54,7 @@ namespace temoto_resource_registrar
 
   UUID RrCatalog::queryExists(const std::string &server, RawData reqData)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &query : id_query_map_)
     {
       QueryContainer<RawData> wrapper = query.second;
@@ -76,10 +75,9 @@ namespace temoto_resource_registrar
 
     std::cout << "processExisting" << std::endl;
 
-    
     request = findOriginalContainer(id).rawRequest_;
 
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     if (request.size())
     {
       id_query_map_[request].storeNewId(q.id(), q.origin());
@@ -103,22 +101,20 @@ namespace temoto_resource_registrar
   RawData RrCatalog::unload(const std::string &server, const std::string &id, bool &unloadable)
   {
 
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     auto vec = server_id_map_[server];
     int removedElCnt = vec.erase(id);
     server_id_map_[server] = vec;
 
     std::string queryResp = "";
 
-    modify_mutex_.unlock();
     if (removedElCnt)
     {
       std::cout << "unload" << std::endl;
       QueryContainer<RawData> qc = findOriginalContainer(id);
-      
+
       if (qc.responsibleServer_.size())
       {
-        modify_mutex_.lock();
         queryResp = qc.rawQuery_;
         qc.removeId(id);
 
@@ -143,7 +139,7 @@ namespace temoto_resource_registrar
   QueryContainer<RawData> RrCatalog::findOriginalContainer(const std::string &id)
   {
     std::cout << "findOriginalContainer: " << id << std::endl;
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &queryEntry : id_query_map_)
     {
       if (queryEntry.second.rr_ids_.count(id))
@@ -152,7 +148,7 @@ namespace temoto_resource_registrar
         return queryEntry.second;
       }
     }
-
+    std::cout << "Not found! Returning raw container" << std::endl;
     return QueryContainer<RawData>();
   }
 
@@ -164,7 +160,7 @@ namespace temoto_resource_registrar
 
   std::unordered_map<UUID, std::string> RrCatalog::getAllQueryIds(const std::string &id)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &queryEntry : id_query_map_)
     {
       if (queryEntry.second.rr_ids_.count(id))
@@ -178,13 +174,13 @@ namespace temoto_resource_registrar
 
   void RrCatalog::storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     id_dependency_map_[queryId].registerDependency(dependencySource, dependencyId);
   }
 
   std::unordered_map<UUID, std::string> RrCatalog::getDependencies(const std::string &queryId)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     if (id_dependency_map_.count(queryId))
       return id_dependency_map_[queryId].dependencies();
 
@@ -194,7 +190,7 @@ namespace temoto_resource_registrar
 
   void RrCatalog::unloadDependency(const std::string &queryId, const std::string &dependencyId)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     id_dependency_map_[queryId].removeDependency(dependencyId);
 
     if (!id_dependency_map_[queryId].count())
@@ -205,7 +201,7 @@ namespace temoto_resource_registrar
 
   UUID RrCatalog::getOriginQueryId(const std::string &queryId)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &dependencyEntry : id_dependency_map_)
     {
       if (dependencyEntry.second.dependencies().count(queryId))
@@ -218,13 +214,13 @@ namespace temoto_resource_registrar
 
   void RrCatalog::storeClientCallRecord(const std::string &client, const std::string &id)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     client_id_map_[client].insert(id);
   }
 
   ClientName RrCatalog::getIdClient(const std::string &id)
   {
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &clientQueries : client_id_map_)
     {
       if (clientQueries.second.count(id))
@@ -240,13 +236,11 @@ namespace temoto_resource_registrar
     std::vector<QueryContainer<RawData>> output;
     std::set<UUID> addedMessages;
 
-    std::lock_guard<std::mutex> lock(modify_mutex_);
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &queryId : server_id_map_[server])
     {
       std::cout << "getUniqueServerQueries" << std::endl;
-      modify_mutex_.unlock();
       QueryContainer<RawData> container = findOriginalContainer(queryId);
-      modify_mutex_.lock();
       if (addedMessages.count(container.q_.id()) == 0)
       {
         output.push_back(container);
@@ -255,6 +249,24 @@ namespace temoto_resource_registrar
     }
 
     return output;
+  }
+
+  std::set<UUID> RrCatalog::getClientIds(const ClientName &client)
+  {
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+    if (client_id_map_.count(client) > 0)
+      return client_id_map_[client];
+
+    throw ElementNotFoundException("Client not found");
+  }
+
+  std::set<UUID> RrCatalog::getServerIds(const ServerName &server)
+  {
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+    if (server_id_map_.count(server) > 0)
+      return server_id_map_[server];
+
+    throw ElementNotFoundException("Server not found");
   }
 
   void RrCatalog::print()

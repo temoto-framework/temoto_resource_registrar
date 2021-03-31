@@ -18,14 +18,14 @@
 
 namespace temoto_resource_registrar
 {
-  RrClientBase::RrClientBase(const std::string &name)
-      : name_(name), id_(name)
+  RrClientBase::RrClientBase(const std::string &rr, const std::string &name)
+      : name_(name), rr_(rr), id_(rr + "_" + name)
   {
   }
 
   std::string RrClientBase::id()
   {
-    return name_;
+    return id_;
   }
 
   void RrClientBase::setCatalog(const RrCatalogPtr &reg)
@@ -56,5 +56,10 @@ namespace temoto_resource_registrar
 
   bool RrClientBase::hasRegisteredCb()
   {
+  }
+
+  std::string RrClientBase::rr() const
+  {
+    return rr_;
   }
 } // namespace temoto_resource_registrar

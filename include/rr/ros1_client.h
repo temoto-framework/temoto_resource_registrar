@@ -17,9 +17,9 @@ class Ros1Client : public temoto_resource_registrar::RrClientBase
 public:
   typedef std::function<void(ServiceClass, temoto_resource_registrar::Status)> UserStatusCb;
 
-  Ros1Client(const std::string &name) : temoto_resource_registrar::RrClientBase(name)
+  Ros1Client(const std::string &rr, const std::string &name) : temoto_resource_registrar::RrClientBase(rr, name)
   {
-    client_ = nh_.serviceClient<ServiceClass>(name);
+    client_ = nh_.serviceClient<ServiceClass>(id());
   }
 
   /**
@@ -74,7 +74,7 @@ public:
       typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialisedRequest_);
       typename ServiceClass::Response response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialisedRsponse_);
 
-      ServiceClass query; // TODO: get the query from the rr_catalog;
+      ServiceClass query;
       query.request = request;
       query.response = response;
 
