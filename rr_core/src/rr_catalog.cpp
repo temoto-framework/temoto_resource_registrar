@@ -115,7 +115,7 @@ namespace temoto_resource_registrar
     {
       std::cout << "unload" << std::endl;
       QueryContainer<RawData> qc = findOriginalContainer(id);
-
+      
       if (qc.responsibleServer_.size())
       {
         modify_mutex_.lock();
@@ -239,11 +239,14 @@ namespace temoto_resource_registrar
   {
     std::vector<QueryContainer<RawData>> output;
     std::set<UUID> addedMessages;
+
     std::lock_guard<std::mutex> lock(modify_mutex_);
     for (auto const &queryId : server_id_map_[server])
     {
       std::cout << "getUniqueServerQueries" << std::endl;
+      modify_mutex_.unlock();
       QueryContainer<RawData> container = findOriginalContainer(queryId);
+      modify_mutex_.lock();
       if (addedMessages.count(container.q_.id()) == 0)
       {
         output.push_back(container);
