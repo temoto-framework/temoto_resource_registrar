@@ -121,14 +121,16 @@ namespace temoto_resource_registrar
         auto sc = nh.serviceClient<UnloadComponent>(clientName);
         auto client = std::make_unique<ros::ServiceClient>(sc);
         unload_clients_[clientName] = std::move(client);
+        ROS_INFO_STREAM("created unload client...");
       }
 
       temoto_resource_registrar::UnloadComponent unloadSrv;
       unloadSrv.request.target = id;
 
+      ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id );
       bool res = unload_clients_[clientName]->call(unloadSrv);
+      ROS_INFO_STREAM("result: " << res);
 
-      ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id << " result: " << res);
       return res;
     }
 
