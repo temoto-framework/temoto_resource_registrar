@@ -26,6 +26,7 @@
 #include <boost/serialization/unordered_map.hpp>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -81,6 +82,14 @@ namespace temoto_resource_registrar
 
   class RrCatalog
   {
+
+    std::unordered_map<ClientName, std::set<UUID>> client_id_map_;
+    std::unordered_map<ServerName, std::set<UUID>> server_id_map_;
+    std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
+    std::unordered_map<UUID, DependencyContainer> id_dependency_map_;
+
+    mutable std::mutex modify_mutex_;
+
   public:
     RrCatalog() = default;
 
@@ -109,6 +118,51 @@ namespace temoto_resource_registrar
 
     void print();
 
+    // Move initialization
+    RrCatalog(RrCatalog &&other)
+    {
+      std::lock_guard<std::mutex> lock(other.modify_mutex_);
+      client_id_map_ = std::move(other.client_id_map_);
+      server_id_map_ = std::move(other.server_id_map_);
+      id_query_map_ = std::move(other.id_query_map_);
+      id_dependency_map_ = std::move(other.id_dependency_map_);
+      //other.value = 0;
+    }
+    // Copy initialization
+    RrCatalog(const RrCatalog &other)
+    {
+      other.modify_mutex_;
+      std::lock_guard<std::mutex> lock(other.modify_mutex_);
+      client_id_map_ = other.client_id_map_;
+      server_id_map_ = other.server_id_map_;
+      id_query_map_ = other.id_query_map_;
+      id_dependency_map_ = other.id_dependency_map_;
+    }
+    // Move assignment
+    RrCatalog &operator=(RrCatalog &&other)
+    {
+      std::lock(modify_mutex_, other.modify_mutex_);
+      std::lock_guard<std::mutex> self_lock(modify_mutex_, std::adopt_lock);
+      std::lock_guard<std::mutex> other_lock(other.modify_mutex_, std::adopt_lock);
+      client_id_map_ = std::move(other.client_id_map_);
+      server_id_map_ = std::move(other.server_id_map_);
+      id_query_map_ = std::move(other.id_query_map_);
+      id_dependency_map_ = std::move(other.id_dependency_map_);
+      return *this;
+    }
+    // Copy assignment
+    RrCatalog &operator=(const RrCatalog &other)
+    {
+      std::lock(modify_mutex_, other.modify_mutex_);
+      std::lock_guard<std::mutex> self_lock(modify_mutex_, std::adopt_lock);
+      std::lock_guard<std::mutex> other_lock(other.modify_mutex_, std::adopt_lock);
+      client_id_map_ = other.client_id_map_;
+      server_id_map_ = other.server_id_map_;
+      id_query_map_ = other.id_query_map_;
+      id_dependency_map_ = other.id_dependency_map_;
+      return *this;
+    }
+
   protected:
     friend class boost::serialization::access;
 
@@ -119,10 +173,7 @@ namespace temoto_resource_registrar
     }
 
   private:
-    std::unordered_map<ClientName, std::set<UUID>> client_id_map_;
-    std::unordered_map<ServerName, std::set<UUID>> server_id_map_;
-    std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
-    std::unordered_map<UUID, DependencyContainer> id_dependency_map_;
+    
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;

@@ -72,7 +72,8 @@ public:
     ROS_INFO_STREAM("------------------ Catalog");
 
     ROS_INFO_STREAM("loading serialized request and response from catalog.. ");
-    
+
+    ROS_INFO_STREAM("unloadMessage");
     temoto_resource_registrar::QueryContainer<std::string> originalContainer = rr_catalog_->findOriginalContainer(id);
     std::string serializedRequest = originalContainer.rawRequest_;
     ROS_INFO_STREAM("Catalog data... isEmpty: " << originalContainer.empty_);

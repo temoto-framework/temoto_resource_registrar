@@ -110,8 +110,7 @@ namespace temoto_resource_registrar
     }
 
   protected:
-    std::unordered_map<std::string, std::unique_ptr<ContentClass>>
-        rr_contents_;
+    std::unordered_map<std::string, std::unique_ptr<ContentClass>> rr_contents_;
   };
 
   class RrServers : public MapContainer<RrServerBase>
@@ -155,7 +154,7 @@ namespace temoto_resource_registrar
 
     void updateCatalog(const RrCatalog &catalog)
     {
-      rr_catalog_ = std::make_shared<RrCatalog>(catalog);
+      *rr_catalog_ = std::move(catalog);
 
       rr_catalog_->print();
     }
@@ -304,6 +303,7 @@ namespace temoto_resource_registrar
       {
         statusData.id_ = originalId;
 
+        std::cout << "handleStatus" << std::endl;
         auto container = rr_catalog_->findOriginalContainer(statusData.id_);
         if (!container.empty_)
         {
@@ -443,7 +443,6 @@ namespace temoto_resource_registrar
     template <class CallClientClass, class ServType, class QueryType, class StatusCallType>
     void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, const StatusCallType &statusFunc, bool overrideFunc)
     {
-      
 
       workId = std::this_thread::get_id();
 

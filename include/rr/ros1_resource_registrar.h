@@ -149,12 +149,17 @@ namespace temoto_resource_registrar
     template <class QueryType>
     std::vector<QueryType> getServerQueries(const std::string &server)
     {
+      ROS_INFO_STREAM("getServerQueries printing before processign catalog.");
+      rr_catalog_->print();
       std::vector<QueryType> out;
 
       for (auto const &queryContainer : rr_catalog_->getUniqueServerQueries(server))
       {
         out.push_back(deSerializeQuery<QueryType>(queryContainer));
       }
+
+      ROS_INFO_STREAM("getServerQueries printing after processign catalog.");
+      rr_catalog_->print();
 
       return out;
     }
@@ -196,7 +201,7 @@ namespace temoto_resource_registrar
         ROS_INFO_STREAM("client " << clientName << " created");
       }
       temoto_resource_registrar::StatusComponent statusSrv;
-
+      ROS_INFO_STREAM("callStatusClient");
       auto container = rr_catalog_->findOriginalContainer(statusData.id_);
       if (!container.empty_)
       {
@@ -243,6 +248,9 @@ namespace temoto_resource_registrar
 
     bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
     {
+      ROS_INFO_STREAM("printing catalog before unload callback");
+      rr_catalog_->print();
+
       ROS_INFO_STREAM("unloadCallback " << req.target);
       std::string id = req.target;
       ROS_INFO_STREAM("std::string id " << id);

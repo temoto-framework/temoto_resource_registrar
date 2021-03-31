@@ -578,8 +578,8 @@ TEST_F(RrBaseTest, ResourceRegistrarTest)
   EXPECT_EQ(rr_m1_1.callbacks().size(), 0);
   EXPECT_EQ(rr_m2.callbacks().size(), 0);
 
-  EXPECT_EQ(r1UnLoadCalls, 1);
-  EXPECT_EQ(r2UnLoadCalls, 1);
+  EXPECT_EQ(r1UnLoadCalls, 2);
+  EXPECT_EQ(r2UnLoadCalls, 2);
 
   LOG(INFO) << "RR_M0 Catalog -------------------";
   rr_m0.printCatalog();
