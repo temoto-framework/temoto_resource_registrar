@@ -27,10 +27,10 @@
 #include "rr_catalog.h"
 #include "rr_client_base.h"
 #include "rr_configuration.h"
+#include "rr_exceptions.h"
 #include "rr_query_base.h"
 #include "rr_server_base.h"
 #include "rr_status.h"
-#include "rr_exceptions.h"
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -139,20 +139,26 @@ namespace temoto_resource_registrar
     RrBase(std::string name) : name_(name),
                                rr_catalog_(std::make_shared<RrCatalog>()){};
 
-    ~RrBase()
+    /**
+ * @brief Destroy the Rr Base object. Here we do the cleanup for backup storage and clients. Since unloadClient(const std::string &id)
+ * uses virtual metods, one needs to create a destructor doing this logic for their implementations of RR. An example can be seen in 
+ * rr_test.cpp TEST_F(RrBaseTest, ClientUnloadTest).
+ * 
+ */
+    virtual ~RrBase()
     {
+      std::cout << "Destroying rr '" << name_ << "'" << std::endl;
       if (configuration_.eraseOnDestruct())
       {
-        eraseSerializedCatalog();
-      }
-
-      for (const std::string &clientId : clients_.getIds()) {
         try
         {
-          unloadClient(clientId);
-        } catch (const ElementNotFoundException &e)
-        {}
-      }      
+          eraseSerializedCatalog();
+        }
+        catch (...)
+        {
+          std::cout << "serializedCatalog erasure failed" << std::endl;
+        }
+      }
     }
 
     void updateConfiguration(const Configuration &config)
@@ -223,7 +229,7 @@ namespace temoto_resource_registrar
 
     virtual bool unload(const std::string &rr, const std::string &id)
     {
-      return false;
+      throw NotImplementedException("'unload' is not implemented in the base class");
     }
 
     bool unload(RrBase &target, const std::string &id)
@@ -394,17 +400,22 @@ namespace temoto_resource_registrar
       }
     }
 
-    void unloadClient(const std::string &client)
+    virtual void unloadClient(const std::string &client)
     {
-      try {
+      std::cout << "unloadClient " << client << std::endl;
+      try
+      {
         std::string targetRr = clients_.getElement(client).rr();
         clients_.remove(client);
 
         for (const std::string &id : rr_catalog_->getClientIds(client))
         {
+          std::cout << "\tunloadClient msg id " << id << std::endl;
           unload(targetRr, id);
         }
-      } catch (const ElementNotFoundException &e) {
+      }
+      catch (const ElementNotFoundException &e)
+      {
         throw ElementNotFoundException("Client not found");
       }
     }
@@ -443,7 +454,10 @@ namespace temoto_resource_registrar
       remove(configuration_.location().c_str());
     }
 
-    virtual bool callStatusClient(const std::string &clientName, Status statusData){};
+    virtual bool callStatusClient(const std::string &clientName, Status statusData)
+    {
+      throw NotImplementedException("'callStatusClient' not implemented for RrBase");
+    }
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
     void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)

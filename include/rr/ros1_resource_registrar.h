@@ -38,11 +38,27 @@ namespace temoto_resource_registrar
     {
     }
 
-    /**
+    ~ResourceRegistrarRos1(){
+      ROS_INFO_STREAM("unloading clients");
+      for (const std::string &clientId : clients_.getIds())
+      {
+        try
+        {
+          ROS_INFO_STREAM("unloading client " << clientId);
+          unloadClient(clientId);
+        }
+        catch (...)
+        {
+          ROS_WARN_STREAM("unloading error for client " << clientId);
+        }
+      }
+    }
+
+        /**
      * @brief Startup call for a ResourceRegistrar. Needed to start up support services of the Registrar.
      * 
      */
-    void init()
+        void init()
     {
       startServices();
     }

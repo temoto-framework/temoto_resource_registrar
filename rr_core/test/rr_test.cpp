@@ -743,6 +743,23 @@ TEST_F(RrBaseTest, ClientUnloadTest)
   public:
     UnloadTestRr(const std::string &name, std::map<std::string, int> &map) : RrBase(name), map(map) {}
 
+    ~UnloadTestRr()
+    {
+      LOG(INFO) << "unloading clients";
+      for (const std::string &clientId : clients_.getIds())
+      {
+        try
+        {
+          LOG(INFO) << "unloading client " << clientId;
+          unloadClient(clientId);
+        }
+        catch (...)
+        {
+          LOG(ERROR) << "unloading error for client " << clientId;
+        }
+      }
+    }
+
     bool unload(const std::string &rr, const std::string &id)
     {
       LOG(INFO) << "UNLOADING";
@@ -754,58 +771,73 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     std::map<std::string, int> &map;
   };
 
-  UnloadTestRr rr("rr", unloadCounter);
+  {
+    UnloadTestRr rr("rr", unloadCounter);
 
-  RrCatalog catalog;
-  catalog.storeClientCallRecord("targetRr_targetServer", "id1");
-  catalog.storeClientCallRecord("targetRr_targetServer", "id2");
-  catalog.storeClientCallRecord("targetRr_targetServer", "id3");
-  catalog.storeClientCallRecord("targetRr2_targetServer2", "id4");
+    RrCatalog catalog;
+    catalog.storeClientCallRecord("targetRr_targetServer", "id1");
+    catalog.storeClientCallRecord("targetRr_targetServer", "id2");
+    catalog.storeClientCallRecord("targetRr_targetServer", "id3");
+    catalog.storeClientCallRecord("targetRr2_targetServer2", "id4");
 
-  rr.updateCatalog(catalog);
+    // used for destructor testing
+    catalog.storeClientCallRecord("targetRr3_targetServer3", "id5");
 
-  EXPECT_EQ(rr.clientCount(), 0);
+    rr.updateCatalog(catalog);
 
-  std::string targetRr = "targetRr";
-  std::string targetServer = "targetServer";
-  std::string targetQuery = "targetQuery";
-  rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
+    EXPECT_EQ(rr.clientCount(), 0);
 
-  EXPECT_EQ(rr.clientCount(), 1);
+    std::string targetRr = "targetRr";
+    std::string targetServer = "targetServer";
+    std::string targetQuery = "targetQuery";
+    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
 
-  std::string targetRr2 = "targetRr2";
-  std::string targetServer2 = "targetServer2";
-  std::string targetQuery2 = "targetQuery2";
-  rr.createClient<RrClientBase, std::string, void *const>(targetRr2, targetServer2, targetQuery2, NULL, false);
+    EXPECT_EQ(rr.clientCount(), 1);
 
-  EXPECT_EQ(rr.clientCount(), 2);
+    targetRr = "targetRr2";
+    targetServer = "targetServer2";
+    targetQuery = "targetQuery2";
+    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
 
-  std::string unloadTarget = "targetRr_targetServer";
-  rr.unloadClient(unloadTarget);
+    EXPECT_EQ(rr.clientCount(), 2);
 
-  EXPECT_EQ(rr.clientCount(), 1);
-  EXPECT_EQ(unloadCounter["targetRr"], 3);
+    std::string unloadTarget = "targetRr_targetServer";
+    rr.unloadClient(unloadTarget);
 
-  unloadTarget = "targetRr2_targetServer2";
-  rr.unloadClient(unloadTarget);
+    EXPECT_EQ(rr.clientCount(), 1);
+    EXPECT_EQ(unloadCounter["targetRr"], 3);
 
-  EXPECT_EQ(rr.clientCount(), 0);
-  EXPECT_EQ(unloadCounter["targetRr2"], 1);
+    unloadTarget = "targetRr2_targetServer2";
+    rr.unloadClient(unloadTarget);
 
-  LOG(INFO) << "checking invalid client scenario";
+    EXPECT_EQ(rr.clientCount(), 0);
+    EXPECT_EQ(unloadCounter["targetRr2"], 1);
 
-  EXPECT_THROW({
-    try
-    {
-      unloadTarget = "targetRr2_targetServer3";
-      rr.unloadClient(unloadTarget);
-    }
-    catch (const ElementNotFoundException &e)
-    {
-      EXPECT_STREQ("Client not found", e.what());
-      throw;
-    }
-  }, ElementNotFoundException);
+    LOG(INFO) << "checking invalid client scenario";
 
-  EXPECT_EQ(rr.clientCount(), 0);
+    EXPECT_THROW({
+      try
+      {
+        unloadTarget = "targetRr2_targetServer3";
+        rr.unloadClient(unloadTarget);
+      }
+      catch (const ElementNotFoundException &e)
+      {
+        EXPECT_STREQ("Client not found", e.what());
+        throw;
+      }
+    },
+                 ElementNotFoundException);
+
+    EXPECT_EQ(rr.clientCount(), 0);
+
+    targetRr = "targetRr3";
+    targetServer = "targetServer3";
+    targetQuery = "targetQuery3";
+    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
+
+    EXPECT_EQ(rr.clientCount(), 1);
+  }
+
+  EXPECT_EQ(unloadCounter["targetRr3"], 1);
 }

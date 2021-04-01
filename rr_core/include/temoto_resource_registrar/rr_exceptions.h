@@ -51,5 +51,21 @@ namespace temoto_resource_registrar
     std::string error_message_;
   private:
   };
+
+  class NotImplementedException : public std::exception
+  {
+  public:
+    NotImplementedException(const char *msg) : error_message_(msg) {}
+
+    virtual const char *what() const throw()
+    {
+      return error_message_.c_str();
+    }
+
+  protected:
+    std::string error_message_;
+
+  private:
+  };
 } // namespace temoto_resource_registrar
 #endif
