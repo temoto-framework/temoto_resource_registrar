@@ -35,8 +35,6 @@ generate_messages(DEPENDENCIES
   std_msgs
 )
 
-# ----------------------------------------
-
 include(ExternalProject)
 
 ExternalProject_Add(rr_core001
@@ -70,8 +68,6 @@ catkin_package(
 include_directories(
   ${headers}
 )
-
-# ----------------------------------------
 
 ## producer start
 add_executable(resource_producer 
@@ -124,3 +120,7 @@ target_link_libraries(resource_agent
   ${libraries}
 )
 ## agent end
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1
+  ${CATKIN_DEVEL_PREFIX}/lib/librr_core.so.0.0.1 COPYONLY
+)
