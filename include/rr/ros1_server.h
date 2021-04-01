@@ -197,6 +197,7 @@ public:
       ROS_INFO("Request found. No storage needed. Fetching it... ");
       typename ServiceClass::Response fetchedResponse = fetchResponse(requestId, wrappedQuery);
       ROS_INFO("Fetching done...");
+      fetchedResponse.TemotoMetadata.requestId = generatedId;
       res = fetchedResponse;
     }
 

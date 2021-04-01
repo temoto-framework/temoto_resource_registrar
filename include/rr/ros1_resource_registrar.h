@@ -38,7 +38,9 @@ namespace temoto_resource_registrar
     {
     }
 
-    ~ResourceRegistrarRos1(){
+    ~ResourceRegistrarRos1()
+    {
+      ROS_INFO_STREAM("Destroying RR Ros " << name());
       ROS_INFO_STREAM("unloading clients");
       for (const std::string &clientId : clients_.getIds())
       {
@@ -54,11 +56,11 @@ namespace temoto_resource_registrar
       }
     }
 
-        /**
+    /**
      * @brief Startup call for a ResourceRegistrar. Needed to start up support services of the Registrar.
      * 
      */
-        void init()
+    void init()
     {
       startServices();
     }
@@ -143,13 +145,21 @@ namespace temoto_resource_registrar
       temoto_resource_registrar::UnloadComponent unloadSrv;
       unloadSrv.request.target = id;
 
-      ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id );
       bool res = unload_clients_[clientName]->call(unloadSrv);
       ROS_INFO_STREAM("result: " << res);
 
       return res;
     }
 
+/**
+ * @brief Metod used to deserialize a message from  the catalog for status propagation. Messages are not held on the client
+ * side and therefore need to be sent to the client. The client also needs to be able to deserialize them. This method is
+ * used for that.
+ * 
+ * @tparam QueryType 
+ * @param container 
+ * @return QueryType 
+ */
     template <class QueryType>
     QueryType deSerializeQuery(const QueryContainer<RawData> &container)
     {
@@ -241,6 +251,12 @@ namespace temoto_resource_registrar
       return status_clients_[clientName]->call(statusSrv);
     };
 
+    /**
+ * @brief ROS 1 implementation of the unloadResource method. 
+ * 
+ * @param id 
+ * @param dependency 
+ */
     virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
     {
       bool unloadStatus = unload(dependency.second, dependency.first);
@@ -298,6 +314,13 @@ namespace temoto_resource_registrar
       return dependencies;
     }
 
+/**
+ * @brief Method used to strip system metadata from a message. This is useful when message uniqueness is required.
+ * 
+ * @tparam MsgClass 
+ * @param data 
+ * @return MsgClass 
+ */
     template <class MsgClass>
     static MsgClass sanityzeData(MsgClass data)
     {

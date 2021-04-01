@@ -18,6 +18,7 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <mutex>
 #include <stdio.h>
@@ -284,7 +285,7 @@ namespace temoto_resource_registrar
 
     bool unloadByServerAndQuery(const std::string &server, const std::string &id) { return servers_.unload(server, id); }
 
-    virtual void sendStatus(Status statusData)
+    void sendStatus(Status statusData)
     {
       std::cout << "core sendStatus " << statusData.id_ << std::endl;
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(statusData.id_);
@@ -293,6 +294,7 @@ namespace temoto_resource_registrar
         std::string clientName = notId.second + "_status";
         std::cout << "\t callStatusClient for client name" << clientName << std::endl;
         bool statusResult = callStatusClient(clientName, statusData);
+
         std::cout << "\t call result: " << statusResult << std::endl;
       }
     }
@@ -338,7 +340,9 @@ namespace temoto_resource_registrar
         }
 
         std::cout << "\t\tsendStatus to target " << statusData.id_ << std::endl;
-        sendStatus(statusData);
+
+        std::async(&RrBase::sendStatus, this, statusData);
+        //sendStatus(statusData);
       }
       std::cout << "-----exited handleStatus " << statusData.id_ << std::endl;
     }
