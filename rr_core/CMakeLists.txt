@@ -70,6 +70,22 @@ option(test "Build all tests." OFF)
 if (test)
   
 
+  ExternalProject_Add(
+    glog
+    URL https://github.com/google/glog/archive/master.zip
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/glog
+    INSTALL_COMMAND ""
+  )
+
+  ExternalProject_Get_Property(glog source_dir binary_dir)
+
+  add_library(libglog SHARED IMPORTED)
+  set_target_properties(libglog PROPERTIES IMPORTED_LOCATION ${binary_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}glog${CMAKE_SHARED_LIBRARY_SUFFIX} )
+
+
+  include_directories("${source_dir}/src"
+                      "${binary_dir}")
+
   find_package(Threads REQUIRED)
 
   ExternalProject_Add(
@@ -100,26 +116,11 @@ if (test)
   include_directories("${source_dir}/googletest/include"
                     "${source_dir}/googlemock/include")
 
-  ExternalProject_Add(
-    glog
-    URL https://github.com/google/glog/archive/master.zip
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/glog
-    INSTALL_COMMAND ""
-  )
-
-  ExternalProject_Get_Property(glog source_dir binary_dir)
-
-  add_library(libglog IMPORTED STATIC GLOBAL)
-  add_dependencies(libglog glog)
-
-  set_target_properties(libglog PROPERTIES
-    "IMPORTED_LOCATION" "${binary_dir}/libglog.a"
-  )
-
-  include_directories("${binary_dir}"
-                      "${source_dir}/src")
 
 
+
+
+ 
 
 
   #enable_testing()
