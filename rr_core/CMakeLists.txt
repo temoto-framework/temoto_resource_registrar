@@ -83,8 +83,8 @@ if (test)
   set_target_properties(libglog PROPERTIES IMPORTED_LOCATION ${binary_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}glog${CMAKE_SHARED_LIBRARY_SUFFIX} )
 
 
-  include_directories("${source_dir}/src"
-                      "${binary_dir}")
+  include_directories(${source_dir}/src
+                      ${binary_dir})
 
   find_package(Threads REQUIRED)
 
@@ -127,7 +127,7 @@ if (test)
   #find_package(GTest)
 
   set(TEST_BINARY ${CMAKE_PROJECT_NAME}_test)
-  file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false test/*.h test/*.cpp)
+  file(GLOB_RECURSE TEST_SOURCES test/*.h test/*.cpp)
 
   add_executable(${TEST_BINARY} ${TEST_SOURCES})
   target_link_libraries(${TEST_BINARY} libgtest libgmock libglog libconsole_bridge ${LIBRARY_NAME} ${Boost_LIBRARIES})
