@@ -6,6 +6,7 @@
 #include "temoto_resource_registrar/rr_server_base.h"
 
 #include "rr/message_serializer.h"
+#include "rr/query_utils.h"
 #include "rr/ros1_client.h"
 #include "rr/ros1_query.h"
 
@@ -87,7 +88,7 @@ public:
 
     typename ServiceClass::Request request;
     typename ServiceClass::Response response;
-    
+
     try
     {
       request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serializedRequest);
@@ -117,7 +118,9 @@ public:
       {
         member_unload_cb_(request, response);
       }
-    } else {
+    }
+    else
+    {
       ROS_INFO_STREAM("Resource can not be unloaded. Printing catalog for debug");
     }
 
@@ -142,7 +145,35 @@ public:
     ROS_INFO_STREAM("Starting serverCallback");
 
     typename ServiceClass::Request sanitizedReq = sanityzeRequest(req);
+
+    bool hasEqualsDefined = QueryUtils::EqualExists<typename ServiceClass::Request>::value;
+    ROS_INFO_STREAM("request has equals defined?: " << hasEqualsDefined);
+
     std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(sanitizedReq);
+    std::string requestId = "";
+
+    ROS_INFO_STREAM("checking existance of request in catalog... ");
+    ROS_INFO_STREAM("Message: " << req);
+    ROS_INFO_STREAM("sanitized Message: " << sanitizedReq);
+
+    if (hasEqualsDefined)
+    {
+      ROS_INFO_STREAM("evaluating uniqueness based on ==");
+      std::vector<temoto_resource_registrar::QueryContainer<std::string>> allServerRequests = rr_catalog_->getUniqueServerQueries(name_);
+      for (const auto &q : allServerRequests) {
+        std::string serReq = q.rawRequest_;
+        typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serReq);
+        if (request == sanitizedReq) {
+          serializedRequest = serReq;
+          requestId = q.q_.id();
+        }
+      }
+    }
+    else
+    {
+      ROS_INFO_STREAM("evaluating uniqueness based on string comparison");
+      requestId = this->rr_catalog_->queryExists(name_, serializedRequest);
+    }
 
     std::string generatedId = generateId();
     res.TemotoMetadata.requestId = generatedId;
@@ -150,12 +181,6 @@ public:
     ROS_INFO_STREAM("Generated request id: " << generatedId);
 
     Ros1Query<ServiceClass> wrappedQuery = wrap(req, res);
-
-    ROS_INFO_STREAM("checking existance of request in catalog... ");
-
-    ROS_INFO_STREAM("Message: " << req);
-    ROS_INFO_STREAM("sanitized Message: " << sanitizedReq);
-    std::string requestId = this->rr_catalog_->queryExists(name_, serializedRequest);
 
     if (requestId.size() == 0)
     {
@@ -180,7 +205,6 @@ public:
 
       ROS_INFO_STREAM("Wrapping response...");
       Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
-
 
       if (wrappedResponse.dependencies().size())
       {
@@ -251,7 +275,7 @@ private:
   {
     typename ServiceClass::Response empty;
     res.TemotoMetadata = empty.TemotoMetadata;
-    
+
     std::string serialized = MessageSerializer::serializeMessage<typename ServiceClass::Response>(res);
 
     return serialized;
