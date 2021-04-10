@@ -54,9 +54,12 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(console_bridge source_dir binary_dir)
 
+set(CONSOLE_BRIDGE_LIB_INCLUDE "${source_dir}/include")
+file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_LIB_INCLUDE})
+
 add_library(libconsole_bridge SHARED IMPORTED)
 set_target_properties(libconsole_bridge PROPERTIES IMPORTED_LOCATION ${binary_dir}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}console_bridge${CMAKE_SHARED_LIBRARY_SUFFIX})
-set_target_properties(libconsole_bridge PROPERTIES INCLUDE_DIRECTORIES ${source_dir}/include)
+set_target_properties(libconsole_bridge PROPERTIES INCLUDE_DIRECTORIES "${CONSOLE_BRIDGE_LIB_INCLUDE}")
 
 #############
 # test flag
