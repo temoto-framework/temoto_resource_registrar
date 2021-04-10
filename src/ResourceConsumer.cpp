@@ -83,6 +83,12 @@ int main(int argc, char **argv)
 
   ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
 
+  rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, NULL, statusCallback);
+
+  load1Id = loadCall.response.TemotoMetadata.requestId;
+
+  ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
+
   //bool unloadRes = rr.unload("AgentRR", load1Id);
   //ROS_INFO_STREAM("Unload result: " << unloadRes);
 
