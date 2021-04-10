@@ -1,7 +1,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include <console_bridge/console.h>
+#include "console_bridge/console.h"
 
 #include <iostream>
 #include <sstream>
