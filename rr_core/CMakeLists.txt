@@ -56,7 +56,7 @@ ExternalProject_Get_Property(console_bridge source_dir binary_dir)
 
 add_library(libconsole_bridge SHARED IMPORTED)
 set_target_properties(libconsole_bridge PROPERTIES IMPORTED_LOCATION ${binary_dir}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}console_bridge${CMAKE_SHARED_LIBRARY_SUFFIX} )
-include_directories(${source_dir}/console_bridge/include/)
+include_directories("${source_dir}/console_bridge/include")
 
 #############
 # test flag
