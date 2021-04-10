@@ -50,6 +50,8 @@ ExternalProject_Add(
   URL https://github.com/ros/console_bridge/archive/master.zip
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/console_bridge
   INSTALL_COMMAND ""
+  LOG_DOWNLOAD ON
+  LOG_INSTALL ON
 )
 
 ExternalProject_Get_Property(console_bridge source_dir binary_dir)
@@ -59,7 +61,7 @@ file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_LIB_INCLUDE})
 
 add_library(libconsole_bridge SHARED IMPORTED)
 set_target_properties(libconsole_bridge PROPERTIES IMPORTED_LOCATION ${binary_dir}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}console_bridge${CMAKE_SHARED_LIBRARY_SUFFIX})
-set_target_properties(libconsole_bridge PROPERTIES INCLUDE_DIRECTORIES "${CONSOLE_BRIDGE_LIB_INCLUDE}")
+set_target_properties(libconsole_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CONSOLE_BRIDGE_LIB_INCLUDE}")
 
 #############
 # test flag
