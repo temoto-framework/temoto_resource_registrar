@@ -79,22 +79,21 @@ option(test "Build all tests." OFF)
 #############
 if (test)
   
+  #ExternalProject_Add(
+  #  glog
+  #  URL https://github.com/google/glog/archive/master.zip
+  #  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/glog
+  #  INSTALL_COMMAND ""
+  #)
 
-  ExternalProject_Add(
-    glog
-    URL https://github.com/google/glog/archive/master.zip
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/glog
-    INSTALL_COMMAND ""
-  )
+  #ExternalProject_Get_Property(glog source_dir binary_dir)
 
-  ExternalProject_Get_Property(glog source_dir binary_dir)
-
-  add_library(libglog SHARED IMPORTED)
-  set_target_properties(libglog PROPERTIES IMPORTED_LOCATION ${binary_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}glog${CMAKE_SHARED_LIBRARY_SUFFIX} )
+  #add_library(libglog SHARED IMPORTED)
+  #set_target_properties(libglog PROPERTIES IMPORTED_LOCATION ${binary_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}glog${CMAKE_SHARED_LIBRARY_SUFFIX} )
 
 
-  include_directories(${source_dir}/src
-                      ${binary_dir})
+  #include_directories(${source_dir}/src
+  #                    ${binary_dir})
 
   find_package(Threads REQUIRED)
 
@@ -129,10 +128,6 @@ if (test)
 
 
 
-
- 
-
-
   #enable_testing()
   #find_package(GTest)
 
@@ -140,7 +135,7 @@ if (test)
   file(GLOB_RECURSE TEST_SOURCES test/*.h test/*.cpp)
 
   add_executable(${TEST_BINARY} ${TEST_SOURCES})
-  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog libconsole_bridge ${LIBRARY_NAME} ${Boost_LIBRARIES})
+  target_link_libraries(${TEST_BINARY} libgtest libgmock libconsole_bridge ${LIBRARY_NAME} ${Boost_LIBRARIES})
 
   #gtest_discover_tests(${TEST_BINARY}
   #  WORKING_DIRECTORY ${PROJECT_DIR}
