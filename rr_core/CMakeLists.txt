@@ -91,7 +91,7 @@ if (test)
 
   set(GLOG_LIB_INCLUDE "${source_dir}/src")
   file(MAKE_DIRECTORY ${GLOG_LIB_INCLUDE})
-  set(GLOG_BIN_LIB_INCLUDE "${binary_dir}")
+  set(GLOG_BIN_LIB_INCLUDE "${binary_dir}/glog")
   file(MAKE_DIRECTORY ${GLOG_BIN_LIB_INCLUDE})
 
   list(APPEND GLOG_LIB_INCLUDE_DIRS ${GLOG_LIB_INCLUDE})
