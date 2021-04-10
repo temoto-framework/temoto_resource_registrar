@@ -91,13 +91,14 @@ if (test)
 
   set(GLOG_LIB_INCLUDE "${source_dir}/src")
   file(MAKE_DIRECTORY ${GLOG_LIB_INCLUDE})
-  set(GLOG_BIN_LIB_INCLUDE "${binary_dir}/glog")
+  set(GLOG_BIN_LIB_INCLUDE "${binary_dir}")
   file(MAKE_DIRECTORY ${GLOG_BIN_LIB_INCLUDE})
 
   list(APPEND GLOG_LIB_INCLUDE_DIRS ${GLOG_LIB_INCLUDE})
   list(APPEND GLOG_LIB_INCLUDE_DIRS ${GLOG_BIN_LIB_INCLUDE})
 
   add_library(libglog SHARED IMPORTED)
+  add_dependencies(libglog glog)
   set_target_properties(libglog PROPERTIES IMPORTED_LOCATION ${binary_dir}/${CMAKE_SHARED_LIBRARY_PREFIX}glog${CMAKE_SHARED_LIBRARY_SUFFIX} )
   set_target_properties(libglog PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${GLOG_LIB_INCLUDE_DIRS}")
 
