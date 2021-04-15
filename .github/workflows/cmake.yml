@@ -18,9 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - name: Setup ROS environment
-        with:
-          required-ros-distributions: melodic
+      - uses: ros-tooling/setup-ros@0.0.25
+      - run: vcs --help
 
       - name: boost
         run: sudo apt-get update && sudo apt-get install -yq libboost-all-dev
