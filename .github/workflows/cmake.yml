@@ -18,8 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - uses: ros-tooling/setup-ros@0.0.25
-      - run: vcs --help
+      - uses: betwo/github-setup-catkin@master
+        with:
+          ros-version: 'melodic'
+          build-tool: 'catkin_tools'
+          workspace: '$GITHUB_WORKSPACE'
 
       - name: boost
         run: sudo apt-get update && sudo apt-get install -yq libboost-all-dev
