@@ -13,17 +13,34 @@ jobs:
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
+    container: ros:melodic-ros-base
 
     steps:
       - uses: actions/checkout@v2
       
-      - uses: betwo/github-setup-catkin@master
-        with:
-          ros-version: 'melodic'
-          build-tool: 'catkin_tools'
-          workspace: '$GITHUB_WORKSPACE'
-
+      - name: Install catkin & package dependencies
+        run: |
+          cd / && ./ros_entrypoint.sh
+          apt-get update
+          apt-get install -y python-pip
+          apt-get install -y ros-melodic-catkin python-catkin-tools
+          apt-get install -y ros-melodic-cv-bridge
+          apt-get install -y ros-melodic-roslint
+          pip install bluerobotics-ping
+          
+      - name: Setup catkin workspace
+        run: |
+          mkdir -p ~/catkin_ws/src
+          cd ~/catkin_ws
+          /bin/bash -c "source /opt/ros/melodic/setup.bash && catkin build"
+      
+      - name: Build package
+        run: |
+          cd ~/catkin_ws/src
+          cp -r $GITHUB_WORKSPACE .
+          /bin/bash -c "source ../devel/setup.bash && catkin build"
+          
       - name: boost
         run: sudo apt-get update && sudo apt-get install -yq libboost-all-dev
 
