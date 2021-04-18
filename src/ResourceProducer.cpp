@@ -8,15 +8,17 @@
 
 #include "temoto_resource_registrar/CounterService.h"
 
+#include <boost/thread/thread.hpp>
+
 std::string rrName = "ProducerRR";
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
 bool loaded = false;
 std::string id = "";
 
-void caller()
+void caller(int loopNr)
 {
-  for (int n = 0; n < 3; ++n)
+  for (int n = 0; n < loopNr; ++n)
   {
     std::string message = "some message i need to see";
     ROS_INFO("caller...");
@@ -27,9 +29,12 @@ void caller()
 
 void RtLoadCB(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res)
 {
-  ROS_INFO_STREAM("IN LOAD CB CounterService " << res.TemotoMetadata.requestId);
-  id = res.TemotoMetadata.requestId;
-  loaded = true;
+  ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temotoMetadata.requestId);
+  id = res.temotoMetadata.requestId;
+
+  //auto fa = std::async(std::launch::async, caller);
+
+  boost::thread thread_b(caller, 5);
 }
 
 void RtUnloadCB(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res)
@@ -44,6 +49,9 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   ros::Rate loop_rate(10);
 
+  ros::AsyncSpinner spinner(4); // Use 4 threads
+  spinner.start();
+
   rr.init();
 
   auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>(rrName + "_counterServer", &RtLoadCB, &RtUnloadCB);
@@ -52,7 +60,7 @@ int main(int argc, char **argv)
   ROS_INFO("spinning....");
 
 
-  while (ros::ok())
+  /*while (ros::ok())
   {
     ros::spinOnce();
     loop_rate.sleep();
@@ -60,8 +68,9 @@ int main(int argc, char **argv)
       auto fa = std::async(std::launch::async, caller);
       loaded = false;
     }
-      
-  }
+  }*/
+  //ros::spin();
+  ros::waitForShutdown();
 
   ROS_INFO("Exiting producer...");
 }

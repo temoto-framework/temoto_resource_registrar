@@ -1,5 +1,5 @@
-TemotoMetadata TemotoMetadata
+TemotoRequestMetadata temotoMetadata
 string loadTarget
 ---
-TemotoMetadata TemotoMetadata
+TemotoResponseMetadata temotoMetadata
 string loadMessage

@@ -33,7 +33,7 @@ public:
     ROS_INFO_STREAM("invoke for ServiceClass started");
     if (client_.call(request))
     {
-      ROS_INFO_STREAM("invoke OK " << request.response.TemotoMetadata.requestId);
+      ROS_INFO_STREAM("invoke OK " << request.response.temotoMetadata.requestId);
     }
     else
     {
@@ -78,8 +78,9 @@ public:
       query.request = request;
       query.response = response;
 
-      query.request.TemotoMetadata.requestId = status.id_;
-      query.response.TemotoMetadata.requestId = status.id_;
+      //query.request.TemotoMetadata.requestId = status.id_;
+      query.response.temotoMetadata.requestId = status.id_;
+      
       user_status_cb_(query, status); // TODO: needs exception handling
     }
   }

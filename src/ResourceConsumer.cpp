@@ -5,16 +5,31 @@
 std::string rrName = "ConsumerRR";
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
+int counter = 0;
+int shutdownCounter = 5;
+std::string loadId = "";
+
 void statusCallback(temoto_resource_registrar::LoadComponent msg, temoto_resource_registrar::Status status)
 {
-  ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialisedRequest_.size() << " - " << msg.request.TemotoMetadata.originRr);
+  ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialisedRequest_.size() << " - " << msg.request.temotoMetadata.originRr);
+
+  counter++;
+
+  if (counter == shutdownCounter)
+  {
+    ROS_INFO_STREAM("Counter reached, unloading: " << loadId << " from: "
+                                                   << "AgentRR");
+    bool res = rr.unload("AgentRR", loadId);
+    ROS_INFO_STREAM("Unload result: " << res);
+  }
 }
 
 int main(int argc, char **argv)
 {
   ROS_INFO("Starting up consumer...");
   ros::init(argc, argv, "consumer_thing");
-
+  ros::AsyncSpinner spinner(4); // Use 4 threads
+  spinner.start();
   rr.init();
 
   /*std::vector<std::string> dependencies;
@@ -79,9 +94,10 @@ int main(int argc, char **argv)
 
   rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, NULL, statusCallback);
 
-  std::string load1Id = loadCall.response.TemotoMetadata.requestId;
+  loadId = loadCall.response.temotoMetadata.requestId;
 
-  ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
+
+  /*ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
 
   rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, NULL, statusCallback);
 
@@ -91,6 +107,7 @@ int main(int argc, char **argv)
 
   //bool unloadRes = rr.unload("AgentRR", load1Id);
   //ROS_INFO_STREAM("Unload result: " << unloadRes);
+
 
   temoto_resource_registrar::LoadComponent loadCall2;
   loadCall2.request.loadTarget = "TimeService";
@@ -104,8 +121,9 @@ int main(int argc, char **argv)
   rr.unload("AgentRR", load2Id);
 
   rr.printCatalog();
-
-  ros::spin();
+*/
+  //ros::spin();
+  ros::waitForShutdown();
 
   ROS_INFO("Exiting consumer....");
 }

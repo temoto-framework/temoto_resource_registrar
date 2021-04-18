@@ -176,7 +176,7 @@ public:
     }
 
     std::string generatedId = generateId();
-    res.TemotoMetadata.requestId = generatedId;
+    res.temotoMetadata.requestId = generatedId;
 
     ROS_INFO_STREAM("Generated request id: " << generatedId);
 
@@ -195,6 +195,7 @@ public:
       }
 
       ROS_INFO_STREAM("Storing query in catalog...");
+      
 
       rr_catalog_->storeQuery(name_,
                               wrappedQuery,
@@ -221,11 +222,11 @@ public:
       ROS_INFO("Request found. No storage needed. Fetching it... ");
       typename ServiceClass::Response fetchedResponse = fetchResponse(requestId, wrappedQuery);
       ROS_INFO("Fetching done...");
-      fetchedResponse.TemotoMetadata.requestId = generatedId;
+      fetchedResponse.temotoMetadata.requestId = generatedId;
       res = fetchedResponse;
     }
 
-    ROS_INFO_STREAM("server call end" << res.TemotoMetadata.requestId);
+    ROS_INFO_STREAM("server call end" << res.temotoMetadata.requestId);
     return true;
   }
 
@@ -267,14 +268,14 @@ private:
   static typename ServiceClass::Request sanityzeRequest(typename ServiceClass::Request data)
   {
     typename ServiceClass::Request empty;
-    data.TemotoMetadata = empty.TemotoMetadata;
+    data.temotoMetadata = empty.temotoMetadata;
     return data;
   }
 
   std::string sanitizeAndSerialize(typename ServiceClass::Response res)
   {
     typename ServiceClass::Response empty;
-    res.TemotoMetadata = empty.TemotoMetadata;
+    res.temotoMetadata = empty.temotoMetadata;
 
     std::string serialized = MessageSerializer::serializeMessage<typename ServiceClass::Response>(res);
 

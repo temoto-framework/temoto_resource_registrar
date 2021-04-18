@@ -1,7 +1,8 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_H
 #define TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_H
 
-#include "temoto_resource_registrar/TemotoMetadata.h"
+#include "temoto_resource_registrar/TemotoRequestMetadata.h"
+#include "temoto_resource_registrar/TemotoResponseMetadata.h"
 #include "temoto_resource_registrar/rr_query_container.h"
 
 /**
@@ -20,12 +21,15 @@ public:
    * 
    * @param metadata 
    */
-  Ros1Query(const temoto_resource_registrar::TemotoMetadata &metadata){
-    setId(metadata.requestId);
-    setRr(metadata.servingRr);
-    setOrigin(metadata.originRr);
+  Ros1Query(const temoto_resource_registrar::TemotoRequestMetadata &requestData,
+            const temoto_resource_registrar::TemotoResponseMetadata &responseData)
+  {
+    setId(responseData.requestId);
+    setRr(requestData.servingRr);
+    setOrigin(requestData.originRr);
+    setStatus(responseData.status);
 
-    for (const auto &el : metadata.dependencies)
+    for (const auto &el : responseData.dependencies)
     {
       std::vector<std::string> splitDep = splitString(el, DELIMITER);
       if (splitDep.size() == 2)
@@ -47,14 +51,11 @@ public:
   Ros1Query(const ServiceClass &query) : typed_query_(query)
   {
 
-    setId(selectNonEmpty(typed_query_.request.TemotoMetadata.requestId,
-                         typed_query_.response.TemotoMetadata.requestId));
-    setRr(selectNonEmpty(typed_query_.request.TemotoMetadata.servingRr,
-                         typed_query_.response.TemotoMetadata.servingRr));
-    setOrigin(selectNonEmpty(typed_query_.request.TemotoMetadata.originRr,
-                             typed_query_.response.TemotoMetadata.originRr));
+    setId(typed_query_.response.temotoMetadata.requestId);
+    setRr(typed_query_.request.temotoMetadata.servingRr);
+    setOrigin(typed_query_.request.temotoMetadata.originRr);
 
-    for (const auto &el : selectLongerVector(typed_query_.request.TemotoMetadata.dependencies, typed_query_.response.TemotoMetadata.dependencies))
+    for (const auto &el : typed_query_.response.temotoMetadata.dependencies)
     {
       std::vector<std::string> splitDep = splitString(el, DELIMITER);
       if (splitDep.size() == 2)
@@ -98,8 +99,8 @@ public:
   {
     ServiceClass sq = rosQuery();
 
-    req.TemotoMetadata = sq.request.TemotoMetadata;
-    res.TemotoMetadata = sq.response.TemotoMetadata;
+    req.temotoMetadata = sq.request.temotoMetadata;
+    res.temotoMetadata = sq.response.temotoMetadata;
   }
 
   /**
@@ -109,15 +110,12 @@ public:
    */
   ServiceClass rosQuery()
   {
-    typed_query_.response.TemotoMetadata.requestId = id();
-    typed_query_.response.TemotoMetadata.servingRr = rr();
-    typed_query_.response.TemotoMetadata.originRr = origin();
-    typed_query_.response.TemotoMetadata.dependencies = convertDependencies();
+    typed_query_.response.temotoMetadata.requestId = id();
+    typed_query_.response.temotoMetadata.dependencies = convertDependencies();
+    typed_query_.response.temotoMetadata.status = status();
 
-    typed_query_.request.TemotoMetadata.requestId = id();
-    typed_query_.request.TemotoMetadata.servingRr = rr();
-    typed_query_.request.TemotoMetadata.originRr = origin();
-    typed_query_.request.TemotoMetadata.dependencies = convertDependencies();
+    typed_query_.request.temotoMetadata.servingRr = rr();
+    typed_query_.request.temotoMetadata.originRr = origin();
 
     return typed_query_;
   }
@@ -137,20 +135,6 @@ private:
     }
 
     return output;
-  }
-
-  std::string selectNonEmpty(std::string s1, std::string s2)
-  {
-    if (s1.size() > s2.size())
-      return s1;
-    return s2;
-  }
-
-  std::vector<std::string> selectLongerVector(std::vector<std::string> v1, std::vector<std::string> v2)
-  {
-    if (v1.size() > v2.size())
-      return v1;
-    return v2;
   }
 
   std::vector<std::string> splitString(std::string string, const std::string &splitter)

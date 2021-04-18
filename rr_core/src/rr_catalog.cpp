@@ -25,8 +25,11 @@ namespace temoto_resource_registrar
     std::cout << "in store query.." << std::endl;
 
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+    std::cout << "locking..." << std::endl;
     id_query_map_[reqData] = QueryContainer<RawData>(q, reqData, qData, server);
+    std::cout << "id_query_map_[reqData] set" << std::endl;
     server_id_map_[server].insert(q.id());
+    std::cout << "server_id_map_[server] set" << std::endl;
 
     std::cout << "storage done..." << std::endl;
   }

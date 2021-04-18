@@ -169,7 +169,7 @@ namespace temoto_resource_registrar
       q.request = MessageSerializer::deSerializeMessage<typename QueryType::Request>(container.rawRequest_);
       q.response = MessageSerializer::deSerializeMessage<typename QueryType::Response>(container.rawQuery_);
 
-      q.response.TemotoMetadata.requestId = container.q_.id();
+      q.response.temotoMetadata.requestId = container.q_.id();
 
       return q;
     }
@@ -325,7 +325,7 @@ namespace temoto_resource_registrar
     static MsgClass sanityzeData(MsgClass data)
     {
       MsgClass empty;
-      data.TemotoMetadata = empty.TemotoMetadata;
+      data.temotoMetadata = empty.temotoMetadata;
       return data;
     }
   };

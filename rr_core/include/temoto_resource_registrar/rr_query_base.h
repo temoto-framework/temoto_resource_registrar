@@ -39,20 +39,19 @@ namespace temoto_resource_registrar
     void storeResponse(MT &resp);
 
     void setId(const std::string &id) { requestId_ = id; };
-
     std::string id() const { return requestId_; }
 
     void includeDependency(const std::string &rr, const std::string &id) { dependentQueryIds_[id] = rr; }
-
     std::unordered_map<std::string, std::string> dependencies() { return dependentQueryIds_; }
 
     void setRr(const std::string &rr) { servingRr_ = rr; }
-
     std::string rr() { return servingRr_; }
 
     void setOrigin(const std::string &rr) { originRr_ = rr; }
-
     std::string origin() { return originRr_; }
+
+    void setStatus(const int &status) { status_ = status; }
+    int status() { return status_; }
 
   protected:
     std::string requestId_;
@@ -60,12 +59,14 @@ namespace temoto_resource_registrar
     std::string servingRr_;
     std::string originRr_;
 
+    int status_;
+
     friend class boost::serialization::access;
 
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &requestId_ &dependentQueryIds_ &servingRr_ &originRr_;
+      ar &requestId_ &dependentQueryIds_ &servingRr_ &originRr_ &status_;
     }
 
   private:
