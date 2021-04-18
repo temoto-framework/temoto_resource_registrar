@@ -15,7 +15,8 @@ find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
 
 add_message_files(
   FILES
-  TemotoMetadata.msg
+  TemotoRequestMetadata.msg
+  TemotoResponseMetadata.msg
 )
 
 add_action_files(
