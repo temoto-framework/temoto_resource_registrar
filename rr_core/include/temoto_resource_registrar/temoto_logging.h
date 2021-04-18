@@ -28,12 +28,12 @@
 
 #include <iostream> // TODO: remove after debug finished
 
-#define GET_NAME TEMOTO_MSG_ATTR.getNsWithSlash() + __func__
-#define GET_OBJ_NAME TEMOTO_MSG_ATTR.getNsWithSlash() + boost::core::demangle(typeid(*this).name()) + "::" + __func__
+#define GET_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + __func__
+#define GET_OBJ_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + boost::core::demangle(typeid(*this).name()) + "::" + __func__
 
-#define PUSH_TRACE_CONTEXT TEMOTO_MSG_ATTR.pushParentTraceContext(GET_NAME)
-#define PUSH_OBJ_TRACE_CONTEXT TEMOTO_MSG_ATTR.pushParentTraceContext(GET_OBJ_NAME)
-#define PRINT_TRACE_CONTEXT TEMOTO_MSG_ATTR.printContext()
+#define PUSH_TRACE_CONTEXT TEMOTO_LOG_ATTR.pushParentTraceContext(GET_NAME)
+#define PUSH_OBJ_TRACE_CONTEXT TEMOTO_LOG_ATTR.pushParentTraceContext(GET_OBJ_NAME)
+#define PRINT_TRACE_CONTEXT TEMOTO_LOG_ATTR.printContext()
 
 class TemotoLoggingAttributes
 {
@@ -105,6 +105,6 @@ private:
   mutable std::recursive_mutex trace_stacks_mtx_;
 };
 
-static TemotoLoggingAttributes TEMOTO_MSG_ATTR;
+extern TemotoLoggingAttributes TEMOTO_LOG_ATTR;
 
 #endif
