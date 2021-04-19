@@ -14,8 +14,8 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_ERROR_H
-#define TEMOTO_ERROR_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__TEMOTO_ERROR_H
+#define TEMOTO_RESOURCE_REGISTRAR__TEMOTO_ERROR_H
 
 #include <vector>
 #include <string>
@@ -24,21 +24,28 @@
 #include <sstream>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 #include "temoto_resource_registrar/temoto_logging.h"
 
-#define TEMOTO_ERROR(message) TemotoError(message, GET_NAME)
-#define TEMOTO_OBJ_ERROR(message) TemotoError(message, GET_OBJ_NAME)
+#define TEMOTO_ERROR_FF(message) resource_registrar::TemotoError(message, GET_NAME_FF)
+#define TEMOTO_ERROR_(message) resource_registrar::TemotoError(message, GET_NAME)
 
-#define TEMOTO_ERRSTACK(message) TemotoErrorStack(message, GET_NAME)
-#define TEMOTO_OBJ_ERRSTACK(message) TemotoErrorStack(message, GET_OBJ_NAME)
+#define TEMOTO_ERRSTACK_FF(message) resource_registrar::TemotoErrorStack(message, GET_NAME_FF)
+#define TEMOTO_ERRSTACK(message) resource_registrar::TemotoErrorStack(message, GET_NAME)
 
+#define FWD_TEMOTO_ERRSTACK_FF(error_stack) error_stack.appendError("forwarding", GET_NAME_FF)
 #define FWD_TEMOTO_ERRSTACK(error_stack) error_stack.appendError("forwarding", GET_NAME)
-#define FWD_TEMOTO_OBJ_ERRSTACK(error_stack) error_stack.appendError("forwarding", GET_OBJ_NAME)
 
+namespace resource_registrar
+{
 class TemotoError : public std::exception
 {
 public:
+  TemotoError()
+  {}
+
   TemotoError(std::string message, std::string origin)
   : time_(time(NULL))
   , message_(message)
@@ -111,10 +118,7 @@ public:
   {
     std::stringstream ss(serialized_errstack);
     boost::archive::binary_iarchive ia(ss);
-
-    TemotoErrorStack tes;
-    ia >> tes;
-    TemotoErrorStack(tes);
+    ia >> *this;
   }
 
   TemotoErrorStack appendError(std::string error_message, std::string origin)
@@ -158,6 +162,11 @@ public:
     return getMessage().c_str();
   }
 
+  const TemotoError front()
+  {
+    return error_stack_.front();
+  }
+
   std::string serialize()
   {
     std::stringstream ss;
@@ -179,5 +188,6 @@ private:
   std::vector<TemotoError> error_stack_;
   mutable std::string messages_;
 };
+} // resource registrar namespace
 
 #endif

@@ -28,11 +28,11 @@
 
 #include <iostream> // TODO: remove after debug finished
 
-#define GET_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + __func__
-#define GET_OBJ_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + boost::core::demangle(typeid(*this).name()) + "::" + __func__
+#define GET_NAME_FF TEMOTO_LOG_ATTR.getNsWithSlash() + __func__
+#define GET_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + boost::core::demangle(typeid(*this).name()) + "::" + __func__
 
-#define PUSH_TRACE_CONTEXT TEMOTO_LOG_ATTR.pushParentTraceContext(GET_NAME)
-#define PUSH_OBJ_TRACE_CONTEXT TEMOTO_LOG_ATTR.pushParentTraceContext(GET_OBJ_NAME)
+#define PUSH_TRACE_CONTEXT_FF TEMOTO_LOG_ATTR.pushParentTraceContext(GET_NAME)
+#define PUSH_TRACE_CONTEXT TEMOTO_LOG_ATTR.pushParentTraceContext(GET_OBJ_NAME)
 #define PRINT_TRACE_CONTEXT TEMOTO_LOG_ATTR.printContext()
 
 class TemotoLoggingAttributes
