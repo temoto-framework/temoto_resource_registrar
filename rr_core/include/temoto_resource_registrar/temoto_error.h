@@ -21,7 +21,11 @@
 #include <string>
 #include <exception>
 #include <time.h>
-#include "temoto_logging.h"
+#include <sstream>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
+
+#include "temoto_resource_registrar/temoto_logging.h"
 
 #define TEMOTO_ERROR(message) TemotoError(message, GET_NAME)
 #define TEMOTO_OBJ_ERROR(message) TemotoError(message, GET_OBJ_NAME)
@@ -73,6 +77,15 @@ public:
     return getMessage().c_str();
   }
 
+protected:
+  friend class boost::serialization::access;
+
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /* version */)
+  {
+    ar &origin_ &message_ &time_;
+  }
+
 private:
   unsigned long time_;
   std::string message_;
@@ -93,6 +106,16 @@ public:
   : error_stack_(tes.error_stack_)
   , messages_(tes.messages_)
   {}
+
+  TemotoErrorStack(const std::string &serialized_errstack)
+  {
+    std::stringstream ss(serialized_errstack);
+    boost::archive::binary_iarchive ia(ss);
+
+    TemotoErrorStack tes;
+    ia >> tes;
+    TemotoErrorStack(tes);
+  }
 
   TemotoErrorStack appendError(std::string error_message, std::string origin)
   {
@@ -134,6 +157,24 @@ public:
   {
     return getMessage().c_str();
   }
+
+  std::string serialize()
+  {
+    std::stringstream ss;
+    boost::archive::binary_oarchive oa(ss);
+    oa << *this;
+    return ss.str();
+  }
+
+protected:
+  friend class boost::serialization::access;
+
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /* version */)
+  {
+    ar &error_stack_;
+  }
+
 private:
   std::vector<TemotoError> error_stack_;
   mutable std::string messages_;
