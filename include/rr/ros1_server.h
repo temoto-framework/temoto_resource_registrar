@@ -98,6 +98,8 @@ public:
       request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serializedRequest);
       response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
 
+      response.temotoMetadata.requestId = originalContainer.q_.id();
+
       ROS_INFO_STREAM("Found response with legth: " << serializedResponse.size());
     }
     catch (const temoto_resource_registrar::DeserializationException &e)
