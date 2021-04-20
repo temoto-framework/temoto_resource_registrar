@@ -38,7 +38,9 @@ public:
              void (*unLoadCallback)(typename ServiceClass::Request &,
                                     typename ServiceClass::Response &)) : temoto_resource_registrar::RrServerBase(name, NULL, NULL),
                                                                           typed_load_callback_ptr_(loadCallback),
-                                                                          typed_unload_callback_ptr_(unLoadCallback)
+                                                                          typed_unload_callback_ptr_(unLoadCallback),
+                                                                          member_load_cb_(NULL),
+                                                                          member_unload_cb_(NULL)
   {
     initialize();
   }
@@ -52,7 +54,9 @@ public:
                  member_unload_cb)
       : temoto_resource_registrar::RrServerBase(name, NULL, NULL),
         member_load_cb_(member_load_cb),
-        member_unload_cb_(member_unload_cb)
+        member_unload_cb_(member_unload_cb),
+        typed_load_callback_ptr_(NULL),
+        typed_unload_callback_ptr_(NULL)
   {
     initialize();
   }
