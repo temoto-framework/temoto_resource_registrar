@@ -451,9 +451,8 @@ namespace temoto_resource_registrar
     {
       if (configuration_.saveOnModify())
       {
-        mtx.lock();
+        std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
         saveCatalog();
-        mtx.unlock();
       }
     }
 
@@ -477,9 +476,8 @@ namespace temoto_resource_registrar
       auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientName));
       client.invoke(query);
 
-      mtx.lock();
+      std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
       rr_catalog_->storeClientCallRecord(clientName, query.id());
-      mtx.unlock();
     }
 
     /**
@@ -559,13 +557,14 @@ namespace temoto_resource_registrar
   private:
     std::string name_;
     std::unordered_map<std::string, RrBase *> rr_references_;
-    std::mutex mtx;
+    mutable std::recursive_mutex modify_mutex_;
 
     // is a map of thread id - query objects. Used for automatic dependency detection
     std::unordered_map<std::thread::id, RrQueryBase> running_query_map_;
 
     void processTransactionCallback(const TransactionInfo &info)
     {
+      std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
       CONSOLE_BRIDGE_logDebug("\t\t\t processTransactionCallback %i", info.type_);
       CONSOLE_BRIDGE_logDebug("\t\t\t processTransactionCallback map size %i", running_query_map_.size());
       std::thread::id workId = std::this_thread::get_id();
