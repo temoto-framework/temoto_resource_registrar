@@ -30,12 +30,8 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
     temoto_resource_registrar::CounterService counterSrv;
     counterSrv.request.startPoint = 1;
 
-    Ros1Query<temoto_resource_registrar::LoadComponent> parentQuery(req.temotoMetadata, res.temotoMetadata);
-
-    rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, &(parentQuery), statusCallback);
+    rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, statusCallback);
     ROS_INFO_STREAM("3" << req.loadTarget);
-    parentQuery.rosQuery(req, res);
-    ROS_INFO_STREAM("4" << req.loadTarget);
   }
   ROS_INFO_STREAM("5" << req.loadTarget);
   res.loadMessage = req.loadTarget;

@@ -28,19 +28,6 @@ public:
     setRr(requestData.servingRr);
     setOrigin(requestData.originRr);
     setStatus(responseData.status);
-
-    for (const auto &el : responseData.dependencies)
-    {
-      std::vector<std::string> splitDep = splitString(el, DELIMITER);
-      if (splitDep.size() == 2)
-      {
-        includeDependency(splitDep.at(0), splitDep.at(1));
-      }
-      else
-      {
-        ROS_INFO_STREAM(splitDep.size() << " " << splitDep.at(0));
-      }
-    }
   }
 
   /**
@@ -50,23 +37,9 @@ public:
    */
   Ros1Query(const ServiceClass &query) : typed_query_(query)
   {
-
     setId(typed_query_.response.temotoMetadata.requestId);
     setRr(typed_query_.request.temotoMetadata.servingRr);
     setOrigin(typed_query_.request.temotoMetadata.originRr);
-
-    for (const auto &el : typed_query_.response.temotoMetadata.dependencies)
-    {
-      std::vector<std::string> splitDep = splitString(el, DELIMITER);
-      if (splitDep.size() == 2)
-      {
-        includeDependency(splitDep.at(0), splitDep.at(1));
-      }
-      else
-      {
-        ROS_INFO_STREAM(splitDep.size() << " " << splitDep.at(0));
-      }
-    }
   }
 
   /**
@@ -111,7 +84,6 @@ public:
   ServiceClass rosQuery()
   {
     typed_query_.response.temotoMetadata.requestId = id();
-    typed_query_.response.temotoMetadata.dependencies = convertDependencies();
     typed_query_.response.temotoMetadata.status = status();
 
     typed_query_.request.temotoMetadata.servingRr = rr();
@@ -124,34 +96,5 @@ protected:
   ServiceClass typed_query_;
 
 private:
-  std::string DELIMITER = ";;";
-
-  std::vector<std::string> convertDependencies()
-  {
-    std::vector<std::string> output;
-    for (const auto &dep : dependencies())
-    {
-      output.push_back(dep.second + DELIMITER + dep.first);
-    }
-
-    return output;
-  }
-
-  std::vector<std::string> splitString(std::string string, const std::string &splitter)
-  {
-    std::vector<std::string> res;
-
-    size_t pos = 0;
-    std::string token;
-
-    while ((pos = string.find(splitter)) != std::string::npos)
-    {
-      token = string.substr(0, pos);
-      res.push_back(token);
-      string.erase(0, pos + splitter.length());
-    }
-    res.push_back(string);
-    return res;
-  }
 };
 #endif

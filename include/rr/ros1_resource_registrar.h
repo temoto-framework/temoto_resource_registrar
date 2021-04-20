@@ -74,7 +74,6 @@ namespace temoto_resource_registrar
  * -- If not done yet create a new client to communicate with the server. Existing cliets are cached.
  * -- Send the users request to the server. This uses the Ros1Client::invoce(Ros1Query<ServiceClass> &wrappedRequest) method
  * -- If the request is unique, the server will execute the user defined loadCallback and return the response. Else a cached response is returned.
- * - Check if a parent query was bound to the main query and store the query information. This is to detect dependencies in query chains.
  * - Check if a status function was attached to the query. This status function will be called if a status update is sent upstream from the server.
  * 
  * Status functions can be defined for every client. Every client can have only one status function. If it is needed to re-define said function
@@ -84,7 +83,6 @@ namespace temoto_resource_registrar
  * @param rr - Name of the target ResourceRegistrar.
  * @param server - Name of the target Ros1Server.
  * @param query - User query as a QueryType srv object.
- * @param parentQuery - Optional. Used for dependency resolving.
  * @param statusFunc - Optional. User defined status function. Executed when a status is sent by a downstream server.
  * @param overrideStatus - Optional. Forces overwriting of the client status function.
  */
@@ -92,7 +90,6 @@ namespace temoto_resource_registrar
     void call(const std::string &rr,
               const std::string &server,
               QueryType &query,
-              RrQueryBase *parentQuery = NULL,
               std::function<void(QueryType, Status)> statusFunc = NULL,
               bool overrideStatus = false)
     {
@@ -106,7 +103,6 @@ namespace temoto_resource_registrar
                                                           NULL,
                                                           server,
                                                           wrappedBaseQuery,
-                                                          parentQuery,
                                                           statusFunc,
                                                           overrideStatus);
 
@@ -298,22 +294,6 @@ namespace temoto_resource_registrar
       handleStatus({static_cast<Status::State>(req.status), req.target, req.message, req.serialisedRequest, req.serialisedResponse});
       return true;
     }
-
-    std::vector<std::string> convertDependencies(RrQueryBase *query)
-    {
-      std::vector<std::string> dependencies;
-      if (query != NULL)
-      {
-        ROS_INFO_STREAM("query exists with size: " << query->dependencies().size());
-
-        for (auto const mapEntry : query->dependencies())
-        {
-          dependencies.push_back(mapEntry.first + ";;" + mapEntry.second);
-        }
-      }
-      return dependencies;
-    }
-
 /**
  * @brief Method used to strip system metadata from a message. This is useful when message uniqueness is required.
  * 

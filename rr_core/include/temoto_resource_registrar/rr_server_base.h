@@ -19,9 +19,9 @@
 
 #include "rr_catalog.h"
 #include "rr_client_base.h"
+#include "rr_exceptions.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
-#include "rr_exceptions.h"
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
@@ -31,6 +31,16 @@
 
 namespace temoto_resource_registrar
 {
+  class TransactionInfo
+  {
+  public:
+    TransactionInfo(const int &type, const RrQueryBase &query) : type_(type), base_query_(query){};
+    // 100 - start transaction
+    // 200 - end transaction
+    int type_;
+    RrQueryBase base_query_;    
+  };
+
   class RrServerBase : public Identifiable<std::string>
   {
 
@@ -56,6 +66,11 @@ namespace temoto_resource_registrar
 
     virtual bool unloadMessage(const std::string &id) = 0;
 
+    void registerTransactionCb(std::function<void(const TransactionInfo &)> callback)
+    {
+      transaction_callback_ptr_ = callback;
+    }
+
   protected:
     RrCatalogPtr rr_catalog_;
     //keeping debug values, just in case for dev
@@ -63,6 +78,8 @@ namespace temoto_resource_registrar
 
     void (*load_callback_ptr_)(RrQueryBase &);
     void (*unload_callback_ptr_)(RrQueryBase &);
+
+    std::function<void(const TransactionInfo &)> transaction_callback_ptr_;
 
     std::string generateId() const
     {
