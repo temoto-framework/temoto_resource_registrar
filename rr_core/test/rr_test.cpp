@@ -203,25 +203,21 @@ public:
     std::string requestId = rr_catalog_->queryExists(name_, serializedRequest);
     if (requestId.size() == 0)
     {
+
+      LOG(INFO) << "Executing query startup callback";
+      transaction_callback_ptr_(TransactionInfo(100, query));
+
       LOG(INFO) << "Request not found. Running and storing it";
       typed_load_callback_ptr_(query);
       LOG(INFO) << "Finished callback";
+
+      LOG(INFO) << "Executing query finished callback";
+      transaction_callback_ptr_(TransactionInfo(200, query));
 
       LOG(INFO) << "Storing query data to server..." << name_;
 
       storeQuery(serializedRequest, query);
       LOG(INFO) << "Finished storing";
-
-      if (query.dependencies().size())
-      {
-        LOG(INFO) << "dependency storage required";
-        for (auto const &i : query.dependencies())
-        {
-          LOG(INFO) << "     dependency: " << i.first << " - " << i.second;
-
-          rr_catalog_->storeDependency(query.id(), i.second, i.first);
-        }
-      }
     }
     else
     {
@@ -365,7 +361,7 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   RrQueryResponseTemplate<Resource2> resp(Resource2(0, 0));
   RrQueryTemplate<Resource2> newQuery(req, resp);
 
-  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery, &(query));
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery);
 
   EXPECT_EQ(newQuery.response().getResponse().j_, 100);
   EXPECT_EQ(newQuery.response().getResponse().i_, 1);
@@ -374,7 +370,7 @@ void RtM1LoadCB(RrQueryTemplate<Resource1> &query)
   RrQueryResponseTemplate<Resource2> resp2(Resource2(0, 0));
   RrQueryTemplate<Resource2> newQuery2(req2, resp2);
 
-  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2, &(query));
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S", newQuery2);
 
   EXPECT_EQ(newQuery2.response().getResponse().j_, 100);
   EXPECT_EQ(newQuery2.response().getResponse().i_, 2);

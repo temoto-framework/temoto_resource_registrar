@@ -41,9 +41,6 @@ namespace temoto_resource_registrar
     void setId(const std::string &id) { requestId_ = id; };
     std::string id() const { return requestId_; }
 
-    void includeDependency(const std::string &rr, const std::string &id) { dependentQueryIds_[id] = rr; }
-    std::unordered_map<std::string, std::string> dependencies() { return dependentQueryIds_; }
-
     void setRr(const std::string &rr) { servingRr_ = rr; }
     std::string rr() { return servingRr_; }
 
@@ -55,7 +52,6 @@ namespace temoto_resource_registrar
 
   protected:
     std::string requestId_;
-    std::unordered_map<std::string, std::string> dependentQueryIds_;
     std::string servingRr_;
     std::string originRr_;
 
@@ -66,7 +62,7 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &requestId_ &dependentQueryIds_ &servingRr_ &originRr_ &status_;
+      ar &requestId_ &servingRr_ &originRr_ &status_;
     }
 
   private:

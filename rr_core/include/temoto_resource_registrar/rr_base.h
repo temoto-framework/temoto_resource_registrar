@@ -18,6 +18,7 @@
 #define TEMOTO_RESOURCE_REGISTRAR__RR_BASE_H
 
 #include <fstream>
+#include <functional>
 #include <future>
 #include <iostream>
 #include <mutex>
@@ -211,20 +212,18 @@ namespace temoto_resource_registrar
     void call(RrBase &target,
               const std::string &server,
               QueryType &query,
-              RrQueryBase *parentQuery = NULL,
               StatusCallType statusFunc = NULL,
               bool overrideStatus = false)
     {
-      privateCall<RrClientBase, ServType, QueryType, StatusCallType>(NULL, &(target), server, query, parentQuery, statusFunc, overrideStatus);
+      privateCall<RrClientBase, ServType, QueryType, StatusCallType>(NULL, &(target), server, query, statusFunc, overrideStatus);
     }
 
     template <class ServType, class QueryType>
     void call(RrBase &target,
               const std::string &server,
-              QueryType &query,
-              RrQueryBase *parentQuery = NULL)
+              QueryType &query)
     {
-      privateCall<RrClientBase, ServType, QueryType, void *>(NULL, &(target), server, query, parentQuery, NULL, false);
+      privateCall<RrClientBase, ServType, QueryType, void *>(NULL, &(target), server, query, NULL, false);
     }
 
     size_t serverCount() { return servers_.getIds().size(); }
@@ -265,6 +264,7 @@ namespace temoto_resource_registrar
     void registerServer(std::unique_ptr<RrServerBase> serverPtr)
     {
       serverPtr->setCatalog(rr_catalog_);
+      serverPtr->registerTransactionCb(std::bind(&RrBase::processTransactionCallback, this, std::placeholders::_1));
       servers_.add(std::move(serverPtr));
     }
 
@@ -451,9 +451,8 @@ namespace temoto_resource_registrar
     {
       if (configuration_.saveOnModify())
       {
-        mtx.lock();
+        std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
         saveCatalog();
-        mtx.unlock();
       }
     }
 
@@ -477,9 +476,8 @@ namespace temoto_resource_registrar
       auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientName));
       client.invoke(query);
 
-      mtx.lock();
+      std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
       rr_catalog_->storeClientCallRecord(clientName, query.id());
-      mtx.unlock();
     }
 
     /**
@@ -496,15 +494,14 @@ namespace temoto_resource_registrar
      * @param target 
      * @param server 
      * @param query 
-     * @param parentQuery 
      * @param statusFunc 
      * @param overrideFunc 
      */
     template <class CallClientClass, class ServType, class QueryType, class StatusCallType>
-    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, RrQueryBase *parentQuery, const StatusCallType &statusFunc, bool overrideFunc)
+    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, const StatusCallType &statusFunc, bool overrideFunc)
     {
 
-      workId = std::this_thread::get_id();
+      std::thread::id workId = std::this_thread::get_id();
 
       CONSOLE_BRIDGE_logDebug("in private call");
 
@@ -530,11 +527,13 @@ namespace temoto_resource_registrar
         target->handleInternalCall<ServType, QueryType>(server, query);
       }
 
-      if (parentQuery != NULL)
+      if (running_query_map_.count(workId))
       {
-        CONSOLE_BRIDGE_logDebug("if has parent query: %s - %s", query.rr().c_str(), query.id().c_str());
+        CONSOLE_BRIDGE_logDebug("------------------------------------- has a dependency requirement");
+        RrQueryBase bq = running_query_map_[workId];
+        std::cout << "!!!Query " << query.id() << " is dependency of " << bq.id() << ". Stroring it" << std::endl;
 
-        parentQuery->includeDependency(query.rr(), query.id());
+        rr_catalog_->storeDependency(bq.id(), query.rr(), query.id());
       }
 
       autoSaveCatalog();
@@ -544,7 +543,7 @@ namespace temoto_resource_registrar
     {
       CONSOLE_BRIDGE_logDebug("private unloadResource() %s", id.c_str());
       std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
-      
+
       CONSOLE_BRIDGE_logDebug("dependencyServer %s", dependencyServer.c_str());
 
       bool unloadStatus = rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
@@ -558,8 +557,28 @@ namespace temoto_resource_registrar
   private:
     std::string name_;
     std::unordered_map<std::string, RrBase *> rr_references_;
-    std::thread::id workId;
-    std::mutex mtx;
+    mutable std::recursive_mutex modify_mutex_;
+
+    // is a map of thread id - query objects. Used for automatic dependency detection
+    std::unordered_map<std::thread::id, RrQueryBase> running_query_map_;
+
+    void processTransactionCallback(const TransactionInfo &info)
+    {
+      std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+      CONSOLE_BRIDGE_logDebug("\t\t\t processTransactionCallback %i", info.type_);
+      CONSOLE_BRIDGE_logDebug("\t\t\t processTransactionCallback map size %i", running_query_map_.size());
+      std::thread::id workId = std::this_thread::get_id();
+      // query started. Needs to be added to map
+      if (info.type_ == 100)
+      {
+        running_query_map_[workId] = info.base_query_;
+      }
+      // query ended, needs removing from map
+      else if (info.type_ == 200)
+      {
+        running_query_map_.erase(workId);
+      }
+    }
   };
 
 } // namespace temoto_resource_registrar

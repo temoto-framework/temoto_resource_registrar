@@ -184,6 +184,10 @@ public:
 
     if (requestId.size() == 0)
     {
+
+      ROS_INFO("Executing query startup callback");
+      transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(100, wrappedQuery));
+
       ROS_INFO("Query is unique. executing callback");
       if (typed_load_callback_ptr_ != NULL)
       {
@@ -194,9 +198,11 @@ public:
         member_load_cb_(req, res);
       }
 
+      ROS_INFO("Executing query finished callback");
+      transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(200, wrappedQuery));
+
       ROS_INFO_STREAM("Storing query in catalog...");
       
-
       rr_catalog_->storeQuery(name_,
                               wrappedQuery,
                               serializedRequest,
@@ -206,16 +212,6 @@ public:
 
       ROS_INFO_STREAM("Wrapping response...");
       Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
-
-      if (wrappedResponse.dependencies().size())
-      {
-        ROS_INFO("Dependency storage required:");
-        for (auto const &i : wrappedResponse.dependencies())
-        {
-          ROS_INFO_STREAM("       dependency: " << wrappedResponse.id() << " - " << i.first << " - " << i.second);
-          rr_catalog_->storeDependency(wrappedResponse.id(), i.second, i.first);
-        }
-      }
     }
     else
     {
@@ -250,11 +246,7 @@ private:
 
   Ros1Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
-    ServiceClass srvCall;
-    srvCall.request = req;
-    srvCall.response = res;
-
-    return Ros1Query<ServiceClass>(srvCall);
+    return Ros1Query<ServiceClass>(req.temotoMetadata, res.temotoMetadata);
   }
 
   typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
