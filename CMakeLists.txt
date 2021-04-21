@@ -1,12 +1,15 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.10)
 project(temoto_resource_registrar)
+
+add_compile_options(-std=c++14 -Wno-dev)
 
 find_package(catkin REQUIRED COMPONENTS 
   roscpp 
   actionlib 
   actionlib_msgs
   std_msgs
-  message_generation)
+  message_generation
+)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
 
@@ -122,6 +125,8 @@ target_link_libraries(resource_agent
 )
 ## agent end
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1
-  ${CATKIN_DEVEL_PREFIX}/lib/librr_core.so.0.0.1 COPYONLY
+add_custom_command(TARGET rr_core001
+  POST_BUILD
+  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1 
+    ${CATKIN_DEVEL_PREFIX}/lib/librr_core.so.0.0.1
 )
