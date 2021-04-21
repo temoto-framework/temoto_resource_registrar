@@ -19,6 +19,7 @@
 
 #include "rr_query_request.h"
 #include "rr_query_response.h"
+#include "temoto_error.h"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/unordered_map.hpp>
 #include <iostream>
@@ -27,16 +28,35 @@
 
 namespace temoto_resource_registrar
 {
+
+  class QueryMetadata
+  {
+  public:
+    resource_registrar::TemotoErrorStack &errorStack() { return error_stack_; }
+
+  protected:
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &error_stack_;
+    }
+
+  private:
+    resource_registrar::TemotoErrorStack error_stack_;
+  };
+
   class RrQueryBase
   {
   public:
     virtual ~RrQueryBase() = default;
 
-    template <class MT>
-    MT request() const;
+    template <class RequestClass>
+    RequestClass request() const;
 
-    template <class MT>
-    void storeResponse(MT &resp);
+    template <class ResponseClass>
+    void storeResponse(ResponseClass &resp);
 
     void setId(const std::string &id) { requestId_ = id; };
     std::string id() const { return requestId_; }
@@ -50,6 +70,9 @@ namespace temoto_resource_registrar
     void setStatus(const int &status) { status_ = status; }
     int status() { return status_; }
 
+    void setMetadata(QueryMetadata metadata) { metadata_ = metadata; };
+    QueryMetadata &metadata() { return metadata_; }
+
   protected:
     std::string requestId_;
     std::string servingRr_;
@@ -57,12 +80,14 @@ namespace temoto_resource_registrar
 
     int status_;
 
+    QueryMetadata metadata_;
+
     friend class boost::serialization::access;
 
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &requestId_ &servingRr_ &originRr_ &status_;
+      ar &requestId_ &servingRr_ &originRr_ &status_ &metadata_;
     }
 
   private:

@@ -92,10 +92,16 @@ int main(int argc, char **argv)
   temoto_resource_registrar::LoadComponent loadCall;
   loadCall.request.loadTarget = "CounterService";
 
-  rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, statusCallback);
+  ROS_INFO_STREAM("Calling server with error expectation...");
+  try {
+    rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, statusCallback);
 
-  loadId = loadCall.response.temotoMetadata.requestId;
-
+    loadId = loadCall.response.temotoMetadata.requestId;
+  }
+  catch (const resource_registrar::TemotoErrorStack &e)
+  {
+    ROS_WARN_STREAM("Something bad happened. What is the cause i wonder? : " << e.getMessage());
+  }
 
   /*ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.loadMessage << "; id: " << load1Id);
 

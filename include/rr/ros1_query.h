@@ -3,7 +3,8 @@
 
 #include "temoto_resource_registrar/TemotoRequestMetadata.h"
 #include "temoto_resource_registrar/TemotoResponseMetadata.h"
-#include "temoto_resource_registrar/rr_query_container.h"
+#include "temoto_resource_registrar/rr_query_base.h"
+#include "temoto_resource_registrar/rr_serializer.h"
 
 /**
  * @brief A wrapper class for temoto_resource_registrar::RrQueryBase. Used as a intermediery container to hande data by the ResourceRegistrar.
@@ -24,10 +25,14 @@ public:
   Ros1Query(const temoto_resource_registrar::TemotoRequestMetadata &requestData,
             const temoto_resource_registrar::TemotoResponseMetadata &responseData)
   {
-    setId(responseData.requestId);
     setRr(requestData.servingRr);
     setOrigin(requestData.originRr);
+
+    setId(responseData.requestId);
     setStatus(responseData.status);
+
+    if (responseData.metadata.size() > 0)
+      setMetadata(Serializer::deserialize<temoto_resource_registrar::QueryMetadata>(responseData.metadata));
   }
 
   /**
@@ -35,11 +40,9 @@ public:
    * 
    * @param query 
    */
-  Ros1Query(const ServiceClass &query) : typed_query_(query)
+  Ros1Query(const ServiceClass &query) : Ros1Query(query.request.temotoMetadata, query.response.temotoMetadata)
   {
-    setId(typed_query_.response.temotoMetadata.requestId);
-    setRr(typed_query_.request.temotoMetadata.servingRr);
-    setOrigin(typed_query_.request.temotoMetadata.originRr);
+    typed_query_ = query;
   }
 
   /**
@@ -83,11 +86,14 @@ public:
    */
   ServiceClass rosQuery()
   {
-    typed_query_.response.temotoMetadata.requestId = id();
-    typed_query_.response.temotoMetadata.status = status();
-
+    ROS_INFO_STREAM("Returning ROS query");
+    
     typed_query_.request.temotoMetadata.servingRr = rr();
     typed_query_.request.temotoMetadata.originRr = origin();
+
+    typed_query_.response.temotoMetadata.requestId = id();
+    typed_query_.response.temotoMetadata.status = status();
+    typed_query_.response.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(metadata());
 
     return typed_query_;
   }

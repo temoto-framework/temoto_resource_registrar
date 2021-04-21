@@ -17,15 +17,15 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__TEMOTO_ERROR_H
 #define TEMOTO_RESOURCE_REGISTRAR__TEMOTO_ERROR_H
 
-#include <vector>
-#include <string>
-#include <exception>
-#include <time.h>
-#include <sstream>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/vector.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
+#include <exception>
+#include <sstream>
+#include <string>
+#include <time.h>
+#include <vector>
 
 #include "temoto_resource_registrar/temoto_logging.h"
 
@@ -40,154 +40,158 @@
 
 namespace resource_registrar
 {
-class TemotoError : public std::exception
-{
-public:
-  TemotoError()
-  {}
-
-  TemotoError(std::string message, std::string origin)
-  : time_(time(NULL))
-  , message_(message)
-  , origin_(origin)
-  {}
-
-  TemotoError(unsigned int time, std::string message, std::string origin)
-  : time_(time)
-  , message_(message)
-  , origin_(origin)
-  {}
-
-  TemotoError(const TemotoError& te)
-  : time_(te.time_)
-  , message_(te.message_)
-  , origin_(te.origin_)
-  {}
-
-  const unsigned long& getTime() const
+  class TemotoError : public std::exception
   {
-    return time_;
-  }
-
-  const std::string& getMessage() const
-  {
-    return message_;
-  }
-
-  const std::string& getOrigin() const
-  {
-    return origin_;
-  }
-
-  virtual const char* what() const noexcept
-  {
-    return getMessage().c_str();
-  }
-
-protected:
-  friend class boost::serialization::access;
-
-  template <class Archive>
-  void serialize(Archive &ar, const unsigned int /* version */)
-  {
-    ar &origin_ &message_ &time_;
-  }
-
-private:
-  unsigned long time_;
-  std::string message_;
-  std::string origin_;
-};
-
-class TemotoErrorStack : public std::exception
-{
-public:
-  TemotoErrorStack()
-  {}
-
-  TemotoErrorStack(std::string error_message, std::string origin)
-  : error_stack_({TemotoError(error_message, origin)})
-  {}
-
-  TemotoErrorStack(const TemotoErrorStack& tes)
-  : error_stack_(tes.error_stack_)
-  , messages_(tes.messages_)
-  {}
-
-  TemotoErrorStack(const std::string &serialized_errstack)
-  {
-    std::stringstream ss(serialized_errstack);
-    boost::archive::binary_iarchive ia(ss);
-    ia >> *this;
-  }
-
-  TemotoErrorStack appendError(std::string error_message, std::string origin)
-  {
-    error_stack_.emplace_back(error_message, origin);
-    return *this;
-  }
-
-  void appendError(const TemotoErrorStack& tes)
-  {
-    error_stack_.insert(error_stack_.end(), tes.getErrorStack().begin(), tes.getErrorStack().end());
-  }
-
-  const std::string& getMessage() const
-  {
-    messages_.clear();
-    
-    for (unsigned int i=0; i<error_stack_.size(); i++)
+  public:
+    TemotoError()
     {
-      if (i==0)
-      {
-        messages_ += "origin [in " + error_stack_.at(i).getOrigin() + "]: ";
-        messages_ += error_stack_.at(i).getMessage() + "\n";
-      }
-      else
-      {
-        messages_ += "   fwd [in " + error_stack_.at(i).getOrigin() + "]: ";
-        messages_ += error_stack_.at(i).getMessage() + "\n";
-      }
     }
-    return messages_;
-  }
 
-  const std::vector<TemotoError>& getErrorStack() const
+    TemotoError(std::string message, std::string origin)
+        : time_(time(NULL)), message_(message), origin_(origin)
+    {
+    }
+
+    TemotoError(unsigned int time, std::string message, std::string origin)
+        : time_(time), message_(message), origin_(origin)
+    {
+    }
+
+    TemotoError(const TemotoError &te)
+        : time_(te.time_), message_(te.message_), origin_(te.origin_)
+    {
+    }
+
+    const unsigned long &getTime() const
+    {
+      return time_;
+    }
+
+    const std::string &getMessage() const
+    {
+      return message_;
+    }
+
+    const std::string &getOrigin() const
+    {
+      return origin_;
+    }
+
+    virtual const char *what() const noexcept
+    {
+      return getMessage().c_str();
+    }
+
+  protected:
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &origin_ &message_ &time_;
+    }
+
+  private:
+    unsigned long time_;
+    std::string message_;
+    std::string origin_;
+  };
+
+  class TemotoErrorStack : public std::exception
   {
-    return error_stack_;
-  }
+  public:
+    TemotoErrorStack()
+    {
+    }
 
-  virtual const char* what() const noexcept
-  {
-    return getMessage().c_str();
-  }
+    TemotoErrorStack(std::string error_message, std::string origin)
+        : error_stack_({TemotoError(error_message, origin)})
+    {
+    }
 
-  const TemotoError front()
-  {
-    return error_stack_.front();
-  }
+    TemotoErrorStack(const TemotoErrorStack &tes)
+        : error_stack_(tes.error_stack_), messages_(tes.messages_)
+    {
+    }
 
-  std::string serialize()
-  {
-    std::stringstream ss;
-    boost::archive::binary_oarchive oa(ss);
-    oa << *this;
-    return ss.str();
-  }
+    TemotoErrorStack(const std::string &serialized_errstack)
+    {
+      std::stringstream ss(serialized_errstack);
+      boost::archive::binary_iarchive ia(ss);
+      ia >> *this;
+    }
 
-protected:
-  friend class boost::serialization::access;
+    TemotoErrorStack appendError(std::string error_message, std::string origin)
+    {
+      error_stack_.emplace_back(error_message, origin);
+      return *this;
+    }
 
-  template <class Archive>
-  void serialize(Archive &ar, const unsigned int /* version */)
-  {
-    ar &error_stack_;
-  }
+    void appendError(const TemotoErrorStack &tes)
+    {
+      error_stack_.insert(error_stack_.end(), tes.getErrorStack().begin(), tes.getErrorStack().end());
+    }
 
-private:
-  std::vector<TemotoError> error_stack_;
-  mutable std::string messages_;
-};
+    const std::string &getMessage() const
+    {
+      messages_.clear();
+
+      for (unsigned int i = 0; i < error_stack_.size(); i++)
+      {
+        if (i == 0)
+        {
+          messages_ += "origin [in " + error_stack_.at(i).getOrigin() + "]: ";
+          messages_ += error_stack_.at(i).getMessage() + "\n";
+        }
+        else
+        {
+          messages_ += "   fwd [in " + error_stack_.at(i).getOrigin() + "]: ";
+          messages_ += error_stack_.at(i).getMessage() + "\n";
+        }
+      }
+      return messages_;
+    }
+
+    const std::vector<TemotoError> &getErrorStack() const
+    {
+      return error_stack_;
+    }
+
+    virtual const char *what() const noexcept
+    {
+      return getMessage().c_str();
+    }
+
+    const TemotoError front()
+    {
+      return error_stack_.front();
+    }
+
+    std::string serialize()
+    {
+      std::stringstream ss;
+      boost::archive::binary_oarchive oa(ss);
+      oa << *this;
+      return ss.str();
+    }
+
+    const bool empty() {
+      return error_stack_.size() == 0;
+    }
+
+  protected:
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &error_stack_;
+    }
+
+  private:
+    std::vector<TemotoError> error_stack_;
+    mutable std::string messages_;
+  };
 } // resource registrar namespace
 
 #endif

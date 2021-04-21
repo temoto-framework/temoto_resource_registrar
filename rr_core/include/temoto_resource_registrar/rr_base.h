@@ -527,6 +527,19 @@ namespace temoto_resource_registrar
         target->handleInternalCall<ServType, QueryType>(server, query);
       }
 
+      if (!query.metadata().errorStack().empty())
+      {
+        CONSOLE_BRIDGE_logDebug("query had an error. unloading if dependencies exist");
+        if (running_query_map_.count(workId)) {
+          CONSOLE_BRIDGE_logDebug("Dependencies might exist. Attempting unload");
+          localUnload(running_query_map_[workId].id());
+        }
+          
+
+        CONSOLE_BRIDGE_logDebug("throwing error upstream");
+        throw FWD_TEMOTO_ERRSTACK(query.metadata().errorStack());
+      }
+
       if (running_query_map_.count(workId))
       {
         CONSOLE_BRIDGE_logDebug("------------------------------------- has a dependency requirement");
@@ -565,8 +578,6 @@ namespace temoto_resource_registrar
     void processTransactionCallback(const TransactionInfo &info)
     {
       std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-      CONSOLE_BRIDGE_logDebug("\t\t\t processTransactionCallback %i", info.type_);
-      CONSOLE_BRIDGE_logDebug("\t\t\t processTransactionCallback map size %i", running_query_map_.size());
       std::thread::id workId = std::this_thread::get_id();
       // query started. Needs to be added to map
       if (info.type_ == 100)
