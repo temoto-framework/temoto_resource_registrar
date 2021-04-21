@@ -17,14 +17,14 @@
 #ifndef TEMOTO_LOGGING_H
 #define TEMOTO_LOGGING_H
 
-#include <map>
-#include <string>
-#include <stack>
-#include <thread>
-#include <mutex>
-#include <typeinfo>
-#include <cstdlib>
 #include <boost/core/demangle.hpp>
+#include <cstdlib>
+#include <map>
+#include <mutex>
+#include <stack>
+#include <string>
+#include <thread>
+#include <typeinfo>
 
 #include <iostream> // TODO: remove after debug finished
 
@@ -38,18 +38,17 @@
 class TemotoLoggingAttributes
 {
 public:
-
   typedef std::string TraceContextType;
 
   TemotoLoggingAttributes()
   {
-    if (const char* env_p = std::getenv("TEMOTO_NAMESPACE"))
+    if (const char *env_p = std::getenv("TEMOTO_NAMESPACE"))
     {
       temoto_namespace_ = std::string(env_p);
     }
   }
 
-  void pushParentTraceContext(const TraceContextType& trace_context)
+  void pushParentTraceContext(const TraceContextType &trace_context)
   {
     std::lock_guard<std::recursive_mutex> l(trace_stacks_mtx_);
     trace_stacks_[std::this_thread::get_id()].push(trace_context);
@@ -81,7 +80,7 @@ public:
     }
   }
 
-  const std::string& getNs() const
+  const std::string &getNs() const
   {
     return temoto_namespace_;
   }
@@ -99,7 +98,6 @@ public:
   }
 
 private:
-
   std::string temoto_namespace_;
   std::map<std::thread::id, std::stack<TraceContextType>> trace_stacks_;
   mutable std::recursive_mutex trace_stacks_mtx_;

@@ -4,6 +4,7 @@
 #include "ros/ros.h"
 
 #include "temoto_resource_registrar/rr_server_base.h"
+#include "temoto_resource_registrar/rr_serializer.h"
 
 #include "rr/message_serializer.h"
 #include "rr/query_utils.h"
@@ -166,10 +167,12 @@ public:
     {
       ROS_INFO_STREAM("evaluating uniqueness based on ==");
       std::vector<temoto_resource_registrar::QueryContainer<std::string>> allServerRequests = rr_catalog_->getUniqueServerQueries(name_);
-      for (const auto &q : allServerRequests) {
+      for (const auto &q : allServerRequests)
+      {
         std::string serReq = q.rawRequest_;
         typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serReq);
-        if (request == sanitizedReq) {
+        if (request == sanitizedReq)
+        {
           serializedRequest = serReq;
           requestId = q.q_.id();
         }
@@ -191,33 +194,41 @@ public:
     if (requestId.size() == 0)
     {
 
-      ROS_INFO("Executing query startup callback");
-      transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(100, wrappedQuery));
+      try
+      {
+        ROS_INFO("Executing query startup callback");
+        transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(100, wrappedQuery));
 
-      ROS_INFO("Query is unique. executing callback");
-      if (typed_load_callback_ptr_ != NULL)
-      {
-        typed_load_callback_ptr_(req, res);
+        ROS_INFO("Query is unique. executing callback");
+        if (typed_load_callback_ptr_ != NULL)
+        {
+          typed_load_callback_ptr_(req, res);
+        }
+        else
+        {
+          member_load_cb_(req, res);
+        }
+
+        ROS_INFO_STREAM("Storing query in catalog...");
+
+        rr_catalog_->storeQuery(name_,
+                                wrappedQuery,
+                                serializedRequest,
+                                sanitizeAndSerialize(res));
+
+        ROS_INFO_STREAM("Stored!");
       }
-      else
+      catch (const resource_registrar::TemotoErrorStack &e)
       {
-        member_load_cb_(req, res);
+        ROS_WARN_STREAM("Server encountered an error while executing a callback: " << e.getMessage());
+        wrappedQuery.metadata().errorStack().appendError(e);
+        // store metadata object as serialized string in response
+        res.temotoMetadata.status = 500;
+        res.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(wrappedQuery.metadata());
       }
 
       ROS_INFO("Executing query finished callback");
       transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(200, wrappedQuery));
-
-      ROS_INFO_STREAM("Storing query in catalog...");
-      
-      rr_catalog_->storeQuery(name_,
-                              wrappedQuery,
-                              serializedRequest,
-                              sanitizeAndSerialize(res));
-
-      ROS_INFO_STREAM("Stored!");
-
-      ROS_INFO_STREAM("Wrapping response...");
-      Ros1Query<ServiceClass> wrappedResponse = wrap(req, res);
     }
     else
     {

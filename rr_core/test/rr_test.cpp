@@ -13,7 +13,9 @@
 #include "temoto_resource_registrar/rr_base.h"
 #include "temoto_resource_registrar/rr_configuration.h"
 #include "temoto_resource_registrar/rr_serializable.h"
+#include "temoto_resource_registrar/rr_serializer.h"
 #include "temoto_resource_registrar/rr_server_base.h"
+#include "temoto_resource_registrar/temoto_error.h"
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -195,7 +197,7 @@ public:
     // need to call server here.
 
     MessageType rawRequest = query.request().getRequest();
-    std::string serializedRequest = serialize<MessageType>(rawRequest);
+    std::string serializedRequest = Serializer::serialize<MessageType>(rawRequest);
 
     query.setId(generateId());
 
@@ -203,27 +205,34 @@ public:
     std::string requestId = rr_catalog_->queryExists(name_, serializedRequest);
     if (requestId.size() == 0)
     {
+      try
+      {
+        LOG(INFO) << "Executing query startup callback";
+        transaction_callback_ptr_(TransactionInfo(100, query));
 
-      LOG(INFO) << "Executing query startup callback";
-      transaction_callback_ptr_(TransactionInfo(100, query));
+        LOG(INFO) << "Request not found. Running and storing it";
+        typed_load_callback_ptr_(query);
+        LOG(INFO) << "Finished callback";
 
-      LOG(INFO) << "Request not found. Running and storing it";
-      typed_load_callback_ptr_(query);
-      LOG(INFO) << "Finished callback";
+        LOG(INFO) << "Storing query data to server..." << name_;
+
+        storeQuery(serializedRequest, query);
+        LOG(INFO) << "Finished storing";
+      }
+      catch (const resource_registrar::TemotoErrorStack &e)
+      {
+        LOG(INFO) << "server caught a callback exception. returning error to requestor.";
+        query.metadata().errorStack().appendError(e);
+      }
 
       LOG(INFO) << "Executing query finished callback";
       transaction_callback_ptr_(TransactionInfo(200, query));
-
-      LOG(INFO) << "Storing query data to server..." << name_;
-
-      storeQuery(serializedRequest, query);
-      LOG(INFO) << "Finished storing";
     }
     else
     {
       LOG(INFO) << "Request found. No storage needed. Fetching it... ";
       std::string serializedQuery = processExisting(requestId, query);
-      RrQueryTemplate<MessageType> previousRequest = deserialize<RrQueryTemplate<MessageType>>(serializedQuery);
+      RrQueryTemplate<MessageType> previousRequest = Serializer::deserialize<RrQueryTemplate<MessageType>>(serializedQuery);
 
       query.storeResponse(previousRequest.response());
       LOG(INFO) << "Fetching done... " << serializedQuery;
@@ -240,43 +249,19 @@ public:
 
     std::string query = rr_catalog_->unload(name_, id, canUnload);
 
-    RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);
+    RrQueryTemplate<MessageType> q = Serializer::deserialize<RrQueryTemplate<MessageType>>(query);
 
     LOG(INFO) << "Unload result size: " << query.size();
 
     if (canUnload)
     {
-      RrQueryTemplate<MessageType> q = deserialize<RrQueryTemplate<MessageType>>(query);
+      RrQueryTemplate<MessageType> q = Serializer::deserialize<RrQueryTemplate<MessageType>>(query);
       LOG(INFO) << "Time for unload CB!";
       typed_unload_callback_ptr_(q);
     }
 
     return query.size() > 0;
   }
-
-  template <class SerialClass>
-  std::string serialize(SerialClass message) const
-  {
-
-    std::stringstream ss;
-    boost::archive::binary_oarchive oa(ss);
-
-    oa << message;
-
-    return ss.str();
-  };
-
-  template <class SerialClass>
-  SerialClass deserialize(const std::string &data) const
-  {
-    std::stringstream ss(data);
-    boost::archive::binary_iarchive ia(ss);
-
-    SerialClass obj;
-    ia >> obj;
-
-    return obj;
-  };
 
 protected:
   void (*typed_load_callback_ptr_)(RrQueryTemplate<MessageType> &);
@@ -288,7 +273,7 @@ private:
     rr_catalog_->storeQuery(name_,
                             query,
                             rawRequest,
-                            serialize<RrQueryTemplate<MessageType>>(query));
+                            Serializer::serialize<RrQueryTemplate<MessageType>>(query));
   }
 
   std::string processExisting(const std::string &requestId, RrQueryTemplate<MessageType> query) const
@@ -839,4 +824,99 @@ TEST_F(RrBaseTest, ClientUnloadTest)
   }
 
   EXPECT_EQ(unloadCounter["targetRr3"], 1);
+}
+
+int s1loadCount, s1unloadCount, s2loadCount, s2unloadCount = 0;
+
+void S1LoadCb(RrQueryTemplate<Resource1> &query)
+{
+  s1loadCount++;
+
+  LOG(INFO)
+      << "S1LoadCb called";
+
+  LOG(INFO) << "executing normal call...";
+  RrQueryRequestTemplate<Resource2> req(Resource2(1, 0));
+  RrQueryResponseTemplate<Resource2> resp(Resource2(0, 0));
+  RrQueryTemplate<Resource2> newQuery(req, resp);
+
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S_e", newQuery);
+
+  LOG(INFO) << "executing error call...";
+  RrQueryRequestTemplate<Resource2> req2(Resource2(2, 0));
+  RrQueryResponseTemplate<Resource2> resp2(Resource2(0, 0));
+  RrQueryTemplate<Resource2> newQuery2(req2, resp2);
+
+  rr_m1.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_m2, "R2_S_e", newQuery2);
+};
+
+void S1UnloadCb(RrQueryTemplate<Resource1> &query)
+{
+  s1unloadCount++;
+  LOG(INFO) << "S1UnloadCb called";
+};
+
+void S2LoadCb(RrQueryTemplate<Resource2> &query)
+{
+  s2loadCount++;
+  LOG(INFO) << "RtM2LoadCB called";
+  if (query.request().getRequest().i_ == 2)
+    throw resource_registrar::TemotoErrorStack("S2 encountered an error", "R2_S_e");
+  else
+    LOG(INFO) << "NO error to throw yet";
+};
+
+void S2UnloadCb(RrQueryTemplate<Resource2> &query)
+{
+  s2unloadCount ++;
+  LOG(INFO) << "RtM2UnloadCB called";
+};
+
+TEST_F(RrBaseTest, CallbackErrorTest)
+{
+  LOG(INFO) << "Registering servers that throw errors in callback";
+  rr_m1.registerServer(std::make_unique<RrTemplateServer<Resource1>>("R1_S_e", &S1LoadCb, &S1UnloadCb));
+  rr_m2.registerServer(std::make_unique<RrTemplateServer<Resource2>>("R2_S_e", &S2LoadCb, &S2UnloadCb));
+
+  EXPECT_EQ(s1loadCount, 0);
+  EXPECT_EQ(s1unloadCount, 0);
+  EXPECT_EQ(s2loadCount, 0);
+  EXPECT_EQ(s2unloadCount, 0);
+
+  RrQueryTemplate<Resource1> query(Resource1("throw error please"), Resource1(""));
+
+  LOG(INFO) << "calling expecting an exception";
+  try
+  {
+    rr_m0.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_m1, "R1_S_e", query);
+  }
+  catch (const resource_registrar::TemotoErrorStack &e)
+  {
+
+    EXPECT_EQ(s1loadCount, 1);
+    EXPECT_EQ(s1unloadCount, 0);
+    EXPECT_EQ(s2loadCount, 2);
+    EXPECT_EQ(s2unloadCount, 1);
+
+    LOG(INFO) << "Checking exception stack length...";
+    EXPECT_EQ(e.getErrorStack().size(), 3);
+
+    LOG(INFO) << "Checking exception stack contents";
+    for (const resource_registrar::TemotoError &stackElement : e.getErrorStack())
+    {
+      if (stackElement.getOrigin() == "R2_S_e")
+      {
+        EXPECT_EQ(stackElement.getMessage(), "S2 encountered an error");
+      }
+      else
+      {
+        EXPECT_EQ(stackElement.getMessage(), "forwarding");
+      }
+    }
+  }
+  catch (...)
+  {
+    FAIL() << "Unexpected error happened while handling erronous callback";
+  }
+  LOG(INFO) << "Exception system appears to work";
 }

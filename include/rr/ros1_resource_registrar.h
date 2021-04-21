@@ -95,7 +95,7 @@ namespace temoto_resource_registrar
     {
       ROS_INFO_STREAM("calling " << rr << " server " << server);
       Ros1Query<QueryType> wrappedBaseQuery(query);
-
+      
       privateCall<Ros1Client<QueryType>,
                   Ros1Server<QueryType>,
                   Ros1Query<QueryType>,

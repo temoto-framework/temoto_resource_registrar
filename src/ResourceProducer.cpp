@@ -7,6 +7,7 @@
 #include "rr/ros1_resource_registrar.h"
 
 #include "temoto_resource_registrar/CounterService.h"
+#include "temoto_resource_registrar/temoto_error.h"
 
 #include <boost/thread/thread.hpp>
 
@@ -32,6 +33,8 @@ void RtLoadCB(temoto_resource_registrar::CounterService::Request &req, temoto_re
   ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temotoMetadata.requestId);
   id = res.temotoMetadata.requestId;
 
+  throw resource_registrar::TemotoErrorStack("producer error", "ResourceProducer");
+
   //auto fa = std::async(std::launch::async, caller);
 
   boost::thread thread_b(caller, 5);
@@ -39,7 +42,7 @@ void RtLoadCB(temoto_resource_registrar::CounterService::Request &req, temoto_re
 
 void RtUnloadCB(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res)
 {
-  ROS_INFO("IN UNLOAD CB CounterService");
+  ROS_INFO_STREAM("IN UNLOAD CB CounterService. ID: " << req << " - " << res);
 }
 
 int main(int argc, char **argv)
