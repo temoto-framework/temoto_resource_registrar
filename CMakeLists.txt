@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   std_msgs
   message_generation
+  rosconsole_bridge
 )
 
 find_package(Boost REQUIRED COMPONENTS system filesystem serialization)

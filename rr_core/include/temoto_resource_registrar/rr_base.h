@@ -263,9 +263,11 @@ namespace temoto_resource_registrar
 
     void registerServer(std::unique_ptr<RrServerBase> serverPtr)
     {
+      CONSOLE_BRIDGE_logInform("registering server");
       serverPtr->setCatalog(rr_catalog_);
       serverPtr->registerTransactionCb(std::bind(&RrBase::processTransactionCallback, this, std::placeholders::_1));
       servers_.add(std::move(serverPtr));
+      CONSOLE_BRIDGE_logInform("registration complete");
     }
 
     template <class ServType, class QueryType>

@@ -16,6 +16,10 @@
 
 #include <functional>
 
+#include "rosconsole_bridge/bridge.h"
+
+REGISTER_ROSCONSOLE_BRIDGE;
+
 namespace temoto_resource_registrar
 {
 
