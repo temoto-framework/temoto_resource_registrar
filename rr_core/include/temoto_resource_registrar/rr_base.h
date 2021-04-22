@@ -430,7 +430,7 @@ namespace temoto_resource_registrar
 
     void unloadServer(const std::string &server)
     {
-      rr_catalog_->getServerIds(server);
+      throw NotImplementedException("'unloadServer' not implemented for RrBase");
     }
 
   protected:
