@@ -66,7 +66,7 @@ set(libraries
 catkin_package(
   INCLUDE_DIRS ${headers}
   LIBRARIES ${libraries}
-  CATKIN_DEPENDS roscpp std_msgs message_generation actionlib_msgs
+  CATKIN_DEPENDS roscpp std_msgs message_generation actionlib_msgs rosconsole_bridge
   #DEPENDS
 ) 
 
