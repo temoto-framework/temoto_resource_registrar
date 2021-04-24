@@ -37,6 +37,7 @@ namespace temoto_resource_registrar
   using RawData = std::string;
   using ServerName = std::string;
   using ClientName = std::string;
+  using RrName = std::string;
   using UUID = std::string;
 
   class DependencyContainer
@@ -84,6 +85,8 @@ namespace temoto_resource_registrar
   class RrCatalog
   {
 
+    std::unordered_map<ServerName, RrName> server_rr_;
+
     std::unordered_map<ClientName, std::set<UUID>> client_id_map_;
     std::unordered_map<ServerName, std::set<UUID>> server_id_map_;
     std::unordered_map<RawData, QueryContainer<RawData>> id_query_map_;
@@ -120,6 +123,9 @@ namespace temoto_resource_registrar
     std::set<UUID> getClientIds(const ClientName &client);
     std::set<UUID> getServerIds(const ServerName &server);
 
+    void storeServerRr(const ServerName &server, const RrName &rr);
+    RrName getServerRr(const ServerName &server);
+
     void print();
 
     // Move initialization
@@ -130,6 +136,7 @@ namespace temoto_resource_registrar
       server_id_map_ = std::move(other.server_id_map_);
       id_query_map_ = std::move(other.id_query_map_);
       id_dependency_map_ = std::move(other.id_dependency_map_);
+      server_rr_ = std::move(other.server_rr_);
       //other.value = 0;
     }
     // Copy initialization
@@ -141,6 +148,7 @@ namespace temoto_resource_registrar
       server_id_map_ = other.server_id_map_;
       id_query_map_ = other.id_query_map_;
       id_dependency_map_ = other.id_dependency_map_;
+      server_rr_ = other.server_rr_;
     }
     // Move assignment
     RrCatalog &operator=(RrCatalog &&other)
@@ -152,6 +160,7 @@ namespace temoto_resource_registrar
       server_id_map_ = std::move(other.server_id_map_);
       id_query_map_ = std::move(other.id_query_map_);
       id_dependency_map_ = std::move(other.id_dependency_map_);
+      server_rr_ = std::move(other.server_rr_);
       return *this;
     }
     // Copy assignment
@@ -164,6 +173,7 @@ namespace temoto_resource_registrar
       server_id_map_ = other.server_id_map_;
       id_query_map_ = other.id_query_map_;
       id_dependency_map_ = other.id_dependency_map_;
+      server_rr_ = other.server_rr_;
       return *this;
     }
 
@@ -173,7 +183,7 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &server_id_map_ &client_id_map_ &id_query_map_ &id_dependency_map_;
+      ar &server_id_map_ &client_id_map_ &id_query_map_ &id_dependency_map_ &server_rr_;
     }
 
   private:

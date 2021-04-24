@@ -141,7 +141,10 @@ namespace temoto_resource_registrar
     };
 
     RrBase(std::string name) : name_(name),
-                               rr_catalog_(std::make_shared<RrCatalog>()){};
+                               rr_catalog_(std::make_shared<RrCatalog>())
+    {
+      CONSOLE_BRIDGE_logInform("constructed rr %s", name.c_str());
+    };
 
     /**
  * @brief Destroy the Rr Base object. Here we do the cleanup for backup storage and clients. Since unloadClient(const std::string &id)
@@ -273,6 +276,7 @@ namespace temoto_resource_registrar
     template <class ServType, class QueryType>
     void handleInternalCall(const std::string &server, QueryType &query)
     {
+      CONSOLE_BRIDGE_logDebug("\t executing internal call to server: %s", server.c_str());
       auto &serverRef = servers_.getElement(server);
 
       auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
@@ -352,6 +356,40 @@ namespace temoto_resource_registrar
       }
 
       CONSOLE_BRIDGE_logDebug("-----exited handleStatus %s", statusData.id_.c_str());
+    }
+
+    // get target rr based on target server name and from there get all queries that used the clientName client
+    std::map<std::string, std::string> getClientQueries(const std::string &serverName, const std::string &clientName)
+    {
+      // get server queries. can find the target RR from these queries
+      std::string targetRr = rr_catalog_->getServerRr(serverName);
+
+      return callDataFetchClient(targetRr, clientName);
+    };
+
+    std::map<UUID, std::string> handleDataFetch(const std::string &client)
+    {
+      CONSOLE_BRIDGE_logDebug("fetching query data for client: %s", client.c_str());
+
+      std::map<UUID, std::string> ret;
+
+      CONSOLE_BRIDGE_logDebug("getClientIds");
+
+      std::set<std::string> ids = rr_catalog_->getServerIds(client);
+
+      CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries");
+      findAndCollectIdQueries(ids, ret);
+
+      CONSOLE_BRIDGE_logDebug("got %i queries ", ret.size());
+      return ret;
+    }
+
+    virtual std::map<std::string, std::string> callDataFetchClient(const std::string &targetRr, const std::string &client)
+    {
+      CONSOLE_BRIDGE_logDebug("target rr for data fetch: %s", targetRr.c_str());
+      auto res = rr_references_[targetRr]->handleDataFetch(client);
+      CONSOLE_BRIDGE_logDebug("fetched %i queries", res.size());
+      return res;
     }
 
     std::vector<std::string> callbacks()
@@ -511,13 +549,15 @@ namespace temoto_resource_registrar
 
       CONSOLE_BRIDGE_logDebug("setting origin");
 
+      std::string targetRrName;
+
       // In case we have a client call, not a internal call
       if ((rr != NULL) && (target == NULL))
       {
 
         CONSOLE_BRIDGE_logDebug("executing client call, also setting rr to %s", (*(rr)).c_str());
-
-        query.setRr(*(rr));
+        targetRrName = *(rr);
+        query.setRr(targetRrName);
         handleClientCall<CallClientClass, QueryType, StatusCallType>(*(rr), server, query, statusFunc, overrideFunc);
 
         CONSOLE_BRIDGE_logDebug("query id: %s", query.id().c_str());
@@ -525,18 +565,25 @@ namespace temoto_resource_registrar
       else
       {
         CONSOLE_BRIDGE_logDebug("executing mem call, also setting rr");
-        query.setRr(target->name());
+        targetRrName = target->name();
+        query.setRr(targetRrName);
         target->handleInternalCall<ServType, QueryType>(server, query);
+
+        CONSOLE_BRIDGE_logDebug("\t storeClientCallRecord to server: %s", server.c_str());
+
+        rr_catalog_->storeClientCallRecord(server, query.id());
       }
+
+      rr_catalog_->storeServerRr(server, targetRrName);
 
       if (!query.metadata().errorStack().empty())
       {
         CONSOLE_BRIDGE_logDebug("query had an error. unloading if dependencies exist");
-        if (running_query_map_.count(workId)) {
+        if (running_query_map_.count(workId))
+        {
           CONSOLE_BRIDGE_logDebug("Dependencies might exist. Attempting unload");
           localUnload(running_query_map_[workId].id());
         }
-          
 
         CONSOLE_BRIDGE_logDebug("throwing error upstream");
         throw FWD_TEMOTO_ERRSTACK(query.metadata().errorStack());
@@ -590,6 +637,20 @@ namespace temoto_resource_registrar
       else if (info.type_ == 200)
       {
         running_query_map_.erase(workId);
+      }
+    }
+
+    void findAndCollectIdQueries(const std::set<std::string> &ids, std::map<UUID, std::string> &resultMap)
+    {
+      CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries for %i ids", ids.size());
+
+      for (const auto &id : ids)
+      {
+        QueryContainer<std::string> container = rr_catalog_->findOriginalContainer(id);
+        if (!container.empty_)
+        {
+          resultMap[container.q_.id()] = container.rawRequest_;
+        }
       }
     }
   };

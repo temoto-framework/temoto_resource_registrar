@@ -16,6 +16,8 @@
 
 #include "temoto_resource_registrar/rr_catalog.h"
 
+#include <console_bridge/console.h>
+
 namespace temoto_resource_registrar
 {
 
@@ -134,7 +136,10 @@ namespace temoto_resource_registrar
     }
 
     if (!server_id_map_[server].size())
+    {
       server_id_map_.erase(server);
+      server_rr_.erase(server);
+    }
 
     return queryResp;
   }
@@ -257,8 +262,13 @@ namespace temoto_resource_registrar
   std::set<UUID> RrCatalog::getClientIds(const ClientName &client)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+
+    std::cout << "getClientIds for client " << client << std::endl;
+
     if (client_id_map_.count(client) > 0)
       return client_id_map_[client];
+
+    std::cout << "none found" << std::endl;
 
     throw ElementNotFoundException("Client not found");
   }
@@ -272,8 +282,46 @@ namespace temoto_resource_registrar
     throw ElementNotFoundException("Server not found");
   }
 
+  void RrCatalog::storeServerRr(const ServerName &server, const RrName &rr)
+  {
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+    server_rr_[server] = rr;
+  }
+
+  RrName RrCatalog::getServerRr(const ServerName &server)
+  {
+    std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+    if (server_rr_.count(server) > 0)
+      return server_rr_[server];
+
+    throw ElementNotFoundException("Server not found");
+  }
+
   void RrCatalog::print()
   {
+    std::cout << "server_rr_: " << server_rr_.size() << std::endl;
+    for (auto const &i : server_rr_)
+    {
+      std::cout << "{" << std::endl;
+      std::cout << i.first << ": ";
+      std::cout << i.second << ",";
+      std::cout << std::endl;
+      std::cout << "}" << std::endl;
+    }
+
+    std::cout << "client_id_map_: " << std::endl;
+    for (auto const &i : client_id_map_)
+    {
+      std::cout << "{" << std::endl;
+      std::cout << i.first << ": ";
+      for (auto const &j : i.second)
+      {
+        std::cout << j << ", ";
+      }
+      std::cout << std::endl;
+      std::cout << "}" << std::endl;
+    }
+
     std::cout << "server_id_map_: " << std::endl;
     for (auto const &i : server_id_map_)
     {

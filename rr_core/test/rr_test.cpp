@@ -868,7 +868,7 @@ void S2LoadCb(RrQueryTemplate<Resource2> &query)
 
 void S2UnloadCb(RrQueryTemplate<Resource2> &query)
 {
-  s2unloadCount ++;
+  s2unloadCount++;
   LOG(INFO) << "RtM2UnloadCB called";
 };
 
@@ -919,4 +919,56 @@ TEST_F(RrBaseTest, CallbackErrorTest)
     FAIL() << "Unexpected error happened while handling erronous callback";
   }
   LOG(INFO) << "Exception system appears to work";
+}
+
+void loadCb(RrQueryTemplate<Resource1> &query)
+{
+  LOG(INFO) << "S1LoadCb called";
+};
+
+void unloadCb(RrQueryTemplate<Resource1> &query)
+{
+  LOG(INFO) << "S1UnloadCb called";
+};
+
+TEST_F(RrBaseTest, DataFetchTest)
+{
+
+  LOG(INFO) << "constructing test RRs";
+  RrBase rr_cli("rr_client");
+  RrBase rr_srv("rr_server");
+  std::unordered_map<std::string, RrBase *> rr_ref;
+  rr_ref["rr_client"] = &rr_cli;
+  rr_ref["rr_server"] = &rr_srv;
+  rr_cli.setRrReferences(rr_ref);
+  rr_srv.setRrReferences(rr_ref);
+
+  LOG(INFO) << "registering server named 'srv'";
+  rr_srv.registerServer(std::make_unique<RrTemplateServer<Resource1>>("srv", &loadCb, &unloadCb));
+
+  LOG(INFO) << "executing call";
+  RrQueryTemplate<Resource1> query(Resource1("someQueryContent"), Resource1(""));
+  rr_cli.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_srv, "srv", query);
+
+  RrQueryTemplate<Resource1> query2(Resource1("someQueryContent2"), Resource1(""));
+  rr_cli.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_srv, "srv", query2);
+
+  LOG(INFO) << "fetching queries";
+
+  std::map<std::string, std::string> resultMap = rr_cli.getClientQueries("srv", "srv");
+
+  EXPECT_EQ(resultMap.size(), 2);
+
+  std::vector<std::string> ids{query2.id(), query.id()};
+  std::vector<std::string> values{"someQueryContent2", "someQueryContent"};
+
+  int c = 0;
+  for (const auto &el : resultMap)
+  {
+    EXPECT_EQ(el.first, ids.at(c));
+
+    Resource1 query = Serializer::deserialize<Resource1>(el.second);
+    EXPECT_EQ(query.rawMessage(), values.at(c));
+    c++;
+  }
 }
