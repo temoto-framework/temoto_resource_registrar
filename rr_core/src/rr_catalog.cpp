@@ -16,8 +16,6 @@
 
 #include "temoto_resource_registrar/rr_catalog.h"
 
-#include <console_bridge/console.h>
-
 namespace temoto_resource_registrar
 {
 
