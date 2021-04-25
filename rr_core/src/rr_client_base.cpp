@@ -15,11 +15,12 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "temoto_resource_registrar/rr_client_base.h"
+#include "temoto_resource_registrar/rr_id_utils.h"
 
 namespace temoto_resource_registrar
 {
   RrClientBase::RrClientBase(const std::string &rr, const std::string &name)
-      : name_(name), rr_(rr), id_(rr + "_" + name)
+      : name_(name), rr_(rr), id_(IDUtils::generateServerName(rr, name))
   {
   }
 

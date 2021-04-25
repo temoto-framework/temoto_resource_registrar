@@ -20,6 +20,7 @@
 #include "rr_catalog.h"
 #include "rr_client_base.h"
 #include "rr_exceptions.h"
+#include "rr_id_utils.h"
 #include "rr_identifiable.h"
 #include "rr_query_base.h"
 
@@ -38,7 +39,7 @@ namespace temoto_resource_registrar
     // 100 - start transaction
     // 200 - end transaction
     int type_;
-    RrQueryBase base_query_;    
+    RrQueryBase base_query_;
   };
 
   class RrServerBase : public Identifiable<std::string>
@@ -50,18 +51,20 @@ namespace temoto_resource_registrar
 
     std::string id()
     {
-      return name_;
+      return id_;
     };
+
+    void initializeServer(const std::string &rr, const RrCatalogPtr &reg)
+    {
+      id_ = IDUtils::generateServerName(rr, name_);
+      rr_catalog_ = reg;
+      initialized_ = true;
+    }
 
     template <class Q>
     void processQuery(Q &query) const
     {
       load_callback_ptr_(query);
-    };
-
-    void setCatalog(const RrCatalogPtr &reg)
-    {
-      rr_catalog_ = reg;
     };
 
     virtual bool unloadMessage(const std::string &id) = 0;
@@ -74,7 +77,9 @@ namespace temoto_resource_registrar
   protected:
     RrCatalogPtr rr_catalog_;
     //keeping debug values, just in case for dev
-    std::string name_;
+
+    std::string id_;
+    bool initialized_ = false;
 
     void (*load_callback_ptr_)(RrQueryBase &);
     void (*unload_callback_ptr_)(RrQueryBase &);
@@ -87,7 +92,7 @@ namespace temoto_resource_registrar
     }
 
   private:
-    unsigned int id_;
+    std::string name_;
   };
 
 } // namespace temoto_resource_registrar

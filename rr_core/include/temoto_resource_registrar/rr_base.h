@@ -30,6 +30,7 @@
 #include "rr_client_base.h"
 #include "rr_configuration.h"
 #include "rr_exceptions.h"
+#include "rr_id_utils.h"
 #include "rr_query_base.h"
 #include "rr_server_base.h"
 #include "rr_status.h"
@@ -267,10 +268,11 @@ namespace temoto_resource_registrar
     void registerServer(std::unique_ptr<RrServerBase> serverPtr)
     {
       CONSOLE_BRIDGE_logInform("registering server");
-      serverPtr->setCatalog(rr_catalog_);
       serverPtr->registerTransactionCb(std::bind(&RrBase::processTransactionCallback, this, std::placeholders::_1));
+      serverPtr->initializeServer(name(), rr_catalog_);
+
+      CONSOLE_BRIDGE_logInform("registration complete %s", (serverPtr->id()).c_str());
       servers_.add(std::move(serverPtr));
-      CONSOLE_BRIDGE_logInform("registration complete");
     }
 
     template <class ServType, class QueryType>
@@ -301,7 +303,7 @@ namespace temoto_resource_registrar
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(statusData.id_);
       for (auto const &notId : notifyIds)
       {
-        std::string clientName = notId.second + "_status";
+        std::string clientName = IDUtils::generateStatus(notId.second);
         CONSOLE_BRIDGE_logDebug("\t callStatusClient for client name %s", clientName.c_str());
 
         bool statusResult = callStatusClient(clientName, statusData);
@@ -358,13 +360,15 @@ namespace temoto_resource_registrar
       CONSOLE_BRIDGE_logDebug("-----exited handleStatus %s", statusData.id_.c_str());
     }
 
-    // get target rr based on target server name and from there get all queries that used the clientName client
+    // get target rr based on target server name and from there get all 
+    // queries that used the clientName client
     std::map<std::string, std::string> getClientQueries(const std::string &serverName, const std::string &clientName)
     {
+      CONSOLE_BRIDGE_logDebug("getClientQueries for server '%s' client '%s'", serverName.c_str(), clientName.c_str());
       // get server queries. can find the target RR from these queries
       std::string targetRr = rr_catalog_->getServerRr(serverName);
-
-      return callDataFetchClient(targetRr, clientName);
+      CONSOLE_BRIDGE_logDebug("identified for targer rr to be: %s", targetRr.c_str());
+      return callDataFetchClient(targetRr, IDUtils::generateServerName(targetRr, clientName));
     };
 
     std::map<UUID, std::string> handleDataFetch(const std::string &client)
@@ -419,9 +423,9 @@ namespace temoto_resource_registrar
  * @param overwriteCb 
  */
     template <class CallClientClass, class QueryClass, class StatusCallType>
-    void createClient(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
+    std::string createClient(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
     {
-      std::string clientName = rr + "_" + server;
+      std::string clientName = IDUtils::generateServerName(rr, server);
 
       bool oldClient = true;
       if (!clients_.exists(clientName))
@@ -446,6 +450,8 @@ namespace temoto_resource_registrar
       {
         dynamicRef.registerUserStatusCb(statusCallback);
       }
+
+      return clientName;
     }
 
     virtual void unloadClient(const std::string &client)
@@ -507,17 +513,15 @@ namespace temoto_resource_registrar
     }
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
-    void handleClientCall(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
+    void handleClientCall(const std::string &rr, const std::string clientName, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
     {
-      std::string clientName = rr + "_" + server;
+      std::string clientId = createClient<CallClientClass, QueryClass, StatusCallType>(rr, clientName, query, statusCallback, overwriteCb);
 
-      createClient<CallClientClass, QueryClass, StatusCallType>(rr, server, query, statusCallback, overwriteCb);
-
-      auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientName));
+      auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientId));
       client.invoke(query);
 
       std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-      rr_catalog_->storeClientCallRecord(clientName, query.id());
+      rr_catalog_->storeClientCallRecord(clientId, query.id());
     }
 
     /**
@@ -549,14 +553,19 @@ namespace temoto_resource_registrar
 
       CONSOLE_BRIDGE_logDebug("setting origin");
 
-      std::string targetRrName;
+      std::string targetRrName, serverName;
+
+      if ((rr != NULL) && (target == NULL))
+        targetRrName = *(rr);
+      else
+        targetRrName = target->name();
+
+      serverName = IDUtils::generateServerName(targetRrName, server);
 
       // In case we have a client call, not a internal call
       if ((rr != NULL) && (target == NULL))
       {
-
         CONSOLE_BRIDGE_logDebug("executing client call, also setting rr to %s", (*(rr)).c_str());
-        targetRrName = *(rr);
         query.setRr(targetRrName);
         handleClientCall<CallClientClass, QueryType, StatusCallType>(*(rr), server, query, statusFunc, overrideFunc);
 
@@ -565,16 +574,15 @@ namespace temoto_resource_registrar
       else
       {
         CONSOLE_BRIDGE_logDebug("executing mem call, also setting rr");
-        targetRrName = target->name();
         query.setRr(targetRrName);
-        target->handleInternalCall<ServType, QueryType>(server, query);
+        target->handleInternalCall<ServType, QueryType>(serverName, query);
 
         CONSOLE_BRIDGE_logDebug("\t storeClientCallRecord to server: %s", server.c_str());
 
-        rr_catalog_->storeClientCallRecord(server, query.id());
+        rr_catalog_->storeClientCallRecord(serverName, query.id());
       }
 
-      rr_catalog_->storeServerRr(server, targetRrName);
+      rr_catalog_->storeServerRr(serverName, targetRrName);
 
       if (!query.metadata().errorStack().empty())
       {

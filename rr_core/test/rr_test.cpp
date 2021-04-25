@@ -193,7 +193,7 @@ public:
 
   void processQuery(RrQueryTemplate<MessageType> &query) const
   {
-    LOG(INFO) << "processQuery - override - " << typeid(MessageType).name() << "server: " << name_;
+    LOG(INFO) << "processQuery - override - " << typeid(MessageType).name() << "server: " << id_;
     // need to call server here.
 
     MessageType rawRequest = query.request().getRequest();
@@ -201,8 +201,8 @@ public:
 
     query.setId(generateId());
 
-    LOG(INFO) << "checking existance of: " << name_ << " - " << query.id();
-    std::string requestId = rr_catalog_->queryExists(name_, serializedRequest);
+    LOG(INFO) << "checking existance of: " << id_ << " - " << query.id();
+    std::string requestId = rr_catalog_->queryExists(id_, serializedRequest);
     if (requestId.size() == 0)
     {
       try
@@ -214,7 +214,7 @@ public:
         typed_load_callback_ptr_(query);
         LOG(INFO) << "Finished callback";
 
-        LOG(INFO) << "Storing query data to server..." << name_;
+        LOG(INFO) << "Storing query data to server..." << id_;
 
         storeQuery(serializedRequest, query);
         LOG(INFO) << "Finished storing";
@@ -247,7 +247,7 @@ public:
 
     bool canUnload = false;
 
-    std::string query = rr_catalog_->unload(name_, id, canUnload);
+    std::string query = rr_catalog_->unload(id_, id, canUnload);
 
     RrQueryTemplate<MessageType> q = Serializer::deserialize<RrQueryTemplate<MessageType>>(query);
 
@@ -270,7 +270,7 @@ protected:
 private:
   void storeQuery(const std::string &rawRequest, RrQueryTemplate<MessageType> query) const
   {
-    rr_catalog_->storeQuery(name_,
+    rr_catalog_->storeQuery(id_,
                             query,
                             rawRequest,
                             Serializer::serialize<RrQueryTemplate<MessageType>>(query));
@@ -278,7 +278,7 @@ private:
 
   std::string processExisting(const std::string &requestId, RrQueryTemplate<MessageType> query) const
   {
-    return rr_catalog_->processExisting(name_, requestId, query);
+    return rr_catalog_->processExisting(id_, requestId, query);
   };
 };
 
@@ -955,20 +955,26 @@ TEST_F(RrBaseTest, DataFetchTest)
 
   LOG(INFO) << "fetching queries";
 
-  std::map<std::string, std::string> resultMap = rr_cli.getClientQueries("srv", "srv");
+  rr_cli.printCatalog();
+  LOG(INFO) << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>";
+  rr_srv.printCatalog();
+
+  std::map<std::string, std::string> resultMap = rr_cli.getClientQueries(IDUtils::generateServerName("rr_server", "srv"), "srv");
 
   EXPECT_EQ(resultMap.size(), 2);
-
+  
   std::vector<std::string> ids{query2.id(), query.id()};
   std::vector<std::string> values{"someQueryContent2", "someQueryContent"};
 
   int c = 0;
-  for (const auto &el : resultMap)
+  for (const auto &el : ids)
   {
-    EXPECT_EQ(el.first, ids.at(c));
 
-    Resource1 query = Serializer::deserialize<Resource1>(el.second);
+    EXPECT_EQ(resultMap.count(el), 1);
+
+    Resource1 query = Serializer::deserialize<Resource1>(resultMap[el]);
     EXPECT_EQ(query.rawMessage(), values.at(c));
+
     c++;
   }
 }
