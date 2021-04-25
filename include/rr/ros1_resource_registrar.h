@@ -178,15 +178,19 @@ namespace temoto_resource_registrar
     template <class QueryType>
     std::map<std::string, QueryType> getRosServerRrQueries(const std::string &serverName, const std::string &queryRr)
     {
+
+      ROS_DEBUG_STREAM("getting RR queries from server " << serverName << " and origin " << queryRr);
       std::map<std::string, std::string> serialisedQueries = getServerRrQueries(serverName, queryRr);
 
+      ROS_DEBUG_STREAM("Found " << serialisedQueries.size() << " queries");
       std::map<std::string, QueryType> rosQueries;
 
+      ROS_DEBUG_STREAM("Deserializing strings to query type");
       for (const auto &el : serialisedQueries)
       {
         rosQueries[el.first] = MessageSerializer::deSerializeMessage<QueryType>(el.second);
       }
-
+      ROS_DEBUG_STREAM("Returning...");
       return rosQueries;
     }
 
