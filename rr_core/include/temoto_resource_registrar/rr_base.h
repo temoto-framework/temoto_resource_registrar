@@ -362,36 +362,36 @@ namespace temoto_resource_registrar
 
     // get target rr based on target server name and from there get all 
     // queries that used the clientName client
-    std::map<std::string, std::string> getClientQueries(const std::string &serverName, const std::string &clientName)
+    std::map<std::string, std::string> getServerRrQueries(const std::string &serverName, const std::string &queryRr)
     {
-      CONSOLE_BRIDGE_logDebug("getClientQueries for server '%s' client '%s'", serverName.c_str(), clientName.c_str());
+      CONSOLE_BRIDGE_logDebug("getClientQueries for server '%s' from rr '%s'", serverName.c_str(), queryRr.c_str());
       // get server queries. can find the target RR from these queries
       std::string targetRr = rr_catalog_->getServerRr(serverName);
       CONSOLE_BRIDGE_logDebug("identified for targer rr to be: %s", targetRr.c_str());
-      return callDataFetchClient(targetRr, IDUtils::generateServerName(targetRr, clientName));
+      return callDataFetchClient(targetRr, queryRr, serverName);
     };
 
-    std::map<UUID, std::string> handleDataFetch(const std::string &client)
+    std::map<UUID, std::string> handleDataFetch(const std::string &originRr, const std::string &serverName)
     {
-      CONSOLE_BRIDGE_logDebug("fetching query data for client: %s", client.c_str());
+      CONSOLE_BRIDGE_logDebug("fetching query data for server name: %s", serverName.c_str());
 
       std::map<UUID, std::string> ret;
 
       CONSOLE_BRIDGE_logDebug("getClientIds");
 
-      std::set<std::string> ids = rr_catalog_->getServerIds(client);
+      std::set<std::string> ids = rr_catalog_->getServerIds(serverName);
 
       CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries");
-      findAndCollectIdQueries(ids, ret);
+      findAndCollectIdQueries(ids, originRr, ret);
 
       CONSOLE_BRIDGE_logDebug("got %i queries ", ret.size());
       return ret;
     }
 
-    virtual std::map<std::string, std::string> callDataFetchClient(const std::string &targetRr, const std::string &client)
+    virtual std::map<std::string, std::string> callDataFetchClient(const std::string &targetRr, const std::string &originRr, const std::string &serverName)
     {
       CONSOLE_BRIDGE_logDebug("target rr for data fetch: %s", targetRr.c_str());
-      auto res = rr_references_[targetRr]->handleDataFetch(client);
+      auto res = rr_references_[targetRr]->handleDataFetch(originRr, serverName);
       CONSOLE_BRIDGE_logDebug("fetched %i queries", res.size());
       return res;
     }
@@ -648,14 +648,15 @@ namespace temoto_resource_registrar
       }
     }
 
-    void findAndCollectIdQueries(const std::set<std::string> &ids, std::map<UUID, std::string> &resultMap)
+    void findAndCollectIdQueries(const std::set<std::string> &ids, const std::string &originRr, std::map<UUID, std::string> &resultMap)
     {
-      CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries for %i ids", ids.size());
+      CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries for %i ids. Origin: %s", ids.size(), originRr.c_str());
 
       for (const auto &id : ids)
       {
         QueryContainer<std::string> container = rr_catalog_->findOriginalContainer(id);
-        if (!container.empty_)
+        CONSOLE_BRIDGE_logDebug("origin of container: %s", container.q_.origin().c_str());
+        if (!container.empty_ && container.q_.origin() == originRr)
         {
           resultMap[container.q_.id()] = container.rawRequest_;
         }

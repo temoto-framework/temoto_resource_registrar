@@ -959,10 +959,12 @@ TEST_F(RrBaseTest, DataFetchTest)
   LOG(INFO) << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>";
   rr_srv.printCatalog();
 
-  std::map<std::string, std::string> resultMap = rr_cli.getClientQueries(IDUtils::generateServerName("rr_server", "srv"), "srv");
+  std::map<std::string, std::string> resultMap = rr_cli.getServerRrQueries(
+      IDUtils::generateServerName("rr_server", "srv"),
+      "rr_client");
 
   EXPECT_EQ(resultMap.size(), 2);
-  
+
   std::vector<std::string> ids{query2.id(), query.id()};
   std::vector<std::string> values{"someQueryContent2", "someQueryContent"};
 

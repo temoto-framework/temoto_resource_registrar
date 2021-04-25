@@ -58,6 +58,7 @@ namespace temoto_resource_registrar
     {
       id_ = IDUtils::generateServerName(rr, name_);
       rr_catalog_ = reg;
+      initialize();
       initialized_ = true;
     }
 
@@ -75,6 +76,9 @@ namespace temoto_resource_registrar
     }
 
   protected:
+    virtual void initialize(){
+    };
+
     RrCatalogPtr rr_catalog_;
     //keeping debug values, just in case for dev
 
