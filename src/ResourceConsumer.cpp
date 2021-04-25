@@ -17,6 +17,15 @@ void statusCallback(temoto_resource_registrar::LoadComponent msg, temoto_resourc
 
   if (counter == shutdownCounter)
   {
+
+    auto r = rr.getRosServerRrQueries<temoto_resource_registrar::LoadComponent::Request>("AgentRR_resourceServer", rrName);
+
+    for(const auto &el : r) {
+      ROS_INFO_STREAM("id: " << el.first << " - msg: " << el.second);
+    }
+
+    ROS_INFO_STREAM("getServerRrQueries size: " << r.size());
+
     ROS_INFO_STREAM("Counter reached, unloading: " << loadId << " from: "
                                                    << "AgentRR");
     bool res = rr.unload("AgentRR", loadId);

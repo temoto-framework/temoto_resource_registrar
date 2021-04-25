@@ -33,7 +33,7 @@ void RtLoadCB(temoto_resource_registrar::CounterService::Request &req, temoto_re
   ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temotoMetadata.requestId);
   id = res.temotoMetadata.requestId;
 
-  throw resource_registrar::TemotoErrorStack("producer error", "ResourceProducer");
+  //throw resource_registrar::TemotoErrorStack("producer error", "ResourceProducer");
 
   //auto fa = std::async(std::launch::async, caller);
 
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 
   rr.init();
 
-  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>(rrName + "_counterServer", &RtLoadCB, &RtUnloadCB);
+  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>("counterServer", &RtLoadCB, &RtUnloadCB);
   rr.registerServer(std::move(server));
 
   ROS_INFO("spinning....");

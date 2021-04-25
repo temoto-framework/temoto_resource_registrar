@@ -30,7 +30,7 @@ public:
  */
   void invoke(ServiceClass &request)
   {
-    ROS_INFO_STREAM("invoke for ServiceClass started");
+    ROS_INFO_STREAM("invoke for ServiceClass started. Targeting " << id());
     if (client_.call(request))
     {
       ROS_INFO_STREAM("invoke OK " << request.response.temotoMetadata.requestId);

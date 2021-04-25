@@ -1,0 +1,5 @@
+string originRr
+string serverName
+---
+string[] ids
+string[] serializedResult

@@ -48,12 +48,12 @@ int main(int argc, char **argv)
   ROS_INFO("Starting up agent.........");
   ros::init(argc, argv, "agent_thing");
 
-  ros::AsyncSpinner spinner(4); // Use 4 threads
+  ros::AsyncSpinner spinner(10); // Use 10 threads
   spinner.start();
 
   rr.init();
 
-  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::LoadComponent>>(rrName + "_resourceServer", &RtM1LoadCB, &RtM1UnloadCB);
+  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::LoadComponent>>("resourceServer", &RtM1LoadCB, &RtM1UnloadCB);
   rr.registerServer(std::move(server));
 
   ROS_INFO("spinning....");

@@ -89,7 +89,7 @@ public:
 
     bool canUnload = false;
 
-    std::string serializedResponse = rr_catalog_->unload(name_, id, canUnload);
+    std::string serializedResponse = rr_catalog_->unload(id_, id, canUnload);
 
     typename ServiceClass::Request request;
     typename ServiceClass::Response response;
@@ -166,7 +166,7 @@ public:
     if (hasEqualsDefined)
     {
       ROS_INFO_STREAM("evaluating uniqueness based on ==");
-      std::vector<temoto_resource_registrar::QueryContainer<std::string>> allServerRequests = rr_catalog_->getUniqueServerQueries(name_);
+      std::vector<temoto_resource_registrar::QueryContainer<std::string>> allServerRequests = rr_catalog_->getUniqueServerQueries(id_);
       for (const auto &q : allServerRequests)
       {
         std::string serReq = q.rawRequest_;
@@ -181,7 +181,7 @@ public:
     else
     {
       ROS_INFO_STREAM("evaluating uniqueness based on string comparison");
-      requestId = this->rr_catalog_->queryExists(name_, serializedRequest);
+      requestId = this->rr_catalog_->queryExists(id_, serializedRequest);
     }
 
     std::string generatedId = generateId();
@@ -211,7 +211,7 @@ public:
 
         ROS_INFO_STREAM("Storing query in catalog...");
 
-        rr_catalog_->storeQuery(name_,
+        rr_catalog_->storeQuery(id_,
                                 wrappedQuery,
                                 serializedRequest,
                                 sanitizeAndSerialize(res));
@@ -254,11 +254,11 @@ private:
   ros::NodeHandle nh_;
   ros::ServiceServer service_;
 
-  void initialize()
+  virtual void initialize()
   {
-    ROS_INFO_STREAM("Starting up server..." << name_);
-    service_ = nh_.advertiseService(name_, &Ros1Server::serverCallback, this);
-    ROS_INFO("Starting up server done!!!");
+    ROS_INFO_STREAM("Starting up server..." << id_);
+    service_ = nh_.advertiseService(id_, &Ros1Server::serverCallback, this);
+    ROS_INFO_STREAM("Starting up server done!!!");
   }
 
   Ros1Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
@@ -268,7 +268,7 @@ private:
 
   typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
   {
-    std::string serializedResponse = rr_catalog_->processExisting(name_, requestId, query);
+    std::string serializedResponse = rr_catalog_->processExisting(id_, requestId, query);
     typename ServiceClass::Response fetchedResponse = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serializedResponse);
 
     return fetchedResponse;
