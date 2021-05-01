@@ -3,8 +3,8 @@
 
 #include "ros/ros.h"
 
-#include "temoto_resource_registrar/rr_server_base.h"
 #include "temoto_resource_registrar/rr_serializer.h"
+#include "temoto_resource_registrar/rr_server_base.h"
 
 #include "rr/message_serializer.h"
 #include "rr/query_utils.h"
@@ -41,7 +41,8 @@ public:
                                                                           typed_load_callback_ptr_(loadCallback),
                                                                           typed_unload_callback_ptr_(unLoadCallback),
                                                                           member_load_cb_(NULL),
-                                                                          member_unload_cb_(NULL)
+                                                                          member_unload_cb_(NULL),
+                                                                          member_status_cb_(NULL)
   {
     initialize();
   }
@@ -52,12 +53,17 @@ public:
                  member_load_cb,
              std::function<void(typename ServiceClass::Request &,
                                 typename ServiceClass::Response &)>
-                 member_unload_cb)
+                 member_unload_cb,
+             std::function<void(typename ServiceClass::Request &,
+                                typename ServiceClass::Response &,
+                                const temoto_resource_registrar::Status &)>
+                 member_status_cb = NULL)
       : temoto_resource_registrar::RrServerBase(name, NULL, NULL),
         member_load_cb_(member_load_cb),
         member_unload_cb_(member_unload_cb),
         typed_load_callback_ptr_(NULL),
-        typed_unload_callback_ptr_(NULL)
+        typed_unload_callback_ptr_(NULL),
+        member_status_cb_(member_status_cb)
   {
     initialize();
   }
@@ -243,12 +249,24 @@ public:
     return true;
   }
 
+  void triggerCallback(const temoto_resource_registrar::Status &status) const
+  {
+    ROS_INFO_STREAM("Triggering callback logic..." << id());
+    if (member_status_cb_ != NULL)
+    {
+      typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialisedRequest_);
+      typename ServiceClass::Response response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialisedRsponse_);
+      member_status_cb_(request, response, status);
+    }
+  }
+
 protected:
   void (*typed_load_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
   void (*typed_unload_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
 
   std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &)> member_load_cb_;
   std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &)> member_unload_cb_;
+  std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &, const temoto_resource_registrar::Status &)> member_status_cb_;
 
 private:
   ros::NodeHandle nh_;

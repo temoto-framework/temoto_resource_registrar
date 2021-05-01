@@ -252,11 +252,16 @@ namespace temoto_resource_registrar
         ROS_WARN_STREAM("CONTAINER EXISTS");
         statusSrv.request.serialisedRequest = container.rawRequest_;
         statusSrv.request.serialisedResponse = container.rawQuery_;
+        
+        statusData.serialisedRequest_ = container.rawRequest_;
+        statusData.serialisedRsponse_ = container.rawQuery_;
       }
       else
       {
         ROS_WARN_STREAM("CONTAINER does not EXISTS");
       }
+
+      handleRrServerCb(requestId, statusData);
 
       statusSrv.request.target = statusData.id_;
       statusSrv.request.status = static_cast<int>(statusData.state_);

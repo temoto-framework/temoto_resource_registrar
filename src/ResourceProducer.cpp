@@ -28,6 +28,7 @@ void caller(int loopNr)
   }
 }
 
+/*
 void RtLoadCB(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res)
 {
   ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temotoMetadata.requestId);
@@ -45,8 +46,30 @@ void RtUnloadCB(temoto_resource_registrar::CounterService::Request &req, temoto_
   ROS_INFO_STREAM("IN UNLOAD CB CounterService. ID: " << req << " - " << res);
 }
 
+void RtStatusCb(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res, const temoto_resource_registrar::Status &status)
+{
+  ROS_WARN_STREAM("STATUS!");
+}
+*/
+
 int main(int argc, char **argv)
 {
+
+  auto loadCb = [&](temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res) {
+    ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temotoMetadata.requestId);
+    id = res.temotoMetadata.requestId;
+
+    boost::thread thread_b(caller, 5);
+  };
+
+  auto unloadCb = [&](temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res) {
+    ROS_INFO_STREAM("IN UNLOAD CB CounterService. ID: " << req << " - " << res);
+  };
+
+  auto statusCb = [&](temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res, const temoto_resource_registrar::Status &status) {
+    ROS_ERROR_STREAM("Status CB called");
+  };
+
   ROS_INFO("Starting up producer...");
   ros::init(argc, argv, "producer_thing");
   ros::NodeHandle n;
@@ -57,11 +80,10 @@ int main(int argc, char **argv)
 
   rr.init();
 
-  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>("counterServer", &RtLoadCB, &RtUnloadCB);
+  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>("counterServer", loadCb, unloadCb, statusCb);
   rr.registerServer(std::move(server));
 
   ROS_INFO("spinning....");
-
 
   /*while (ros::ok())
   {

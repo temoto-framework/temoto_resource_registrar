@@ -24,33 +24,36 @@ void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resour
   }
 }
 
-void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
-{
-  ROS_INFO("IN LOAD CB ------------------------");
-
-  ROS_INFO_STREAM("1" << req.loadTarget);
-  if (req.loadTarget == "CounterService")
-  {
-    ROS_INFO_STREAM("2" << req.loadTarget);
-    temoto_resource_registrar::CounterService counterSrv;
-    counterSrv.request.startPoint = 1;
-
-    rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, statusCallback);
-    ROS_INFO_STREAM("3" << req.loadTarget);
-    latestId = res.temotoMetadata.requestId;
-  }
-  ROS_INFO_STREAM("5" << req.loadTarget);
-  res.loadMessage = req.loadTarget;
-  ROS_INFO("IN LOAD CB------------------------");
-}
-
-void RtM1UnloadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res)
-{
-  ROS_INFO("IN UNLOAD CB");
-}
-
 int main(int argc, char **argv)
 {
+
+  auto loadCb = [&](temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res) {
+    ROS_INFO("IN LOAD CB ------------------------");
+
+    ROS_INFO_STREAM("1" << req.loadTarget);
+    if (req.loadTarget == "CounterService")
+    {
+      ROS_INFO_STREAM("2" << req.loadTarget);
+      temoto_resource_registrar::CounterService counterSrv;
+      counterSrv.request.startPoint = 1;
+
+      rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, statusCallback);
+      ROS_INFO_STREAM("3" << req.loadTarget);
+      latestId = res.temotoMetadata.requestId;
+    }
+    ROS_INFO_STREAM("5" << req.loadTarget);
+    res.loadMessage = req.loadTarget;
+    ROS_INFO("IN LOAD CB------------------------");
+  };
+
+  auto unloadCb = [&](temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res) {
+    ROS_INFO("IN UNLOAD CB");
+  };
+
+  auto statusCb = [&](temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res, const temoto_resource_registrar::Status &status) {
+    ROS_ERROR_STREAM("Status CB called");
+  };
+
   ROS_INFO("Starting up agent.........");
   ros::init(argc, argv, "agent_thing");
 
@@ -59,7 +62,7 @@ int main(int argc, char **argv)
 
   rr.init();
 
-  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::LoadComponent>>("resourceServer", &RtM1LoadCB, &RtM1UnloadCB);
+  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::LoadComponent>>("resourceServer", loadCb, unloadCb, statusCb);
   rr.registerServer(std::move(server));
 
   ROS_INFO("spinning....");
