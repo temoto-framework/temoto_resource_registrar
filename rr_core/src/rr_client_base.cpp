@@ -24,7 +24,7 @@ namespace temoto_resource_registrar
   {
   }
 
-  std::string RrClientBase::id()
+  std::string RrClientBase::id() const
   {
     return id_;
   }
@@ -42,21 +42,26 @@ namespace temoto_resource_registrar
   {
   }
 
-  void RrClientBase::internalStatusCallback(const Status &status)
+  void RrClientBase::internalStatusCallback(const std::string &requestId, const Status &status)
   {
   }
 
   template <class UserStatusCb>
-  void RrClientBase::registerUserStatusCb(const UserStatusCb &user_status_cb)
+  void RrClientBase::registerUserStatusCb(const std::string &requestId, const UserStatusCb &user_status_cb)
   {
   }
 
-  void RrClientBase::registerUserStatusCb(void *const &t)
+  void RrClientBase::registerUserStatusCb(const std::string &requestId, void *const &t)
   {
   }
 
-  bool RrClientBase::hasRegisteredCb()
+  bool RrClientBase::hasRegisteredCb(const std::string &requestId) const
   {
+  }
+
+  std::vector<std::string> RrClientBase::registeredCallbackQueries() const
+  {
+    return status_query_ids_;
   }
 
   std::string RrClientBase::rr() const

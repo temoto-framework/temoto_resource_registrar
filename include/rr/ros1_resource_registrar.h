@@ -237,8 +237,10 @@ namespace temoto_resource_registrar
  * @return true 
  * @return false 
  */
-    virtual bool callStatusClient(const std::string &clientName, Status statusData)
+    virtual bool callStatusClient(const std::string &targetRr, const std::string &requestId, Status statusData)
     {
+
+      std::string clientName = IDUtils::generateStatus(targetRr);
 
       initClient<StatusComponent>(clientName, status_clients_);
 
@@ -354,8 +356,8 @@ namespace temoto_resource_registrar
 
     bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
     {
-      ROS_INFO_STREAM("statusCallback " << req.target);
-      handleStatus({static_cast<Status::State>(req.status), req.target, req.message, req.serialisedRequest, req.serialisedResponse});
+      ROS_INFO_STREAM("statusCallback: " << req.target);
+      handleStatus(req.target, {static_cast<Status::State>(req.status), req.target, req.message, req.serialisedRequest, req.serialisedResponse});
       return true;
     }
 

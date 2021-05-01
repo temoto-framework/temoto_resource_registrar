@@ -19,7 +19,7 @@ void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resour
     ROS_INFO_STREAM(i.response.temotoMetadata.requestId);
     ROS_INFO_STREAM(i.response.loadMessage);
 
-    std::map<std::string, QueryType> r = rr.getRosChildQueries<temoto_resource_registrar::CounterService::Request>(latestId, "counterServer");
+    std::map<std::string, temoto_resource_registrar::CounterService::Request> r = rr.getRosChildQueries<temoto_resource_registrar::CounterService::Request>(latestId, "counterServer");
     ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<dependency result>>>>>>>>>>>>>>>>>>>>>" << r.size());
   }
 }

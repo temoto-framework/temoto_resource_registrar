@@ -27,7 +27,7 @@ namespace temoto_resource_registrar
   public:
     virtual ~Identifiable(){};
 
-    virtual IdentityClass id() = 0;
+    virtual IdentityClass id() const = 0;
   };
 } // namespace temoto_resource_registrar
 

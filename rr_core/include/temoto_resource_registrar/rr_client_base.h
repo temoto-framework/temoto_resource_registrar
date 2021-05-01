@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace temoto_resource_registrar
 {
@@ -34,20 +35,22 @@ namespace temoto_resource_registrar
 
     virtual void wrappedCallback();
 
-    virtual std::string id();
+    virtual std::string id() const;
 
     void setCatalog(const RrCatalogPtr &reg);
 
     virtual void invoke(const RrQueryBase &query) const;
 
-    virtual void internalStatusCallback(const Status &status);
+    virtual void internalStatusCallback(const std::string &requestId, const Status &status);
 
     template <class UserStatusCb>
-    void registerUserStatusCb(const UserStatusCb &user_status_cb);
+    void registerUserStatusCb(const std::string &requestId, const UserStatusCb &user_status_cb);
 
-    void registerUserStatusCb(void *const &t);
+    void registerUserStatusCb(const std::string &requestId, void *const &t);
 
-    virtual bool hasRegisteredCb();
+    virtual bool hasRegisteredCb(const std::string &requestId) const;
+
+    virtual std::vector<std::string> registeredCallbackQueries() const;
 
     std::string rr() const;
 
@@ -55,6 +58,7 @@ namespace temoto_resource_registrar
     std::string rr_;
     std::string name_;
     RrCatalogPtr rr_catalog_;
+    std::vector<std::string> status_query_ids_;
 
   private:
     std::string id_;

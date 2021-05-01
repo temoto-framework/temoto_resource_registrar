@@ -77,6 +77,17 @@ namespace temoto_resource_registrar
       return ids;
     }
 
+    ContentClass *getElementPtr(const std::string &key)
+    {
+      auto it = rr_contents_.find(key);
+      if (it != rr_contents_.end())
+      {
+        return (it->second.get());
+      }
+      std::string error = "element '" + key + "' not found";
+      throw ElementNotFoundException(error.c_str());
+    }
+
     const ContentClass &getElement(const std::string &key)
     {
       auto it = rr_contents_.find(key);
@@ -98,22 +109,22 @@ namespace temoto_resource_registrar
       return false;
     }
 
-    const bool hasCallback(const std::string &key)
+    const bool hasCallback(const std::string &key, const std::string &queryId)
     {
       auto it = rr_contents_.find(key);
       if (it != rr_contents_.end())
       {
-        return (it->second.get())->hasRegisteredCb();
+        return (it->second.get())->hasRegisteredCb(queryId);
       }
       return false;
     }
 
-    const void runCallback(const std::string &key, const Status &statusInfo)
+    const void runCallback(const std::string &key, const std::string &queryId, const Status &statusInfo)
     {
       auto it = rr_contents_.find(key);
       if (it != rr_contents_.end())
       {
-        (it->second.get())->internalStatusCallback(statusInfo);
+        (it->second.get())->internalStatusCallback(queryId, statusInfo);
       }
     }
 
@@ -296,23 +307,22 @@ namespace temoto_resource_registrar
 
     bool unloadByServerAndQuery(const std::string &server, const std::string &id) { return servers_.unload(server, id); }
 
-    void sendStatus(Status statusData)
+    void sendStatus(const std::string &quieryId, Status statusData)
     {
       CONSOLE_BRIDGE_logDebug("core sendStatus %s", statusData.id_);
 
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(statusData.id_);
       for (auto const &notId : notifyIds)
       {
-        std::string clientName = IDUtils::generateStatus(notId.second);
-        CONSOLE_BRIDGE_logDebug("\t callStatusClient for client name %s", clientName.c_str());
+        CONSOLE_BRIDGE_logDebug("\t callStatusClient for rr %s", notId.second);
 
-        bool statusResult = callStatusClient(clientName, statusData);
+        bool statusResult = callStatusClient(notId.second, quieryId, statusData);
 
         CONSOLE_BRIDGE_logDebug("\t call result: %i", statusResult);
       }
     }
 
-    virtual void handleStatus(Status statusData)
+    virtual void handleStatus(const std::string &requestId, Status statusData)
     {
       CONSOLE_BRIDGE_logDebug("entered handleStatus %s", statusData.id_.c_str());
       std::string originalId = rr_catalog_->getOriginQueryId(statusData.id_);
@@ -332,7 +342,7 @@ namespace temoto_resource_registrar
       if (clients_.exists(clientName))
       {
         CONSOLE_BRIDGE_logDebug("\t\tcalling callback of client %s", clientName.c_str());
-        clients_.runCallback(clientName, statusData);
+        clients_.runCallback(clientName, requestId, statusData);
       }
 
       if (originalId.size())
@@ -354,7 +364,7 @@ namespace temoto_resource_registrar
 
         CONSOLE_BRIDGE_logDebug("\t\tsendStatus to target %s", statusData.id_.c_str());
 
-        std::async(&RrBase::sendStatus, this, statusData);
+        std::async(&RrBase::sendStatus, this, originalId, statusData);
       }
 
       CONSOLE_BRIDGE_logDebug("-----exited handleStatus %s", statusData.id_.c_str());
@@ -426,8 +436,10 @@ namespace temoto_resource_registrar
       int counter = 0;
       for (const std::string &id : clients_.getIds())
       {
-        if (clients_.hasCallback(id))
-          cbVector.push_back(id);
+        for (const std::string &qId : clients_.getElement(id).registeredCallbackQueries())
+        {
+          cbVector.push_back(qId);
+        }
       }
 
       return cbVector;
@@ -451,7 +463,6 @@ namespace temoto_resource_registrar
     {
       std::string clientName = IDUtils::generateServerName(rr, server);
 
-      bool oldClient = true;
       if (!clients_.exists(clientName))
       {
         CONSOLE_BRIDGE_logDebug("creating client! %s", clientName.c_str());
@@ -459,20 +470,8 @@ namespace temoto_resource_registrar
         CONSOLE_BRIDGE_logDebug("client created! %s", clientName.c_str());
         client->setCatalog(rr_catalog_);
         CONSOLE_BRIDGE_logDebug("Catalog set.");
-        client->registerUserStatusCb(statusCallback);
-        CONSOLE_BRIDGE_logDebug("CB registered.");
         clients_.add(std::move(client));
         CONSOLE_BRIDGE_logDebug("Client registered.");
-        oldClient = false;
-      }
-
-      auto &client = clients_.getElement(clientName);
-      CONSOLE_BRIDGE_logDebug("Getting client from storage.");
-      auto dynamicRef = dynamic_cast<const CallClientClass &>(client);
-      CONSOLE_BRIDGE_logDebug("dynamicRef done.");
-      if (overwriteCb && (statusCallback != NULL) && oldClient)
-      {
-        dynamicRef.registerUserStatusCb(statusCallback);
       }
 
       return clientName;
@@ -542,9 +541,13 @@ namespace temoto_resource_registrar
       remove(configuration_.location().c_str());
     }
 
-    virtual bool callStatusClient(const std::string &clientName, Status statusData)
+    virtual bool callStatusClient(const std::string &targetRr, const std::string &requestId, Status statusData)
     {
-      throw NotImplementedException("'callStatusClient' not implemented for RrBase");
+      CONSOLE_BRIDGE_logDebug("target rr for status: %s", targetRr.c_str());
+
+      rr_references_[targetRr]->handleStatus(requestId, statusData);
+
+      return true;
     }
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
@@ -555,9 +558,22 @@ namespace temoto_resource_registrar
       auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientId));
       client.invoke(query);
 
+      storeClientQueryStatusCb<CallClientClass, StatusCallType>(clientId, query.id(), statusCallback);
+
       std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
       rr_catalog_->storeClientCallRecord(clientId, query.id());
     }
+
+    template <class CallClientClass, class StatusCallType>
+    void storeClientQueryStatusCb(const std::string clientId, const std::string &queryId, const StatusCallType &statusCallback)
+    {
+      if (statusCallback != NULL && queryId.size() > 0) {
+        auto client = dynamic_cast<CallClientClass *>(clients_.getElementPtr(clientId));
+        client -> registerUserStatusCb(queryId, statusCallback);
+      }
+        
+    }
+
 
     /**
      * @brief TODO: requires a proper comment.

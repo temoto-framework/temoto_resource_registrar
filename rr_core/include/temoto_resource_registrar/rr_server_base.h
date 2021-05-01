@@ -49,7 +49,7 @@ namespace temoto_resource_registrar
     RrServerBase(const std::string &name, void (*loadCallback)(RrQueryBase &), void (*unLoadCallback)(RrQueryBase &))
         : name_(name), load_callback_ptr_(loadCallback), unload_callback_ptr_(unLoadCallback){};
 
-    std::string id()
+    std::string id() const
     {
       return id_;
     };
