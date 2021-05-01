@@ -360,16 +360,40 @@ namespace temoto_resource_registrar
       CONSOLE_BRIDGE_logDebug("-----exited handleStatus %s", statusData.id_.c_str());
     }
 
-    // get target rr based on target server name and from there get all 
-    // queries that used the clientName client
-    std::map<std::string, std::string> getServerRrQueries(const std::string &serverName, const std::string &queryRr)
+    std::map<std::string, std::string> getChildQueries(const std::string &id, const std::string &serverName)
     {
-      CONSOLE_BRIDGE_logDebug("getClientQueries for server '%s' from rr '%s'", serverName.c_str(), queryRr.c_str());
-      // get server queries. can find the target RR from these queries
-      std::string targetRr = rr_catalog_->getServerRr(serverName);
-      CONSOLE_BRIDGE_logDebug("identified for targer rr to be: %s", targetRr.c_str());
-      return callDataFetchClient(targetRr, queryRr, serverName);
-    };
+      std::map<std::string, std::string> res;
+
+      QueryContainer<std::string> qContainer = rr_catalog_->findOriginalContainer(id);
+
+      std::string clientName;
+
+      if (qContainer.empty_)
+      {
+        CONSOLE_BRIDGE_logDebug("Could not find base container. Maybe is pure client Rr. They can not have multiple dependencies since call executes a single query");
+        return res;
+      } else {
+
+      }
+      // UUID - servingRR
+      std::unordered_map<std::string, std::string> dependencies = rr_catalog_->getDependencies(qContainer.q_.id());
+      
+      CONSOLE_BRIDGE_logDebug("Dependencies:");
+      for (const auto &dep : dependencies)
+      {
+        CONSOLE_BRIDGE_logDebug("%s - %s", dep.first.c_str(), dep.second.c_str());
+
+        //leia client mis seda resurssi haldas
+        clientName = rr_catalog_->getIdClient(dep.first);
+
+        if (IDUtils::generateServerName(dep.second, serverName) == clientName) {
+          CONSOLE_BRIDGE_logDebug("client name %s matched. Fetching queries", clientName.c_str());
+          res = getServerRrQueries(clientName, name());
+        }
+      }
+
+      return res;
+    }
 
     std::map<UUID, std::string> handleDataFetch(const std::string &originRr, const std::string &serverName)
     {
@@ -485,6 +509,17 @@ namespace temoto_resource_registrar
     RrCatalogPtr rr_catalog_;
 
     Configuration configuration_;
+
+    // get target rr based on target server name and from there get all
+    // queries that used the clientName client
+    std::map<std::string, std::string> getServerRrQueries(const std::string &serverName, const std::string &queryRr)
+    {
+      CONSOLE_BRIDGE_logDebug("getClientQueries for server '%s' from rr '%s'", serverName.c_str(), queryRr.c_str());
+      // get server queries. can find the target RR from these queries
+      std::string targetRr = rr_catalog_->getServerRr(serverName);
+      CONSOLE_BRIDGE_logDebug("identified for targer rr to be: %s", targetRr.c_str());
+      return callDataFetchClient(targetRr, queryRr, serverName);
+    };
 
     void updateQuery(const std::string &server,
                      const std::string &request,

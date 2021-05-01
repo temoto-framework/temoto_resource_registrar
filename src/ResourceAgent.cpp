@@ -5,6 +5,8 @@
 
 std::string rrName = "AgentRR";
 
+std::string latestId = "";
+
 temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
 void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::Status status)
@@ -16,6 +18,10 @@ void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resour
   {
     ROS_INFO_STREAM(i.response.temotoMetadata.requestId);
     ROS_INFO_STREAM(i.response.loadMessage);
+
+    
+    auto r = rr.getRosChildQueries<temoto_resource_registrar::CounterService::Request>(latestId, "counterServer");
+    ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<dependency result>>>>>>>>>>>>>>>>>>>>>" << r.size());
   }
 }
 
@@ -32,6 +38,7 @@ void RtM1LoadCB(temoto_resource_registrar::LoadComponent::Request &req, temoto_r
 
     rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, statusCallback);
     ROS_INFO_STREAM("3" << req.loadTarget);
+    latestId = res.temotoMetadata.requestId;
   }
   ROS_INFO_STREAM("5" << req.loadTarget);
   res.loadMessage = req.loadTarget;

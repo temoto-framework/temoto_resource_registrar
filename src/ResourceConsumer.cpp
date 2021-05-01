@@ -18,9 +18,11 @@ void statusCallback(temoto_resource_registrar::LoadComponent msg, temoto_resourc
   if (counter == shutdownCounter)
   {
 
-    auto r = rr.getRosServerRrQueries<temoto_resource_registrar::LoadComponent::Request>("AgentRR_resourceServer", rrName);
+    rr.printCatalog();
+    auto r = rr.getRosChildQueries<temoto_resource_registrar::LoadComponent::Request>(loadId, "resourceServer");
 
-    for(const auto &el : r) {
+    for (const auto &el : r)
+    {
       ROS_INFO_STREAM("id: " << el.first << " - msg: " << el.second);
     }
 
@@ -102,7 +104,8 @@ int main(int argc, char **argv)
   loadCall.request.loadTarget = "CounterService";
 
   ROS_INFO_STREAM("Calling server with error expectation...");
-  try {
+  try
+  {
     rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, statusCallback);
 
     loadId = loadCall.response.temotoMetadata.requestId;

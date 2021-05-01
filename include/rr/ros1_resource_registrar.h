@@ -165,22 +165,22 @@ namespace temoto_resource_registrar
       return q;
     }
 
-    /**
- * @brief Get the Ros Server Rr Queries object. Uses the getServerRrQueries method to fetch recieved
- * queries from a target server. This server is resolved into a RR and all queries that came from the 
- * queryRr are returned to the user. A map of query id-s and the deserialized query is returned.
+
+/**
+ * @brief Get the Ros Child Queries object. Used to get executed queries of a dependency of the query
+ * defined. Takes in an query ID and the serverName the dependency used.
  * 
- * @tparam QueryType - type of the query
- * @param serverName - target server. Used to resolve target RR
- * @param queryRr - origin Rr. Since clients are unique for every Rr this parameter gets queries executed by that Rr
+ * @tparam QueryType - type of the query. Used for deserialization
+ * @param id - id of the query being investigated. Used for dependency determination
+ * @param serverName - name of the resource server being fetched. Many servers with the same resource
+ * type can exist, this is why a name needs to be defined.
  * @return std::map<std::string, QueryType> 
  */
     template <class QueryType>
-    std::map<std::string, QueryType> getRosServerRrQueries(const std::string &serverName, const std::string &queryRr)
+    std::map<std::string, QueryType> getRosChildQueries(const std::string &id, const std::string &serverName)
     {
-
-      ROS_DEBUG_STREAM("getting RR queries from server " << serverName << " and origin " << queryRr);
-      std::map<std::string, std::string> serialisedQueries = getServerRrQueries(serverName, queryRr);
+      ROS_DEBUG_STREAM("getting RR queries for id " << id << " and server " << serverName);
+      std::map<std::string, std::string> serialisedQueries = getChildQueries(id, serverName);
 
       ROS_DEBUG_STREAM("Found " << serialisedQueries.size() << " queries");
       std::map<std::string, QueryType> rosQueries;

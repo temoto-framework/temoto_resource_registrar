@@ -191,6 +191,19 @@ public:
                                                                              typed_load_callback_ptr_(loadCallback),
                                                                              typed_unload_callback_ptr_(unLoadCallback){};
 
+  RrTemplateServer(const std::string &name,
+                   std::function<void(RrQueryTemplate<MessageType> &)> load,
+                   std::function<void(RrQueryTemplate<MessageType> &)> unload,
+                   bool lambdas) : RrServerBase(name,
+                                                NULL,
+                                                NULL),
+                                   typed_load_callback_ptr_(NULL),
+                                   typed_unload_callback_ptr_(NULL),
+                                   typed_load_fn_(load),
+                                   typed_unload_fn_(unload)
+  {
+  }
+
   void processQuery(RrQueryTemplate<MessageType> &query) const
   {
     LOG(INFO) << "processQuery - override - " << typeid(MessageType).name() << "server: " << id_;
@@ -211,7 +224,11 @@ public:
         transaction_callback_ptr_(TransactionInfo(100, query));
 
         LOG(INFO) << "Request not found. Running and storing it";
-        typed_load_callback_ptr_(query);
+        if (typed_load_callback_ptr_ != NULL)
+          typed_load_callback_ptr_(query);
+        else
+          typed_load_fn_(query);
+
         LOG(INFO) << "Finished callback";
 
         LOG(INFO) << "Storing query data to server..." << id_;
@@ -257,7 +274,10 @@ public:
     {
       RrQueryTemplate<MessageType> q = Serializer::deserialize<RrQueryTemplate<MessageType>>(query);
       LOG(INFO) << "Time for unload CB!";
-      typed_unload_callback_ptr_(q);
+      if (typed_unload_callback_ptr_ != NULL)
+        typed_unload_callback_ptr_(q);
+      else
+        typed_unload_fn_(q);
     }
 
     return query.size() > 0;
@@ -266,6 +286,9 @@ public:
 protected:
   void (*typed_load_callback_ptr_)(RrQueryTemplate<MessageType> &);
   void (*typed_unload_callback_ptr_)(RrQueryTemplate<MessageType> &);
+
+  std::function<void(RrQueryTemplate<MessageType> &)> typed_load_fn_;
+  std::function<void(RrQueryTemplate<MessageType> &)> typed_unload_fn_;
 
 private:
   void storeQuery(const std::string &rawRequest, RrQueryTemplate<MessageType> query) const
@@ -921,62 +944,78 @@ TEST_F(RrBaseTest, CallbackErrorTest)
   LOG(INFO) << "Exception system appears to work";
 }
 
-void loadCb(RrQueryTemplate<Resource1> &query)
-{
-  LOG(INFO) << "S1LoadCb called";
-};
-
-void unloadCb(RrQueryTemplate<Resource1> &query)
-{
-  LOG(INFO) << "S1UnloadCb called";
-};
-
 TEST_F(RrBaseTest, DataFetchTest)
 {
 
   LOG(INFO) << "constructing test RRs";
   RrBase rr_cli("rr_client");
+  RrBase rr_agnt("rr_agent");
   RrBase rr_srv("rr_server");
   std::unordered_map<std::string, RrBase *> rr_ref;
   rr_ref["rr_client"] = &rr_cli;
   rr_ref["rr_server"] = &rr_srv;
+  rr_ref["rr_agent"] = &rr_agnt;
   rr_cli.setRrReferences(rr_ref);
   rr_srv.setRrReferences(rr_ref);
+  rr_agnt.setRrReferences(rr_ref);
+
+  std::vector<std::string> childQueryIds;
+
+  auto loadCb = [&](RrQueryTemplate<Resource1> &query) {
+    LOG(INFO) << "S1LoadCb called";
+
+    RrQueryTemplate<Resource2> childQuery(Resource2(1, 2), Resource2());
+    rr_agnt.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_srv, "srv2", childQuery);
+    childQueryIds.push_back(childQuery.id());
+
+    RrQueryTemplate<Resource2> childQuery2(Resource2(2, 2), Resource2());
+    rr_agnt.call<RrTemplateServer<Resource2>, RrQueryTemplate<Resource2>>(rr_srv, "srv2", childQuery2);
+    childQueryIds.push_back(childQuery2.id());
+  };
+
+  auto unloadCb = [&](RrQueryTemplate<Resource1> &query) {
+    LOG(INFO) << "S1UnLoadCb called";
+  };
+
+  auto loadCb2 = [&](RrQueryTemplate<Resource2> &query) {
+    LOG(INFO) << "S2LoadCb called";
+  };
+
+  auto unloadCb2 = [&](RrQueryTemplate<Resource2> &query) {
+    LOG(INFO) << "S2UnLoadCb called";
+  };
 
   LOG(INFO) << "registering server named 'srv'";
-  rr_srv.registerServer(std::make_unique<RrTemplateServer<Resource1>>("srv", &loadCb, &unloadCb));
+  rr_agnt.registerServer(std::make_unique<RrTemplateServer<Resource1>>("srv", loadCb, unloadCb, 1));
+
+  rr_srv.registerServer(std::make_unique<RrTemplateServer<Resource2>>("srv2", loadCb2, unloadCb2, 1));
 
   LOG(INFO) << "executing call";
   RrQueryTemplate<Resource1> query(Resource1("someQueryContent"), Resource1(""));
-  rr_cli.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_srv, "srv", query);
+  rr_cli.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_agnt, "srv", query);
 
-  RrQueryTemplate<Resource1> query2(Resource1("someQueryContent2"), Resource1(""));
-  rr_cli.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_srv, "srv", query2);
+  //RrQueryTemplate<Resource1> query2(Resource1("someQueryContent2"), Resource1(""));
+  //rr_cli.call<RrTemplateServer<Resource1>, RrQueryTemplate<Resource1>>(rr_agnt, "srv", query2);
 
   LOG(INFO) << "fetching queries";
 
   rr_cli.printCatalog();
   LOG(INFO) << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>";
+  rr_agnt.printCatalog();
+  LOG(INFO) << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>";
   rr_srv.printCatalog();
 
-  std::map<std::string, std::string> resultMap = rr_cli.getServerRrQueries(
-      IDUtils::generateServerName("rr_server", "srv"),
-      "rr_client");
+  std::map<std::string, std::string> resultMap = rr_agnt.getChildQueries(query.id(), "srv2");
+  EXPECT_EQ(resultMap.size(), childQueryIds.size());
 
-  EXPECT_EQ(resultMap.size(), 2);
-
-  std::vector<std::string> ids{query2.id(), query.id()};
-  std::vector<std::string> values{"someQueryContent2", "someQueryContent"};
-
-  int c = 0;
-  for (const auto &el : ids)
+  int i = 1;
+  for (const auto &el : childQueryIds)
   {
-
     EXPECT_EQ(resultMap.count(el), 1);
 
-    Resource1 query = Serializer::deserialize<Resource1>(resultMap[el]);
-    EXPECT_EQ(query.rawMessage(), values.at(c));
+    Resource2 query = Serializer::deserialize<Resource2>(resultMap[el]);
+    EXPECT_EQ(query.i_, i);
 
-    c++;
+    i++;
   }
 }
