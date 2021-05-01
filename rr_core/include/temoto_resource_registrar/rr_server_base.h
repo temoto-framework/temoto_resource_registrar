@@ -75,9 +75,12 @@ namespace temoto_resource_registrar
       transaction_callback_ptr_ = callback;
     }
 
-  protected:
-    virtual void initialize(){
+    virtual void triggerCallback(const Status &status) const {
+      throw NotImplementedException("'triggerCallback' not implemented for base servers");
     };
+
+  protected:
+    virtual void initialize(){};
 
     RrCatalogPtr rr_catalog_;
     //keeping debug values, just in case for dev

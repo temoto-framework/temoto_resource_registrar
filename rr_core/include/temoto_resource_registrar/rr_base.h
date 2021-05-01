@@ -311,10 +311,12 @@ namespace temoto_resource_registrar
     {
       CONSOLE_BRIDGE_logDebug("core sendStatus %s", statusData.id_);
 
+      std::string serverName = rr_catalog_->getIdServer(quieryId);
+
       std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(statusData.id_);
       for (auto const &notId : notifyIds)
       {
-        CONSOLE_BRIDGE_logDebug("\t callStatusClient for rr %s", notId.second);
+        CONSOLE_BRIDGE_logDebug("\t callStatusClient for rr %s", notId.second.c_str());
 
         bool statusResult = callStatusClient(notId.second, quieryId, statusData);
 
@@ -324,8 +326,11 @@ namespace temoto_resource_registrar
 
     virtual void handleStatus(const std::string &requestId, Status statusData)
     {
-      CONSOLE_BRIDGE_logDebug("entered handleStatus %s", statusData.id_.c_str());
+      CONSOLE_BRIDGE_logDebug("entered handleStatus &s - %s - %s", name().c_str(), requestId.c_str(), statusData.id_.c_str());
       std::string originalId = rr_catalog_->getOriginQueryId(statusData.id_);
+
+      CONSOLE_BRIDGE_logDebug("query id %s", originalId.c_str());
+
       if (originalId.size())
       {
         std::unordered_map<std::string, std::string> dependencyMap = rr_catalog_->getDependencies(originalId);
@@ -382,12 +387,13 @@ namespace temoto_resource_registrar
       {
         CONSOLE_BRIDGE_logDebug("Could not find base container. Maybe is pure client Rr. They can not have multiple dependencies since call executes a single query");
         return res;
-      } else {
-
+      }
+      else
+      {
       }
       // UUID - servingRR
       std::unordered_map<std::string, std::string> dependencies = rr_catalog_->getDependencies(qContainer.q_.id());
-      
+
       CONSOLE_BRIDGE_logDebug("Dependencies:");
       for (const auto &dep : dependencies)
       {
@@ -396,7 +402,8 @@ namespace temoto_resource_registrar
         //leia client mis seda resurssi haldas
         clientName = rr_catalog_->getIdClient(dep.first);
 
-        if (IDUtils::generateServerName(dep.second, serverName) == clientName) {
+        if (IDUtils::generateServerName(dep.second, serverName) == clientName)
+        {
           CONSOLE_BRIDGE_logDebug("client name %s matched. Fetching queries", clientName.c_str());
           res = getServerRrQueries(clientName, name());
         }
@@ -509,6 +516,20 @@ namespace temoto_resource_registrar
 
     Configuration configuration_;
 
+    void handleRrServerCb(const std::string &queryId, const Status &status)
+    {
+      std::string serverName = rr_catalog_->getIdServer(queryId);
+      CONSOLE_BRIDGE_logDebug("running server status cb Maybe it is server %s", serverName.c_str());
+      try
+      {
+        servers_.getElement(serverName).triggerCallback(status);
+      }
+      catch (const ElementNotFoundException &e)
+      {
+        CONSOLE_BRIDGE_logDebug("Server not found. Continuing");
+      }
+    }
+
     // get target rr based on target server name and from there get all
     // queries that used the clientName client
     std::map<std::string, std::string> getServerRrQueries(const std::string &serverName, const std::string &queryRr)
@@ -545,6 +566,16 @@ namespace temoto_resource_registrar
     {
       CONSOLE_BRIDGE_logDebug("target rr for status: %s", targetRr.c_str());
 
+      auto container = rr_catalog_->findOriginalContainer(statusData.id_);
+
+      if (!container.empty_)
+      {
+        statusData.serialisedRequest_ = container.rawRequest_;
+        statusData.serialisedRsponse_ = container.rawQuery_;
+      }
+
+      handleRrServerCb(requestId, statusData);
+
       rr_references_[targetRr]->handleStatus(requestId, statusData);
 
       return true;
@@ -567,13 +598,12 @@ namespace temoto_resource_registrar
     template <class CallClientClass, class StatusCallType>
     void storeClientQueryStatusCb(const std::string clientId, const std::string &queryId, const StatusCallType &statusCallback)
     {
-      if (statusCallback != NULL && queryId.size() > 0) {
+      if (statusCallback != NULL && queryId.size() > 0)
+      {
         auto client = dynamic_cast<CallClientClass *>(clients_.getElementPtr(clientId));
-        client -> registerUserStatusCb(queryId, statusCallback);
+        client->registerUserStatusCb(queryId, statusCallback);
       }
-        
     }
-
 
     /**
      * @brief TODO: requires a proper comment.
