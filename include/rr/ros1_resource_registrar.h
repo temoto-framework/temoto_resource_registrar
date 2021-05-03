@@ -201,10 +201,11 @@ namespace temoto_resource_registrar
     std::vector<QueryType> getServerQueries(const std::string &server)
     {
       ROS_INFO_STREAM("getServerQueries printing before processign catalog.");
+      std::string serverName = IDUtils::generateServerName(name(), server);
       rr_catalog_->print();
       std::vector<QueryType> out;
 
-      for (auto const &queryContainer : rr_catalog_->getUniqueServerQueries(server))
+      for (auto const &queryContainer : rr_catalog_->getUniqueServerQueries(serverName))
       {
         out.push_back(deSerializeQuery<QueryType>(queryContainer));
       }

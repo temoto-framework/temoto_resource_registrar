@@ -27,7 +27,7 @@ namespace temoto_resource_registrar
 
     static std::string generateServerName(const std::string &prefix, const std::string &suffix)
     {
-      return prefix + "_" + suffix;
+      return prefix + "/" + suffix;
     }
 
     static std::string generateStatus(const std::string &target){
