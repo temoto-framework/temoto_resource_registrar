@@ -86,7 +86,7 @@ public:
    */
   ServiceClass rosQuery()
   {
-    ROS_INFO_STREAM("Returning ROS query");
+    TEMOTO_INFO_STREAM_("Returning ROS query");
     
     typed_query_.request.temotoMetadata.servingRr = rr();
     typed_query_.request.temotoMetadata.originRr = origin();

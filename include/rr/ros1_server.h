@@ -77,21 +77,21 @@ public:
  */
   bool unloadMessage(const std::string &id)
   {
-    ROS_INFO_STREAM("Starting to unload id: " << id);
+    TEMOTO_INFO_STREAM_("Starting to unload id: " << id);
 
-    ROS_INFO_STREAM("------------------ Catalog");
+    TEMOTO_INFO_STREAM_("------------------ Catalog");
     rr_catalog_->print();
-    ROS_INFO_STREAM("------------------ Catalog");
+    TEMOTO_INFO_STREAM_("------------------ Catalog");
 
-    ROS_INFO_STREAM("loading serialized request and response from catalog.. ");
+    TEMOTO_INFO_STREAM_("loading serialized request and response from catalog.. ");
 
-    ROS_INFO_STREAM("unloadMessage");
+    TEMOTO_INFO_STREAM_("unloadMessage");
     temoto_resource_registrar::QueryContainer<std::string> originalContainer = rr_catalog_->findOriginalContainer(id);
     std::string serializedRequest = originalContainer.rawRequest_;
-    ROS_INFO_STREAM("Catalog data... isEmpty: " << originalContainer.empty_);
-    ROS_INFO_STREAM("Catalog data... q_.id(): " << originalContainer.q_.id());
-    ROS_INFO_STREAM("Catalog data... rawQuery_: " << originalContainer.rawQuery_);
-    ROS_INFO_STREAM("Catalog data... rawRequest_: " << originalContainer.rawRequest_);
+    TEMOTO_INFO_STREAM_("Catalog data... isEmpty: " << originalContainer.empty_);
+    TEMOTO_INFO_STREAM_("Catalog data... q_.id(): " << originalContainer.q_.id());
+    TEMOTO_INFO_STREAM_("Catalog data... rawQuery_: " << originalContainer.rawQuery_);
+    TEMOTO_INFO_STREAM_("Catalog data... rawRequest_: " << originalContainer.rawRequest_);
 
     bool canUnload = false;
 
@@ -107,7 +107,7 @@ public:
 
       response.temotoMetadata.requestId = originalContainer.q_.id();
 
-      ROS_INFO_STREAM("Found response with legth: " << serializedResponse.size());
+      TEMOTO_INFO_STREAM_("Found response with legth: " << serializedResponse.size());
     }
     catch (const temoto_resource_registrar::DeserializationException &e)
     {
@@ -119,9 +119,9 @@ public:
     if (canUnload)
     {
 
-      ROS_INFO_STREAM("Resource can be unloaded. Executing callback.");
-      ROS_INFO_STREAM("req: " << request);
-      ROS_INFO_STREAM("res: " << response);
+      TEMOTO_INFO_STREAM_("Resource can be unloaded. Executing callback.");
+      TEMOTO_INFO_STREAM_("req: " << request);
+      TEMOTO_INFO_STREAM_("res: " << response);
 
       if (typed_unload_callback_ptr_ != NULL)
       {
@@ -134,13 +134,13 @@ public:
     }
     else
     {
-      ROS_INFO_STREAM("Resource can not be unloaded. Printing catalog for debug");
+      TEMOTO_INFO_STREAM_("Resource can not be unloaded. Printing catalog for debug");
     }
 
     rr_catalog_->print();
     rr_catalog_->saveCatalog();
 
-    ROS_INFO_STREAM("unload done for id: " << id << " result: " << (serializedResponse.size() > 0));
+    TEMOTO_INFO_STREAM_("unload done for id: " << id << " result: " << (serializedResponse.size() > 0));
     return serializedResponse.size() > 0;
   }
 
@@ -161,18 +161,18 @@ public:
     typename ServiceClass::Request sanitizedReq = sanityzeRequest(req);
 
     bool hasEqualsDefined = QueryUtils::EqualExists<typename ServiceClass::Request>::value;
-    ROS_INFO_STREAM("request has equals defined?: " << hasEqualsDefined);
+    TEMOTO_INFO_STREAM_("request has equals defined?: " << hasEqualsDefined);
 
     std::string serializedRequest = MessageSerializer::serializeMessage<typename ServiceClass::Request>(sanitizedReq);
     std::string requestId = "";
 
-    ROS_INFO_STREAM("checking existance of request in catalog... ");
-    ROS_INFO_STREAM("Message: " << req);
-    ROS_INFO_STREAM("sanitized Message: " << sanitizedReq);
+    TEMOTO_INFO_STREAM_("checking existance of request in catalog... ");
+    TEMOTO_INFO_STREAM_("Message: " << req);
+    TEMOTO_INFO_STREAM_("sanitized Message: " << sanitizedReq);
 
     if (hasEqualsDefined)
     {
-      ROS_INFO_STREAM("evaluating uniqueness based on ==");
+      TEMOTO_INFO_STREAM_("evaluating uniqueness based on ==");
       std::vector<temoto_resource_registrar::QueryContainer<std::string>> allServerRequests = rr_catalog_->getUniqueServerQueries(id_);
       for (const auto &q : allServerRequests)
       {
@@ -187,14 +187,14 @@ public:
     }
     else
     {
-      ROS_INFO_STREAM("evaluating uniqueness based on string comparison");
+      TEMOTO_INFO_STREAM_("evaluating uniqueness based on string comparison");
       requestId = this->rr_catalog_->queryExists(id_, serializedRequest);
     }
 
     std::string generatedId = generateId();
     res.temotoMetadata.requestId = generatedId;
 
-    ROS_INFO_STREAM("Generated request id: " << generatedId);
+    TEMOTO_INFO_STREAM_("Generated request id: " << generatedId);
 
     Ros1Query<ServiceClass> wrappedQuery = wrap(req, res);
 
@@ -216,14 +216,14 @@ public:
           member_load_cb_(req, res);
         }
 
-        ROS_INFO_STREAM("Storing query in catalog...");
+        TEMOTO_INFO_STREAM_("Storing query in catalog...");
 
         rr_catalog_->storeQuery(id_,
                                 wrappedQuery,
                                 serializedRequest,
                                 sanitizeAndSerialize(res));
 
-        ROS_INFO_STREAM("Stored!");
+        TEMOTO_INFO_STREAM_("Stored!");
       }
       catch (const resource_registrar::TemotoErrorStack &e)
       {
@@ -253,7 +253,7 @@ public:
 
   void triggerCallback(const temoto_resource_registrar::Status &status) const
   {
-    ROS_INFO_STREAM("Triggering callback logic..." << id());
+    TEMOTO_INFO_STREAM_("Triggering callback logic..." << id());
     if (member_status_cb_ != NULL)
     {
       typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialisedRequest_);
@@ -276,9 +276,9 @@ private:
 
   virtual void initialize()
   {
-    ROS_INFO_STREAM("Starting up server..." << id_);
+    TEMOTO_INFO_STREAM_("Starting up server..." << id_);
     service_ = nh_.advertiseService(id_, &Ros1Server::serverCallback, this);
-    ROS_INFO_STREAM("Starting up server done!!!");
+    TEMOTO_INFO_STREAM_("Starting up server done!!!");
   }
 
   Ros1Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
