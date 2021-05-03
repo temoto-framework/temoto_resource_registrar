@@ -31,7 +31,8 @@ namespace temoto_resource_registrar
     server_id_map_[server].insert(q.id());
     std::cout << "server_id_map_[server] set" << std::endl;
 
-    std::cout << "storage done..." << std::endl;
+    std::cout << "storage done... current state of catalog:" << std::endl;
+    print();
   }
 
   void RrCatalog::updateResponse(const std::string &server, RawData request, RawData response)
