@@ -17,20 +17,28 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CATALOG_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CATALOG_H
 
+#include "rr_configuration.h"
+#include "rr_exceptions.h"
 #include "rr_query_base.h"
 #include "rr_query_container.h"
-#include "rr_exceptions.h"
 
 #include <algorithm>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/unordered_map.hpp>
+#include <fstream>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <set>
 #include <unordered_map>
 #include <vector>
+
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+
+#include <console_bridge/console.h>
 
 namespace temoto_resource_registrar
 {
@@ -128,6 +136,24 @@ namespace temoto_resource_registrar
 
     void print();
 
+    void saveCatalog()
+    {
+      CONSOLE_BRIDGE_logDebug("saving catalog to: %s", (configuration_.location()).c_str());
+      std::ofstream ofs(configuration_.location());
+      boost::archive::binary_oarchive oa(ofs);
+      oa << *(this);
+      ofs.close();
+
+      CONSOLE_BRIDGE_logWarn("Saved Catalog!");
+
+      print();
+    }
+
+    void updateConfiguration(Configuration &conf)
+    {
+      configuration_ = conf;
+    }
+
     // Move initialization
     RrCatalog(RrCatalog &&other)
     {
@@ -178,6 +204,8 @@ namespace temoto_resource_registrar
     }
 
   protected:
+    Configuration configuration_;
+
     friend class boost::serialization::access;
 
     template <class Archive>
@@ -187,7 +215,6 @@ namespace temoto_resource_registrar
     }
 
   private:
-    
   };
 
   typedef std::shared_ptr<RrCatalog> RrCatalogPtr;

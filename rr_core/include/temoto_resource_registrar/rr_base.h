@@ -185,6 +185,7 @@ namespace temoto_resource_registrar
     {
       configuration_ = config;
       name_ = config.name();
+      rr_catalog_->updateConfiguration(configuration_);
     }
 
     const std::string id();
@@ -193,18 +194,12 @@ namespace temoto_resource_registrar
     {
       *rr_catalog_ = std::move(catalog);
 
-      rr_catalog_->print();
+      rr_catalog_->updateConfiguration(configuration_);
     }
 
     void saveCatalog()
     {
-      CONSOLE_BRIDGE_logDebug("saving catalog to: %s", (configuration_.location()).c_str());
-      std::ofstream ofs(configuration_.location());
-      boost::archive::binary_oarchive oa(ofs);
-      oa << *(rr_catalog_.get());
-      ofs.close();
-
-      rr_catalog_->print();
+      rr_catalog_->saveCatalog();
     }
 
     void loadCatalog()
@@ -547,6 +542,7 @@ namespace temoto_resource_registrar
                      const std::string &response)
     {
       rr_catalog_->updateResponse(IDUtils::generateServerName(name(), server), request, response);
+      autoSaveCatalog();
     }
 
     void autoSaveCatalog()
@@ -554,7 +550,10 @@ namespace temoto_resource_registrar
       if (configuration_.saveOnModify())
       {
         std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
+
         saveCatalog();
+
+        
       }
     }
 
