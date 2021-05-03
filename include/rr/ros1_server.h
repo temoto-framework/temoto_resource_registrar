@@ -138,6 +138,7 @@ public:
     }
 
     rr_catalog_->print();
+    rr_catalog_->saveCatalog();
 
     ROS_INFO_STREAM("unload done for id: " << id << " result: " << (serializedResponse.size() > 0));
     return serializedResponse.size() > 0;
@@ -155,7 +156,7 @@ public:
  */
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
-    ROS_INFO_STREAM("Starting serverCallback");
+    ROS_WARN_STREAM("Starting serverCallback " << id());
 
     typename ServiceClass::Request sanitizedReq = sanityzeRequest(req);
 
@@ -245,7 +246,8 @@ public:
       res = fetchedResponse;
     }
 
-    ROS_INFO_STREAM("server call end" << res.temotoMetadata.requestId);
+    rr_catalog_->saveCatalog();
+    ROS_WARN_STREAM("server call end " << res.temotoMetadata.requestId << " " << id());
     return true;
   }
 
