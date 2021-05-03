@@ -180,7 +180,7 @@ namespace temoto_resource_registrar
     std::map<std::string, QueryType> getRosChildQueries(const std::string &id, const std::string &serverName)
     {
       ROS_DEBUG_STREAM("getting RR queries for id " << id << " and server " << serverName);
-      std::map<std::string, std::string> serialisedQueries = getChildQueries(id, serverName);
+      std::map<std::string, std::pair<std::string, std::string>> serialisedQueries = getChildQueries(id, serverName);
 
       ROS_DEBUG_STREAM("Found " << serialisedQueries.size() << " queries");
       std::map<std::string, QueryType> rosQueries;
@@ -188,7 +188,10 @@ namespace temoto_resource_registrar
       ROS_DEBUG_STREAM("Deserializing strings to query type");
       for (const auto &el : serialisedQueries)
       {
-        rosQueries[el.first] = MessageSerializer::deSerializeMessage<QueryType>(el.second);
+        QueryType q;
+        q.request = MessageSerializer::deSerializeMessage<typename QueryType::Request>(el.second.first);
+        q.response = MessageSerializer::deSerializeMessage<typename QueryType::Response>(el.second.second);
+        rosQueries[el.first] = q;
       }
       ROS_DEBUG_STREAM("Returning...");
       return rosQueries;
@@ -252,7 +255,7 @@ namespace temoto_resource_registrar
         ROS_WARN_STREAM("CONTAINER EXISTS");
         statusSrv.request.serialisedRequest = container.rawRequest_;
         statusSrv.request.serialisedResponse = container.rawQuery_;
-        
+
         statusData.serialisedRequest_ = container.rawRequest_;
         statusData.serialisedRsponse_ = container.rawQuery_;
       }
@@ -272,7 +275,7 @@ namespace temoto_resource_registrar
       return status_clients_[clientName]->call(statusSrv);
     };
 
-    virtual std::map<std::string, std::string> callDataFetchClient(const std::string &targetRr, const std::string &originRr, const std::string &serverName)
+    virtual std::map<std::string, std::pair<std::string, std::string>> callDataFetchClient(const std::string &targetRr, const std::string &originRr, const std::string &serverName)
     {
       ROS_INFO_STREAM("callDataFetchClient");
 
@@ -288,12 +291,13 @@ namespace temoto_resource_registrar
 
       fetch_clients_[clientName]->call(dataFetchSrv);
 
-      std::map<std::string, std::string> res;
+      std::map<std::string, std::pair<std::string, std::string>> res;
 
       int c = 0;
       for (const auto &id : dataFetchSrv.response.ids)
       {
-        res[id] = dataFetchSrv.response.serializedResult.at(c);
+        std::pair<std::string, std::string> reqResPair(dataFetchSrv.response.serializedRequests.at(c), dataFetchSrv.response.serializedResponses.at(c));
+        res[id] = reqResPair;
         c++;
       }
 
@@ -369,17 +373,21 @@ namespace temoto_resource_registrar
     bool dataFetchCallback(DataFetchComponent::Request &req, DataFetchComponent::Response &res)
     {
       ROS_INFO_STREAM("syncCallback " << req);
-      std::map<UUID, std::string> resMap = handleDataFetch(req.originRr, req.serverName);
-      std::vector<std::string> ids, serializedRequests;
+      std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req.originRr, req.serverName);
+      std::vector<std::string> ids, serializedRequests, serializedResponses;
+
+
 
       for (const auto &el : resMap)
       {
         ids.push_back(el.first);
-        serializedRequests.push_back(el.second);
+        serializedRequests.push_back(el.second.first);
+        serializedResponses.push_back(el.second.second);
       }
 
       res.ids = ids;
-      res.serializedResult = serializedRequests;
+      res.serializedRequests = serializedRequests;
+      res.serializedResponses = serializedResponses;
       return true;
     }
 

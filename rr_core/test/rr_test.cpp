@@ -1031,7 +1031,7 @@ TEST_F(RrBaseTest, DataFetchTest)
   LOG(INFO) << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>";
   rr_srv.printCatalog();
 
-  std::map<std::string, std::string> resultMap = rr_agnt.getChildQueries(query.id(), "srv2");
+  std::map<std::string, std::pair<std::string, std::string>> resultMap = rr_agnt.getChildQueries(query.id(), "srv2");
   EXPECT_EQ(resultMap.size(), childQueryIds.size());
 
   int i = 1;
@@ -1039,7 +1039,8 @@ TEST_F(RrBaseTest, DataFetchTest)
   {
     EXPECT_EQ(resultMap.count(el), 1);
 
-    Resource2 query = Serializer::deserialize<Resource2>(resultMap[el]);
+
+    Resource2 query = Serializer::deserialize<Resource2>(resultMap[el].first);
     EXPECT_EQ(query.i_, i);
 
     i++;

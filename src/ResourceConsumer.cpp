@@ -19,11 +19,11 @@ void statusCallback(temoto_resource_registrar::LoadComponent msg, temoto_resourc
   {
 
     rr.printCatalog();
-    auto r = rr.getRosChildQueries<temoto_resource_registrar::LoadComponent::Request>(loadId, "resourceServer");
+    auto r = rr.getRosChildQueries<temoto_resource_registrar::LoadComponent>(loadId, "resourceServer");
 
     for (const auto &el : r)
     {
-      ROS_INFO_STREAM("id: " << el.first << " - msg: " << el.second);
+      ROS_INFO_STREAM("id: " << el.first << " - msg: " << el.second.request);
     }
 
     ROS_INFO_STREAM("getServerRrQueries size: " << r.size());
