@@ -546,7 +546,7 @@ namespace temoto_resource_registrar
                      const std::string &request,
                      const std::string &response)
     {
-      rr_catalog_->updateResponse(server, request, response);
+      rr_catalog_->updateResponse(IDUtils::generateServerName(name(), server), request, response);
     }
 
     void autoSaveCatalog()
