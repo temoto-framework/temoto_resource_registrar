@@ -501,7 +501,7 @@ namespace temoto_resource_registrar
       }
       catch (const ElementNotFoundException &e)
       {
-        throw ElementNotFoundException("Client not found");
+        throw ElementNotFoundException(("unloadClient " + client + " not found").c_str());
       }
     }
 

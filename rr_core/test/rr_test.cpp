@@ -808,13 +808,13 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     UnloadTestRr rr("rr", unloadCounter);
 
     RrCatalog catalog;
-    catalog.storeClientCallRecord("targetRr_targetServer", "id1");
-    catalog.storeClientCallRecord("targetRr_targetServer", "id2");
-    catalog.storeClientCallRecord("targetRr_targetServer", "id3");
-    catalog.storeClientCallRecord("targetRr2_targetServer2", "id4");
+    catalog.storeClientCallRecord(IDUtils::generateServerName("targetRr", "targetServer"), "id1");
+    catalog.storeClientCallRecord(IDUtils::generateServerName("targetRr", "targetServer"), "id2");
+    catalog.storeClientCallRecord(IDUtils::generateServerName("targetRr", "targetServer"), "id3");
+    catalog.storeClientCallRecord(IDUtils::generateServerName("targetRr2", "targetServer2"), "id4");
 
     // used for destructor testing
-    catalog.storeClientCallRecord("targetRr3_targetServer3", "id5");
+    catalog.storeClientCallRecord(IDUtils::generateServerName("targetRr3", "targetServer3"), "id5");
 
     rr.updateCatalog(catalog);
 
@@ -834,13 +834,13 @@ TEST_F(RrBaseTest, ClientUnloadTest)
 
     EXPECT_EQ(rr.clientCount(), 2);
 
-    std::string unloadTarget = "targetRr_targetServer";
+    std::string unloadTarget = IDUtils::generateServerName("targetRr", "targetServer");
     rr.unloadClient(unloadTarget);
 
     EXPECT_EQ(rr.clientCount(), 1);
     EXPECT_EQ(unloadCounter["targetRr"], 3);
 
-    unloadTarget = "targetRr2_targetServer2";
+    unloadTarget = IDUtils::generateServerName("targetRr2", "targetServer2");
     rr.unloadClient(unloadTarget);
 
     EXPECT_EQ(rr.clientCount(), 0);
@@ -851,12 +851,12 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     EXPECT_THROW({
       try
       {
-        unloadTarget = "targetRr2_targetServer3";
+        unloadTarget = IDUtils::generateServerName("targetRr2", "targetServer3");
         rr.unloadClient(unloadTarget);
       }
       catch (const ElementNotFoundException &e)
       {
-        EXPECT_STREQ("Client not found", e.what());
+        EXPECT_STREQ("unloadClient targetRr2/targetServer3 not found", e.what());
         throw;
       }
     },

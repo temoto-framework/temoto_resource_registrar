@@ -268,7 +268,7 @@ namespace temoto_resource_registrar
 
     std::cout << "none found" << std::endl;
 
-    throw ElementNotFoundException("Client not found");
+    throw ElementNotFoundException(("Client " + client + " not found").c_str());
   }
 
   std::set<UUID> RrCatalog::getServerIds(const ServerName &server)
