@@ -14,8 +14,8 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_LOGGING_H
-#define TEMOTO_LOGGING_H
+#ifndef TEMOTO_LOGGING__TEMOTO_LOGGING_H
+#define TEMOTO_LOGGING__TEMOTO_LOGGING_H
 
 #include <cstdlib>
 #include <mutex>
@@ -26,6 +26,7 @@
 #include <console_bridge/console.h>
 #include <iostream>
 #include <exception>
+#include "temoto_resource_registrar/string_formatting.h"
 
 #ifdef temoto_enable_tracing
 #include "temoto_resource_registrar/temoto_distributed_tracing.h"
@@ -36,8 +37,20 @@
 #define GET_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + boost::core::demangle(typeid(*this).name()) + "::" + __func__
 
 // TeMoto logging related definitions via console bridge
-#define TEMOTO_LOG_(level, fmt, ...) \
-  console_bridge::log(__FILE__, __LINE__, level, std::string("[from "+GET_NAME_FF+"]: "+fmt).c_str(), ##__VA_ARGS__)
+#ifdef temoto_enable_tracing
+  #define TEMOTO_LOG_(level, fmt, ...) \
+  { \
+    std::string msg = temoto_logging::format(std::string("[from " + GET_NAME_FF + "]: " + fmt).c_str(), ##__VA_ARGS__); \
+    console_bridge::log(__FILE__, __LINE__, level, msg.c_str()); \
+    TEMOTO_LOG_ATTR.sendSpanLog(msg); \
+  }
+#else
+  #define TEMOTO_LOG_(level, fmt, ...) \
+  { \
+    std::string msg = temoto_logging::format(std::string("[from " + GET_NAME_FF + "]: " + fmt).c_str(), ##__VA_ARGS__); \
+    console_bridge::log(__FILE__, __LINE__, level, msg.c_str()); \
+  }
+#endif
 
 // #define TEMOTO_ERROR_(fmt, ...) \
 //   TEMOTO_LOG_(console_bridge::CONSOLE_BRIDGE_LOG_ERROR, fmt, ##__VA_ARGS__)
@@ -52,12 +65,23 @@
   TEMOTO_LOG_(console_bridge::CONSOLE_BRIDGE_LOG_DEBUG, fmt, ##__VA_ARGS__)
 
 // TeMoto logging stream related definitions via console bridge
-#define TEMOTO_LOG_STREAM_(level, fmt, ...) \
-{ \
-  std::stringstream ss; \
-  ss << "[from " << GET_NAME_FF << "]: " << fmt; \
-  console_bridge::log(__FILE__, __LINE__, level, ss.str().c_str(), ##__VA_ARGS__); \
-} \
+#ifdef temoto_enable_tracing
+  #define TEMOTO_LOG_STREAM_(level, fmt, ...) \
+  { \
+    std::stringstream ss; \
+    ss << "[from " << GET_NAME_FF << "]: " << fmt; \
+    std::string msg = temoto_logging::format(ss.str().c_str(), ##__VA_ARGS__); \
+    console_bridge::log(__FILE__, __LINE__, level, msg.c_str()); \
+    TEMOTO_LOG_ATTR.sendSpanLog(msg); \
+  }
+#else
+  #define TEMOTO_LOG_STREAM_(level, fmt, ...) \
+  { \
+    std::stringstream ss; \
+    ss << "[from " << GET_NAME_FF << "]: " << fmt; \
+    console_bridge::log(__FILE__, __LINE__, level, ss.str().c_str(), ##__VA_ARGS__); \
+  }
+#endif
 
 #define TEMOTO_ERROR_STREAM_(fmt, ...) \
   TEMOTO_LOG_STREAM_(console_bridge::CONSOLE_BRIDGE_LOG_ERROR, fmt, ##__VA_ARGS__)
@@ -73,10 +97,13 @@
 
 // Distribted tracing related macro definitions
 #ifdef temoto_enable_tracing
-#define START_SPAN \
-  temoto_logging::SpanCollector temoto_tracing_span_collector(TEMOTO_LOG_ATTR.startTracingSpan(GET_NAME_FF));
+  #define START_SPAN_UNIQUE(span_collector_name) \
+    temoto_logging::SpanCollector span_collector_name(TEMOTO_LOG_ATTR.startTracingSpan(GET_NAME_FF));
+
+  #define START_SPAN START_SPAN_UNIQUE(temoto_tracing_span_collector)
 #else
-#define START_SPAN
+  #define START_SPAN_UNIQUE(span_collector_name)
+  #define START_SPAN
 #endif
 
 namespace temoto_logging
@@ -235,7 +262,7 @@ private:
   bool spanStackEmpty() const
   {
     std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
-    CONSOLE_BRIDGE_logError("[from %s] spanstacks size %d", std::string(getNsWithSlash() + __func__).c_str(), span_stacks_.size());
+    //CONSOLE_BRIDGE_logError("[from %s] spanstacks size %d", std::string(getNsWithSlash() + __func__).c_str(), span_stacks_.size());
     return span_stacks_.find(std::this_thread::get_id()) == span_stacks_.end();
   }
 
@@ -282,6 +309,16 @@ public:
     pushParentSpan(span_handle);
 
     return std::bind(&LoggingAttributes::popParentSpan, this);
+  }
+
+  void sendSpanLog(const std::string& msg)
+  {
+    std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
+    if (spanStackEmpty())
+    {
+      return;
+    }
+    span_stacks_.at(std::this_thread::get_id()).top().span->Log({{"info", msg}});
   }
 #endif
 };

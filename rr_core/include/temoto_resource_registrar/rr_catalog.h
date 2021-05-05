@@ -38,8 +38,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <console_bridge/console.h>
-
 namespace temoto_resource_registrar
 {
   using RawData = std::string;

@@ -14,8 +14,8 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__TEMOTO_DISTRIBUTED_TRACING_H
-#define TEMOTO_RESOURCE_REGISTRAR__TEMOTO_DISTRIBUTED_TRACING_H
+#ifndef TEMOTO_LOGGING__TEMOTO_DISTRIBUTED_TRACING_H
+#define TEMOTO_LOGGING__TEMOTO_DISTRIBUTED_TRACING_H
 
 #include <thread>
 #include <functional>

@@ -67,7 +67,6 @@ set(headers
 set(libraries
   ${Boost_LIBRARIES}
   ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1
-  ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/opentracing-cpp/src/opentracing-cpp-build/output/libopentracing.so
 )
 
 if(TEMOTO_ENABLE_TRACING_)
