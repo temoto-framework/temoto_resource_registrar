@@ -644,12 +644,7 @@ namespace temoto_resource_registrar
       serverName = IDUtils::generateServerName(targetRrName, server);
 
       #ifdef temoto_enable_tracing
-      std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-      for (const auto& c : //TEMOTO_LOG_ATTR.topParentSpanContext())
-      {
-        std::cout << " * "<< c.first << " : " << c.second << std::endl;
-      }
-      query.requestMetadata().setSpanContext(//TEMOTO_LOG_ATTR.topParentSpanContext());
+      query.requestMetadata().setSpanContext(TEMOTO_LOG_ATTR.topParentSpanContext());
       #endif
 
       // In case we have a client call, not a internal call

@@ -157,14 +157,12 @@ public:
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
     ROS_WARN_STREAM("Starting serverCallback " << id());
+
+    std::string generatedId = generateId();
+    res.temotoMetadata.requestId = generatedId;
     Ros1Query<ServiceClass> wrappedQuery = wrap(req, res);
 
     #ifdef temoto_enable_tracing
-    std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-    for (const auto& c : wrappedQuery.requestMetadata().getSpanContext())
-    {
-      std::cout << " * "<< c.first << " : " << c.second << std::endl;
-    }
     TEMOTO_LOG_ATTR.startTracingSpan(GET_NAME_FF, wrappedQuery.requestMetadata().getSpanContext());
     #endif
 
@@ -200,9 +198,6 @@ public:
       TEMOTO_INFO_STREAM_("evaluating uniqueness based on string comparison");
       requestId = this->rr_catalog_->queryExists(id_, serializedRequest);
     }
-
-    std::string generatedId = generateId();
-    res.temotoMetadata.requestId = generatedId;
 
     TEMOTO_INFO_STREAM_("Generated request id: " << generatedId);
 
