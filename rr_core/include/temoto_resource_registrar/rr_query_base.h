@@ -28,11 +28,16 @@
 
 namespace temoto_resource_registrar
 {
-
   class QueryMetadata
   {
   public:
-    resource_registrar::TemotoErrorStack &errorStack() { return error_stack_; }
+    typedef std::unordered_map<std::string, std::string> SpanContextType;
+
+    resource_registrar::TemotoErrorStack& errorStack() { return error_stack_; }
+
+    SpanContextType& getSpanContext() { return span_context_; }
+
+    void setSpanContext(SpanContextType span_context) { span_context_ = span_context; }
 
   protected:
     friend class boost::serialization::access;
@@ -40,11 +45,12 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &error_stack_;
+      ar &error_stack_ &span_context_;
     }
 
   private:
     resource_registrar::TemotoErrorStack error_stack_;
+    SpanContextType span_context_;
   };
 
   class RrQueryBase

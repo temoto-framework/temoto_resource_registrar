@@ -247,18 +247,6 @@ private:
     CONSOLE_BRIDGE_logInform("[from %s] Tracer initialized", std::string(getNsWithSlash() + __func__).c_str());
   }
 
-  void pushParentSpan(SpanHandle &span_handle)
-  {
-    std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
-    span_stacks_[std::this_thread::get_id()].push(std::move(span_handle));
-  }
-
-  SpanContextType topParentSpanContext() const
-  {
-    std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
-    return span_stacks_.at(std::this_thread::get_id()).top().context;
-  }
-
   bool spanStackEmpty() const
   {
     std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
@@ -267,6 +255,25 @@ private:
   }
 
 public:
+  SpanContextType topParentSpanContext() const
+  {
+    std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
+    if (!spanStackEmpty())
+    {
+      return span_stacks_.at(std::this_thread::get_id()).top().context;
+    }
+    else
+    {
+      return SpanContextType{};
+    }
+  }
+
+  void pushParentSpan(SpanHandle& span_handle)
+  {
+    std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
+    span_stacks_[std::this_thread::get_id()].push(std::move(span_handle));
+  }
+
   void popParentSpan()
   {
     std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
@@ -282,12 +289,19 @@ public:
     }
   }
 
-  std::function<void()> startTracingSpan(const std::string& span_name)
+  std::function<void()> startTracingSpan(const std::string& span_name, SpanContextType parent_context = SpanContextType{})
   {
     std::lock_guard<std::recursive_mutex> l(span_stacks_mtx_);
     
     std::unique_ptr<opentracing::Span> tracing_span;
-    if (spanStackEmpty()) 
+
+    if (!parent_context.empty())
+    {
+      TextMapCarrier carrier(parent_context);
+      auto span_context_maybe = (*tracer_)->Extract(carrier);
+      tracing_span = (*tracer_)->StartSpan(span_name, {opentracing::ChildOf(span_context_maybe->get())});
+    }
+    else if (spanStackEmpty()) 
     {
       tracing_span = (*tracer_)->StartSpan(span_name);
     }

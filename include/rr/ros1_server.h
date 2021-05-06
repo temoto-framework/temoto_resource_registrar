@@ -157,6 +157,16 @@ public:
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
     ROS_WARN_STREAM("Starting serverCallback " << id());
+    Ros1Query<ServiceClass> wrappedQuery = wrap(req, res);
+
+    #ifdef temoto_enable_tracing
+    std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+    for (const auto& c : wrappedQuery.metadata().getSpanContext())
+    {
+      std::cout << " * "<< c.first << " : " << c.second << std::endl;
+    }
+    TEMOTO_LOG_ATTR.startTracingSpan(GET_NAME_FF, wrappedQuery.metadata().getSpanContext());
+    #endif
 
     typename ServiceClass::Request sanitizedReq = sanityzeRequest(req);
 
@@ -195,8 +205,6 @@ public:
     res.temotoMetadata.requestId = generatedId;
 
     TEMOTO_INFO_STREAM_("Generated request id: " << generatedId);
-
-    Ros1Query<ServiceClass> wrappedQuery = wrap(req, res);
 
     if (requestId.size() == 0)
     {
@@ -248,6 +256,11 @@ public:
 
     rr_catalog_->saveCatalog();
     ROS_WARN_STREAM("server call end " << res.temotoMetadata.requestId << " " << id());
+
+    #ifdef temoto_enable_tracing
+    TEMOTO_LOG_ATTR.popParentSpan();
+    #endif
+
     return true;
   }
 

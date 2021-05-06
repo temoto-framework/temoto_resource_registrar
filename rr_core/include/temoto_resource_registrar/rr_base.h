@@ -624,7 +624,7 @@ namespace temoto_resource_registrar
      */
     template <class CallClientClass, class ServType, class QueryType, class StatusCallType>
     void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, const StatusCallType &statusFunc, bool overrideFunc)
-    {
+    { START_SPAN
 
       std::thread::id workId = std::this_thread::get_id();
 
@@ -642,6 +642,15 @@ namespace temoto_resource_registrar
         targetRrName = target->name();
 
       serverName = IDUtils::generateServerName(targetRrName, server);
+
+      #ifdef temoto_enable_tracing
+      std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+      for (const auto& c : TEMOTO_LOG_ATTR.topParentSpanContext())
+      {
+        std::cout << " * "<< c.first << " : " << c.second << std::endl;
+      }
+      query.metadata().setSpanContext(TEMOTO_LOG_ATTR.topParentSpanContext());
+      #endif
 
       // In case we have a client call, not a internal call
       if ((rr != NULL) && (target == NULL))
