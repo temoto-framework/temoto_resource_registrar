@@ -28,14 +28,31 @@
 
 namespace temoto_resource_registrar
 {
-  class QueryMetadata
+  class ResponseMetadata
+  {
+  public:
+
+    resource_registrar::TemotoErrorStack& errorStack() { return error_stack_; }
+
+  protected:
+    friend class boost::serialization::access;
+
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int /* version */)
+    {
+      ar &error_stack_;
+    }
+
+  private:
+    resource_registrar::TemotoErrorStack error_stack_;
+  };
+
+  class RequestMetadata
   {
   public:
     typedef std::unordered_map<std::string, std::string> SpanContextType;
 
-    resource_registrar::TemotoErrorStack& errorStack() { return error_stack_; }
-
-    SpanContextType& getSpanContext() { return span_context_; }
+    SpanContextType &getSpanContext() { return span_context_; }
 
     void setSpanContext(SpanContextType span_context) { span_context_ = span_context; }
 
@@ -45,7 +62,7 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &error_stack_ &span_context_;
+      ar &span_context_;
     }
 
   private:
@@ -76,8 +93,11 @@ namespace temoto_resource_registrar
     void setStatus(const int &status) { status_ = status; }
     int status() { return status_; }
 
-    void setMetadata(QueryMetadata metadata) { metadata_ = metadata; };
-    QueryMetadata &metadata() { return metadata_; }
+    void setRequestMetadata(RequestMetadata metadata) { request_metadata_ = metadata; };
+    RequestMetadata &requestMetadata() { return request_metadata_; }
+
+    void setResponseMetadata(ResponseMetadata metadata) { response_metadata_ = metadata; };
+    ResponseMetadata &responseMetadata() { return response_metadata_; }
 
   protected:
     std::string requestId_;
@@ -86,14 +106,15 @@ namespace temoto_resource_registrar
 
     int status_;
 
-    QueryMetadata metadata_;
+    RequestMetadata request_metadata_;
+    ResponseMetadata response_metadata_;
 
     friend class boost::serialization::access;
 
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &requestId_ &servingRr_ &originRr_ &status_ &metadata_;
+      ar &requestId_ &servingRr_ &originRr_ &status_ &request_metadata_ &response_metadata_;
     }
 
   private:

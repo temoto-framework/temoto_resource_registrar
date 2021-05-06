@@ -253,7 +253,7 @@ public:
       catch (const resource_registrar::TemotoErrorStack &e)
       {
         LOG(INFO) << "server caught a callback exception. returning error to requestor.";
-        query.metadata().errorStack().appendError(e);
+        query.responseMetadata().errorStack().appendError(e);
       }
 
       LOG(INFO) << "Executing query finished callback";
@@ -1076,6 +1076,7 @@ TEST_F(RrBaseTest, RrServerStatusCallbackTest)
     EXPECT_EQ(status.state_, Status::State::FATAL);
     EXPECT_EQ(status.message_, "message");
     statusCbCnt++;
+    LOG(INFO) << "Status CB finished";
   };
 
   LOG(INFO) << "registering server named 'srv'";

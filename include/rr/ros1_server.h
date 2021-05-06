@@ -161,11 +161,11 @@ public:
 
     #ifdef temoto_enable_tracing
     std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-    for (const auto& c : wrappedQuery.metadata().getSpanContext())
+    for (const auto& c : wrappedQuery.requestMetadata().getSpanContext())
     {
       std::cout << " * "<< c.first << " : " << c.second << std::endl;
     }
-    TEMOTO_LOG_ATTR.startTracingSpan(GET_NAME_FF, wrappedQuery.metadata().getSpanContext());
+    TEMOTO_LOG_ATTR.startTracingSpan(GET_NAME_FF, wrappedQuery.requestMetadata().getSpanContext());
     #endif
 
     typename ServiceClass::Request sanitizedReq = sanityzeRequest(req);
@@ -236,10 +236,10 @@ public:
       catch (const resource_registrar::TemotoErrorStack &e)
       {
         ROS_WARN_STREAM("Server encountered an error while executing a callback: " << e.getMessage());
-        wrappedQuery.metadata().errorStack().appendError(e);
+        wrappedQuery.responseMetadata().errorStack().appendError(e);
         // store metadata object as serialized string in response
         res.temotoMetadata.status = 500;
-        res.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(wrappedQuery.metadata());
+        res.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::ResponseMetadata>(wrappedQuery.responseMetadata());
       }
 
       ROS_INFO("Executing query finished callback");

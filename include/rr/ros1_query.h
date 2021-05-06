@@ -31,8 +31,11 @@ public:
     setId(responseData.requestId);
     setStatus(responseData.status);
 
+    if (requestData.metadata.size() > 0)
+      setRequestMetadata(Serializer::deserialize<temoto_resource_registrar::RequestMetadata>(requestData.metadata));
+
     if (responseData.metadata.size() > 0)
-      setMetadata(Serializer::deserialize<temoto_resource_registrar::QueryMetadata>(responseData.metadata));
+      setResponseMetadata(Serializer::deserialize<temoto_resource_registrar::ResponseMetadata>(responseData.metadata));
   }
 
   /**
@@ -90,10 +93,11 @@ public:
     
     typed_query_.request.temotoMetadata.servingRr = rr();
     typed_query_.request.temotoMetadata.originRr = origin();
+    typed_query_.request.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::RequestMetadata>(requestMetadata());
 
     typed_query_.response.temotoMetadata.requestId = id();
     typed_query_.response.temotoMetadata.status = status();
-    typed_query_.response.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(metadata());
+    typed_query_.response.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::ResponseMetadata>(responseMetadata());
 
     return typed_query_;
   }
