@@ -19,15 +19,18 @@
 namespace temoto_resource_registrar
 {
 
-  void RrCatalog::storeQuery(const std::string &server, RrQueryBase q, RawData reqData, RawData qData)
+  void RrCatalog::storeQuery(const std::string &server,
+                             RrQueryBase q,
+                             RawData request_data,
+                             RawData query_data)
   {
 
     std::cout << "in store query.." << std::endl;
 
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     std::cout << "locking..." << std::endl;
-    id_query_map_[reqData] = QueryContainer<RawData>(q, reqData, qData, server);
-    std::cout << "id_query_map_[reqData] set" << std::endl;
+    id_query_map_[request_data] = QueryContainer<RawData>(q, request_data, query_data, server);
+    std::cout << "id_query_map_[request_data] set" << std::endl;
     server_id_map_[server].insert(q.id());
     std::cout << "server_id_map_[server] set" << std::endl;
 
@@ -43,7 +46,7 @@ namespace temoto_resource_registrar
     for (auto const &query : id_query_map_)
     {
       QueryContainer<RawData> wrapper = query.second;
-      if (wrapper.rawRequest_ == request && wrapper.responsibleServer_ == server)
+      if (wrapper.raw_request_ == request && wrapper.responsible_server_ == server)
       {
         key = query.first;
         break;
@@ -52,20 +55,19 @@ namespace temoto_resource_registrar
 
     if (key.size())
     {
-      id_query_map_[key].rawQuery_ = response;
+      id_query_map_[key].raw_query_ = response;
     }
   }
 
-  UUID RrCatalog::queryExists(const std::string &server, RawData reqData)
+  UUID RrCatalog::queryExists(const std::string &server, RawData request_data)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &query : id_query_map_)
     {
       QueryContainer<RawData> wrapper = query.second;
 
-      std::cout << (wrapper.rawRequest_ == reqData) << " & " << (wrapper.responsibleServer_ == server) << std::endl;
-
-      if (wrapper.rawRequest_ == reqData && wrapper.responsibleServer_ == server)
+      if (wrapper.raw_request_ == request_data &&
+          wrapper.responsible_server_ == server)
       {
         return wrapper.q_.id();
       }
@@ -73,20 +75,22 @@ namespace temoto_resource_registrar
     return "";
   }
 
-  RawData RrCatalog::processExisting(const std::string &server, const std::string &id, RrQueryBase q)
+  RawData RrCatalog::processExisting(const std::string &server,
+                                     const std::string &id,
+                                     RrQueryBase q)
   {
     std::string request = "";
 
     std::cout << "processExisting" << std::endl;
 
-    request = findOriginalContainer(id).rawRequest_;
+    request = findOriginalContainer(id).raw_request_;
 
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     if (request.size())
     {
       id_query_map_[request].storeNewId(q.id(), q.origin());
       server_id_map_[server].insert(q.id());
-      return id_query_map_[request].rawQuery_;
+      return id_query_map_[request].raw_query_;
     }
 
     return "";
@@ -94,42 +98,40 @@ namespace temoto_resource_registrar
 
   UUID RrCatalog::getInitialId(const std::string &id)
   {
-    //QueryContainer cotnainer = findOriginalContainer(id);
-    //std::cout << cotnainer.getIdCount() << std::endl;
-    //return cotnainer.q_.id();
-
     std::cout << "getInitialId" << std::endl;
     return getOriginQueryId(id);
   }
 
-  RawData RrCatalog::unload(const std::string &server, const std::string &id, bool &unloadable)
+  RawData RrCatalog::unload(const std::string &server,
+                            const std::string &id,
+                            bool &unloadable)
   {
 
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     auto vec = server_id_map_[server];
-    int removedElCnt = vec.erase(id);
+    int removed_el_cnt = vec.erase(id);
     server_id_map_[server] = vec;
 
-    std::string queryResp = "";
+    std::string query_response = "";
 
-    if (removedElCnt)
+    if (removed_el_cnt)
     {
       std::cout << "unload" << std::endl;
       QueryContainer<RawData> qc = findOriginalContainer(id);
 
-      if (qc.responsibleServer_.size())
+      if (qc.responsible_server_.size())
       {
-        queryResp = qc.rawQuery_;
+        query_response = qc.raw_query_;
         qc.removeId(id);
 
         if (!qc.getIdCount())
         {
           unloadable = true;
-          id_query_map_.erase(qc.rawRequest_);
+          id_query_map_.erase(qc.raw_request_);
         }
         else
         {
-          id_query_map_[qc.rawRequest_] = qc;
+          id_query_map_[qc.raw_request_] = qc;
         }
       }
     }
@@ -140,19 +142,19 @@ namespace temoto_resource_registrar
       server_rr_.erase(server);
     }
 
-    return queryResp;
+    return query_response;
   }
 
   QueryContainer<RawData> RrCatalog::findOriginalContainer(const std::string &id)
   {
     std::cout << "findOriginalContainer: " << id << std::endl;
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    for (auto const &queryEntry : id_query_map_)
+    for (auto const &query_entry : id_query_map_)
     {
-      if (queryEntry.second.rr_ids_.count(id))
+      if (query_entry.second.rr_ids_.count(id))
       {
-        std::cout << "Found!: " << queryEntry.second.q_.id() << std::endl;
-        return queryEntry.second;
+        std::cout << "Found!: " << query_entry.second.q_.id() << std::endl;
+        return query_entry.second;
       }
     }
     std::cout << "Not found! Returning raw container" << std::endl;
@@ -162,64 +164,68 @@ namespace temoto_resource_registrar
   ServerName RrCatalog::getIdServer(const std::string &id)
   {
     std::cout << "getIdServer: " << id << std::endl;
-    return findOriginalContainer(id).responsibleServer_;
+    return findOriginalContainer(id).responsible_server_;
   }
 
   std::unordered_map<UUID, std::string> RrCatalog::getAllQueryIds(const std::string &id)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    for (auto const &queryEntry : id_query_map_)
+    for (auto const &query_entry : id_query_map_)
     {
-      if (queryEntry.second.rr_ids_.count(id))
+      if (query_entry.second.rr_ids_.count(id))
       {
-        return queryEntry.second.rr_ids_;
+        return query_entry.second.rr_ids_;
       }
     }
-    std::unordered_map<UUID, std::string> emptyMap;
-    return emptyMap;
+    std::unordered_map<UUID, std::string> empty_map;
+    return empty_map;
   }
 
-  void RrCatalog::storeDependency(const std::string &queryId, const std::string &dependencySource, const std::string &dependencyId)
+  void RrCatalog::storeDependency(const std::string &query_id,
+                                  const std::string &dependency_source,
+                                  const std::string &dependency_id)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    id_dependency_map_[queryId].registerDependency(dependencySource, dependencyId);
+    id_dependency_map_[query_id].registerDependency(dependency_source, dependency_id);
   }
 
-  std::unordered_map<UUID, std::string> RrCatalog::getDependencies(const std::string &queryId)
+  std::unordered_map<UUID, std::string> RrCatalog::getDependencies(const std::string &query_id)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    if (id_dependency_map_.count(queryId))
-      return id_dependency_map_[queryId].dependencies();
+    if (id_dependency_map_.count(query_id))
+      return id_dependency_map_[query_id].dependencies();
 
     std::unordered_map<std::string, std::string> empty;
     return empty;
   }
 
-  void RrCatalog::unloadDependency(const std::string &queryId, const std::string &dependencyId)
+  void RrCatalog::unloadDependency(const std::string &query_id,
+                                   const std::string &dependency_id)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    id_dependency_map_[queryId].removeDependency(dependencyId);
+    id_dependency_map_[query_id].removeDependency(dependency_id);
 
-    if (!id_dependency_map_[queryId].count())
+    if (!id_dependency_map_[query_id].count())
     {
-      id_dependency_map_.erase(queryId);
+      id_dependency_map_.erase(query_id);
     }
   }
 
-  UUID RrCatalog::getOriginQueryId(const std::string &queryId)
+  UUID RrCatalog::getOriginQueryId(const std::string &query_id)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    for (auto const &dependencyEntry : id_dependency_map_)
+    for (auto const &dependency_entry : id_dependency_map_)
     {
-      if (dependencyEntry.second.dependencies().count(queryId))
+      if (dependency_entry.second.dependencies().count(query_id))
       {
-        return dependencyEntry.first;
+        return dependency_entry.first;
       }
     }
     return "";
   }
 
-  void RrCatalog::storeClientCallRecord(const std::string &client, const std::string &id)
+  void RrCatalog::storeClientCallRecord(const std::string &client,
+                                        const std::string &id)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     client_id_map_[client].insert(id);
@@ -228,11 +234,11 @@ namespace temoto_resource_registrar
   ClientName RrCatalog::getIdClient(const std::string &id)
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    for (auto const &clientQueries : client_id_map_)
+    for (auto const &client_queries : client_id_map_)
     {
-      if (clientQueries.second.count(id))
+      if (client_queries.second.count(id))
       {
-        return clientQueries.first;
+        return client_queries.first;
       }
     }
     return "";
@@ -241,17 +247,17 @@ namespace temoto_resource_registrar
   std::vector<QueryContainer<RawData>> RrCatalog::getUniqueServerQueries(const std::string &server)
   {
     std::vector<QueryContainer<RawData>> output;
-    std::set<UUID> addedMessages;
+    std::set<UUID> added_messages;
 
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    for (auto const &queryId : server_id_map_[server])
+    for (auto const &query_id : server_id_map_[server])
     {
       std::cout << "getUniqueServerQueries" << std::endl;
-      QueryContainer<RawData> container = findOriginalContainer(queryId);
-      if (addedMessages.count(container.q_.id()) == 0)
+      QueryContainer<RawData> container = findOriginalContainer(query_id);
+      if (added_messages.count(container.q_.id()) == 0)
       {
         output.push_back(container);
-        addedMessages.insert(container.q_.id());
+        added_messages.insert(container.q_.id());
       }
     }
 

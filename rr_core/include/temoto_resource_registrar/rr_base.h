@@ -223,10 +223,9 @@ namespace temoto_resource_registrar
     void call(RrBase &target,
               const std::string &server,
               QueryType &query,
-              StatusCallType statusFunc = NULL,
-              bool overrideStatus = false)
+              StatusCallType status_func = NULL)
     {
-      privateCall<RrClientBase, ServType, QueryType, StatusCallType>(NULL, &(target), server, query, statusFunc, overrideStatus);
+      privateCall<RrClientBase, ServType, QueryType, StatusCallType>(NULL, &(target), server, query, status_func);
     }
 
     template <class ServType, class QueryType>
@@ -234,7 +233,7 @@ namespace temoto_resource_registrar
               const std::string &server,
               QueryType &query)
     {
-      privateCall<RrClientBase, ServType, QueryType, void *>(NULL, &(target), server, query, NULL, false);
+      privateCall<RrClientBase, ServType, QueryType, void *>(NULL, &(target), server, query, NULL);
     }
 
     size_t serverCount() { return servers_.getIds().size(); }
@@ -258,11 +257,11 @@ namespace temoto_resource_registrar
 
       CONSOLE_BRIDGE_logDebug("serverId id: %s", serverId.c_str());
 
-      auto dependencyMap = rr_catalog_->getDependencies(id);
-      if (dependencyMap.size() > 0)
+      auto dependency_map = rr_catalog_->getDependencies(id);
+      if (dependency_map.size() > 0)
       {
-        CONSOLE_BRIDGE_logDebug("dependencyMap.size() > 0");
-        for (auto const &dependency : dependencyMap)
+        CONSOLE_BRIDGE_logDebug("dependency_map.size() > 0");
+        for (auto const &dependency : dependency_map)
         {
           unloadResource(id, dependency);
         }
@@ -272,25 +271,25 @@ namespace temoto_resource_registrar
       return res;
     }
 
-    void registerServer(std::unique_ptr<RrServerBase> serverPtr)
+    void registerServer(std::unique_ptr<RrServerBase> server_ptr)
     {
       CONSOLE_BRIDGE_logInform("registering server");
-      serverPtr->registerTransactionCb(std::bind(&RrBase::processTransactionCallback, this, std::placeholders::_1));
-      serverPtr->initializeServer(name(), rr_catalog_);
+      server_ptr->registerTransactionCb(std::bind(&RrBase::processTransactionCallback, this, std::placeholders::_1));
+      server_ptr->initializeServer(name(), rr_catalog_);
 
-      CONSOLE_BRIDGE_logInform("registration complete %s", (serverPtr->id()).c_str());
-      servers_.add(std::move(serverPtr));
+      CONSOLE_BRIDGE_logInform("registration complete %s", (server_ptr->id()).c_str());
+      servers_.add(std::move(server_ptr));
     }
 
     template <class ServType, class QueryType>
     void handleInternalCall(const std::string &server, QueryType &query)
     {
       CONSOLE_BRIDGE_logDebug("\t executing internal call to server: %s", server.c_str());
-      auto &serverRef = servers_.getElement(server);
+      auto &server_ref = servers_.getElement(server);
 
-      auto dynamicRef = dynamic_cast<const ServType &>(serverRef);
+      auto dynamic_ref = dynamic_cast<const ServType &>(server_ref);
 
-      dynamicRef.processQuery(query);
+      dynamic_ref.processQuery(query);
     }
 
     void printCatalog() { rr_catalog_->print(); }
@@ -303,83 +302,81 @@ namespace temoto_resource_registrar
 
     bool unloadByServerAndQuery(const std::string &server, const std::string &id) { return servers_.unload(server, id); }
 
-    void sendStatus(const std::string &quieryId, Status statusData)
+    void sendStatus(const std::string &quiery_id, Status status_data)
     {
-      CONSOLE_BRIDGE_logDebug("core sendStatus %s", statusData.id_);
+      CONSOLE_BRIDGE_logDebug("core sendStatus %s", status_data.id_);
 
-      std::string serverName = rr_catalog_->getIdServer(quieryId);
-
-      std::unordered_map<std::string, std::string> notifyIds = rr_catalog_->getAllQueryIds(statusData.id_);
-      for (auto const &notId : notifyIds)
+      std::unordered_map<std::string, std::string> notify_ids = rr_catalog_->getAllQueryIds(status_data.id_);
+      for (auto const &not_id : notify_ids)
       {
-        CONSOLE_BRIDGE_logDebug("\t callStatusClient for rr %s", notId.second.c_str());
+        CONSOLE_BRIDGE_logDebug("\t callStatusClient for rr %s", not_id.second.c_str());
 
-        bool statusResult = callStatusClient(notId.second, quieryId, statusData);
+        bool status_result = callStatusClient(not_id.second, quiery_id, status_data);
 
-        CONSOLE_BRIDGE_logDebug("\t call result: %i", statusResult);
+        CONSOLE_BRIDGE_logDebug("\t call result: %i", status_result);
       }
     }
 
-    virtual void handleStatus(const std::string &requestId, Status statusData)
+    virtual void handleStatus(const std::string &request_id, Status status_data)
     {
-      CONSOLE_BRIDGE_logDebug("entered handleStatus &s - %s - %s", name().c_str(), requestId.c_str(), statusData.id_.c_str());
-      std::string originalId = rr_catalog_->getOriginQueryId(statusData.id_);
+      CONSOLE_BRIDGE_logDebug("entered handleStatus &s - %s - %s", name().c_str(), request_id.c_str(), status_data.id_.c_str());
+      std::string original_id = rr_catalog_->getOriginQueryId(status_data.id_);
 
-      CONSOLE_BRIDGE_logDebug("query id %s", originalId.c_str());
+      CONSOLE_BRIDGE_logDebug("query id %s", original_id.c_str());
 
-      if (originalId.size())
+      if (original_id.size())
       {
-        std::unordered_map<std::string, std::string> dependencyMap = rr_catalog_->getDependencies(originalId);
-        std::string firstId = dependencyMap.begin()->first;
+        std::unordered_map<std::string, std::string> dependency_map = rr_catalog_->getDependencies(original_id);
+        std::string firstId = dependency_map.begin()->first;
         // stop attempt if dependency
-        if (statusData.id_ != firstId)
+        if (status_data.id_ != firstId)
         {
           return;
         }
       }
 
-      std::string clientName = rr_catalog_->getIdClient(statusData.id_);
+      std::string client_name = rr_catalog_->getIdClient(status_data.id_);
 
-      if (clients_.exists(clientName))
+      if (clients_.exists(client_name))
       {
-        CONSOLE_BRIDGE_logDebug("\t\tcalling callback of client %s", clientName.c_str());
-        clients_.runCallback(clientName, requestId, statusData);
+        CONSOLE_BRIDGE_logDebug("\t\tcalling callback of client %s", client_name.c_str());
+        clients_.runCallback(client_name, request_id, status_data);
       }
 
-      if (originalId.size())
+      if (original_id.size())
       {
-        statusData.id_ = originalId;
+        status_data.id_ = original_id;
 
         CONSOLE_BRIDGE_logDebug("handleStatus");
-        auto container = rr_catalog_->findOriginalContainer(statusData.id_);
+        auto container = rr_catalog_->findOriginalContainer(status_data.id_);
         if (!container.empty_)
         {
           CONSOLE_BRIDGE_logDebug("\t\t\t!container.empty_");
-          statusData.serialisedRequest_ = container.rawRequest_;
-          statusData.serialisedRsponse_ = container.rawQuery_;
+          status_data.serialised_request_ = container.raw_request_;
+          status_data.serialised_response_ = container.raw_query_;
         }
         else
         {
           CONSOLE_BRIDGE_logDebug("\t\t\tcontainer.empty_");
         }
 
-        CONSOLE_BRIDGE_logDebug("\t\tsendStatus to target %s", statusData.id_.c_str());
+        CONSOLE_BRIDGE_logDebug("\t\tsendStatus to target %s", status_data.id_.c_str());
 
-        std::async(&RrBase::sendStatus, this, originalId, statusData);
+        std::async(&RrBase::sendStatus, this, original_id, status_data);
       }
 
-      CONSOLE_BRIDGE_logDebug("-----exited handleStatus %s", statusData.id_.c_str());
+      CONSOLE_BRIDGE_logDebug("-----exited handleStatus %s", status_data.id_.c_str());
     }
 
-    std::map<std::string, std::pair<std::string, std::string>> getChildQueries(const std::string &id, const std::string &serverName)
+    std::map<std::string, std::pair<std::string, std::string>> getChildQueries(const std::string &id, const std::string &server_name)
     {
       std::map<std::string, std::pair<std::string, std::string>> res;
 
-      QueryContainer<std::string> qContainer = rr_catalog_->findOriginalContainer(id);
+      QueryContainer<std::string> q_container = rr_catalog_->findOriginalContainer(id);
 
-      std::string clientName;
+      std::string client_name;
 
-      if (qContainer.empty_)
+      if (q_container.empty_)
       {
         CONSOLE_BRIDGE_logDebug("Could not find base container. Maybe is pure client Rr. They can not have multiple dependencies since call executes a single query");
         return res;
@@ -388,7 +385,7 @@ namespace temoto_resource_registrar
       {
       }
       // UUID - servingRR
-      std::unordered_map<std::string, std::string> dependencies = rr_catalog_->getDependencies(qContainer.q_.id());
+      std::unordered_map<std::string, std::string> dependencies = rr_catalog_->getDependencies(q_container.q_.id());
 
       CONSOLE_BRIDGE_logDebug("Dependencies:");
       for (const auto &dep : dependencies)
@@ -396,56 +393,60 @@ namespace temoto_resource_registrar
         CONSOLE_BRIDGE_logDebug("%s - %s", dep.first.c_str(), dep.second.c_str());
 
         //leia client mis seda resurssi haldas
-        clientName = rr_catalog_->getIdClient(dep.first);
+        client_name = rr_catalog_->getIdClient(dep.first);
 
-        if (IDUtils::generateServerName(dep.second, serverName) == clientName)
+        if (IDUtils::generateServerName(dep.second, server_name) == client_name)
         {
-          CONSOLE_BRIDGE_logDebug("client name %s matched. Fetching queries", clientName.c_str());
-          res = getServerRrQueries(clientName, name());
+          CONSOLE_BRIDGE_logDebug("client name %s matched. Fetching queries", client_name.c_str());
+          res = getServerRrQueries(client_name, name());
         }
       }
 
       return res;
     }
 
-    std::map<UUID, std::pair<std::string, std::string>> handleDataFetch(const std::string &originRr, const std::string &serverName)
+    std::map<UUID, std::pair<std::string, std::string>> handleDataFetch(const std::string &origin_rr, const std::string &server_name)
     {
-      CONSOLE_BRIDGE_logDebug("fetching query data for server name: %s", serverName.c_str());
+      CONSOLE_BRIDGE_logDebug("fetching query data for server name: %s", server_name.c_str());
 
       std::map<UUID, std::pair<std::string, std::string>> ret;
 
       CONSOLE_BRIDGE_logDebug("getClientIds");
 
-      std::set<std::string> ids = rr_catalog_->getServerIds(serverName);
+      std::set<std::string> ids = rr_catalog_->getServerIds(server_name);
 
       CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries");
-      findAndCollectIdQueries(ids, originRr, ret);
+      findAndCollectIdQueries(ids, origin_rr, ret);
 
       CONSOLE_BRIDGE_logDebug("got %i queries ", ret.size());
       return ret;
     }
 
-    virtual std::map<std::string, std::pair<std::string, std::string>> callDataFetchClient(const std::string &targetRr, const std::string &originRr, const std::string &serverName)
+    virtual std::map<std::string,
+                     std::pair<std::string, std::string>>
+    callDataFetchClient(const std::string &target_rr,
+                        const std::string &origin_rr,
+                        const std::string &server_name)
     {
-      CONSOLE_BRIDGE_logDebug("target rr for data fetch: %s", targetRr.c_str());
-      auto res = rr_references_[targetRr]->handleDataFetch(originRr, serverName);
+      CONSOLE_BRIDGE_logDebug("target rr for data fetch: %s", target_rr.c_str());
+      auto res = rr_references_[target_rr]->handleDataFetch(origin_rr, server_name);
       CONSOLE_BRIDGE_logDebug("fetched %i queries", res.size());
       return res;
     }
 
     std::vector<std::string> callbacks()
     {
-      std::vector<std::string> cbVector;
+      std::vector<std::string> cb_vector;
       int counter = 0;
       for (const std::string &id : clients_.getIds())
       {
-        for (const std::string &qId : clients_.getElement(id).registeredCallbackQueries())
+        for (const std::string &q_id : clients_.getElement(id).registeredCallbackQueries())
         {
-          cbVector.push_back(qId);
+          cb_vector.push_back(q_id);
         }
       }
 
-      return cbVector;
+      return cb_vector;
     }
 
     /**
@@ -458,11 +459,11 @@ namespace temoto_resource_registrar
  * @param rr 
  * @param server 
  * @param query 
- * @param statusCallback 
- * @param overwriteCb 
  */
     template <class CallClientClass, class QueryClass, class StatusCallType>
-    std::string createClient(const std::string &rr, const std::string &server, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
+    std::string createClient(const std::string &rr,
+                             const std::string &server,
+                             QueryClass &query)
     {
       std::string clientName = IDUtils::generateServerName(rr, server);
 
@@ -485,13 +486,13 @@ namespace temoto_resource_registrar
       CONSOLE_BRIDGE_logDebug("unloadClient %s", client.c_str());
       try
       {
-        std::string targetRr = clients_.getElement(client).rr();
+        std::string target_rr = clients_.getElement(client).rr();
         clients_.remove(client);
 
         for (const std::string &id : rr_catalog_->getClientIds(client))
         {
           CONSOLE_BRIDGE_logDebug("\tunloadClient msg id %s", id.c_str());
-          unload(targetRr, id);
+          unload(target_rr, id);
         }
       }
       catch (const ElementNotFoundException &e)
@@ -512,13 +513,13 @@ namespace temoto_resource_registrar
 
     Configuration configuration_;
 
-    void handleRrServerCb(const std::string &queryId, const Status &status)
+    void handleRrServerCb(const std::string &query_id, const Status &status)
     {
-      std::string serverName = rr_catalog_->getIdServer(queryId);
-      CONSOLE_BRIDGE_logDebug("running server status cb Maybe it is server %s", serverName.c_str());
+      std::string server_name = rr_catalog_->getIdServer(query_id);
+      CONSOLE_BRIDGE_logDebug("running server status cb Maybe it is server %s", server_name.c_str());
       try
       {
-        servers_.getElement(serverName).triggerCallback(status);
+        servers_.getElement(server_name).triggerCallback(status);
       }
       catch (const ElementNotFoundException &e)
       {
@@ -528,13 +529,13 @@ namespace temoto_resource_registrar
 
     // get target rr based on target server name and from there get all
     // queries that used the clientName client
-    std::map<std::string, std::pair<std::string, std::string>> getServerRrQueries(const std::string &serverName, const std::string &queryRr)
+    std::map<std::string, std::pair<std::string, std::string>> getServerRrQueries(const std::string &server_name, const std::string &query_rr)
     {
-      CONSOLE_BRIDGE_logDebug("getClientQueries for server '%s' from rr '%s'", serverName.c_str(), queryRr.c_str());
+      CONSOLE_BRIDGE_logDebug("getClientQueries for server '%s' from rr '%s'", server_name.c_str(), query_rr.c_str());
       // get server queries. can find the target RR from these queries
-      std::string targetRr = rr_catalog_->getServerRr(serverName);
-      CONSOLE_BRIDGE_logDebug("identified for targer rr to be: %s", targetRr.c_str());
-      return callDataFetchClient(targetRr, queryRr, serverName);
+      std::string target_rr = rr_catalog_->getServerRr(server_name);
+      CONSOLE_BRIDGE_logDebug("identified for targer rr to be: %s", target_rr.c_str());
+      return callDataFetchClient(target_rr, query_rr, server_name);
     };
 
     void updateQuery(const std::string &server,
@@ -552,8 +553,6 @@ namespace temoto_resource_registrar
         std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
 
         saveCatalog();
-
-        
       }
     }
 
@@ -562,46 +561,48 @@ namespace temoto_resource_registrar
       remove(configuration_.location().c_str());
     }
 
-    virtual bool callStatusClient(const std::string &targetRr, const std::string &requestId, Status statusData)
+    virtual bool callStatusClient(const std::string &target_rr, const std::string &request_id, Status status_data)
     {
-      CONSOLE_BRIDGE_logDebug("target rr for status: %s", targetRr.c_str());
+      CONSOLE_BRIDGE_logDebug("target rr for status: %s", target_rr.c_str());
 
-      auto container = rr_catalog_->findOriginalContainer(statusData.id_);
+      auto container = rr_catalog_->findOriginalContainer(status_data.id_);
 
       if (!container.empty_)
       {
-        statusData.serialisedRequest_ = container.rawRequest_;
-        statusData.serialisedRsponse_ = container.rawQuery_;
+        status_data.serialised_request_ = container.raw_request_;
+        status_data.serialised_response_ = container.raw_query_;
       }
 
-      handleRrServerCb(requestId, statusData);
+      handleRrServerCb(request_id, status_data);
 
-      rr_references_[targetRr]->handleStatus(requestId, statusData);
+      rr_references_[target_rr]->handleStatus(request_id, status_data);
 
       return true;
     }
 
     template <class CallClientClass, class QueryClass, class StatusCallType>
-    void handleClientCall(const std::string &rr, const std::string clientName, QueryClass &query, const StatusCallType &statusCallback, bool overwriteCb)
+    void handleClientCall(const std::string &rr, const std::string client_name,
+                          QueryClass &query,
+                          const StatusCallType &status_callback)
     {
-      std::string clientId = createClient<CallClientClass, QueryClass, StatusCallType>(rr, clientName, query, statusCallback, overwriteCb);
+      std::string client_id = createClient<CallClientClass, QueryClass, StatusCallType>(rr, client_name, query);
 
-      auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(clientId));
+      auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(client_id));
       client.invoke(query);
 
-      storeClientQueryStatusCb<CallClientClass, StatusCallType>(clientId, query.id(), statusCallback);
+      storeClientQueryStatusCb<CallClientClass, StatusCallType>(client_id, query.id(), status_callback);
 
       std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-      rr_catalog_->storeClientCallRecord(clientId, query.id());
+      rr_catalog_->storeClientCallRecord(client_id, query.id());
     }
 
     template <class CallClientClass, class StatusCallType>
-    void storeClientQueryStatusCb(const std::string clientId, const std::string &queryId, const StatusCallType &statusCallback)
+    void storeClientQueryStatusCb(const std::string client_id, const std::string &query_id, const StatusCallType &status_callback)
     {
-      if (statusCallback != NULL && queryId.size() > 0)
+      if (status_callback != NULL && query_id.size() > 0)
       {
-        auto client = dynamic_cast<CallClientClass *>(clients_.getElementPtr(clientId));
-        client->registerUserStatusCb(queryId, statusCallback);
+        auto client = dynamic_cast<CallClientClass *>(clients_.getElementPtr(client_id));
+        client->registerUserStatusCb(query_id, status_callback);
       }
     }
 
@@ -619,14 +620,13 @@ namespace temoto_resource_registrar
      * @param target 
      * @param server 
      * @param query 
-     * @param statusFunc 
-     * @param overrideFunc 
+     * @param status_callback
      */
     template <class CallClientClass, class ServType, class QueryType, class StatusCallType>
-    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, const StatusCallType &statusFunc, bool overrideFunc)
+    void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, const StatusCallType &status_callback)
     {
 
-      std::thread::id workId = std::this_thread::get_id();
+      std::thread::id work_id = std::this_thread::get_id();
 
       CONSOLE_BRIDGE_logDebug("in private call");
 
@@ -634,54 +634,54 @@ namespace temoto_resource_registrar
 
       CONSOLE_BRIDGE_logDebug("setting origin");
 
-      std::string targetRrName, serverName;
+      std::string target_rr_name, server_name;
 
       if ((rr != NULL) && (target == NULL))
-        targetRrName = *(rr);
+        target_rr_name = *(rr);
       else
-        targetRrName = target->name();
+        target_rr_name = target->name();
 
-      serverName = IDUtils::generateServerName(targetRrName, server);
+      server_name = IDUtils::generateServerName(target_rr_name, server);
 
       // In case we have a client call, not a internal call
       if ((rr != NULL) && (target == NULL))
       {
         CONSOLE_BRIDGE_logDebug("executing client call, also setting rr to %s", (*(rr)).c_str());
-        query.setRr(targetRrName);
-        handleClientCall<CallClientClass, QueryType, StatusCallType>(*(rr), server, query, statusFunc, overrideFunc);
+        query.setRr(target_rr_name);
+        handleClientCall<CallClientClass, QueryType, StatusCallType>(*(rr), server, query, status_callback);
 
         CONSOLE_BRIDGE_logDebug("query id: %s", query.id().c_str());
       }
       else
       {
         CONSOLE_BRIDGE_logDebug("executing mem call, also setting rr");
-        query.setRr(targetRrName);
-        target->handleInternalCall<ServType, QueryType>(serverName, query);
+        query.setRr(target_rr_name);
+        target->handleInternalCall<ServType, QueryType>(server_name, query);
 
         CONSOLE_BRIDGE_logDebug("\t storeClientCallRecord to server: %s", server.c_str());
 
-        rr_catalog_->storeClientCallRecord(serverName, query.id());
+        rr_catalog_->storeClientCallRecord(server_name, query.id());
       }
 
-      rr_catalog_->storeServerRr(serverName, targetRrName);
+      rr_catalog_->storeServerRr(server_name, target_rr_name);
 
       if (!query.metadata().errorStack().empty())
       {
         CONSOLE_BRIDGE_logDebug("query had an error. unloading if dependencies exist");
-        if (running_query_map_.count(workId))
+        if (running_query_map_.count(work_id))
         {
           CONSOLE_BRIDGE_logDebug("Dependencies might exist. Attempting unload");
-          localUnload(running_query_map_[workId].id());
+          localUnload(running_query_map_[work_id].id());
         }
 
         CONSOLE_BRIDGE_logDebug("throwing error upstream");
         throw FWD_TEMOTO_ERRSTACK(query.metadata().errorStack());
       }
 
-      if (running_query_map_.count(workId))
+      if (running_query_map_.count(work_id))
       {
         CONSOLE_BRIDGE_logDebug("------------------------------------- has a dependency requirement");
-        RrQueryBase bq = running_query_map_[workId];
+        RrQueryBase bq = running_query_map_[work_id];
         std::cout << "!!!Query " << query.id() << " is dependency of " << bq.id() << ". Stroring it" << std::endl;
 
         rr_catalog_->storeDependency(bq.id(), query.rr(), query.id());
@@ -693,13 +693,13 @@ namespace temoto_resource_registrar
     virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
     {
       CONSOLE_BRIDGE_logDebug("private unloadResource() %s", id.c_str());
-      std::string dependencyServer = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
+      std::string dependency_server = rr_references_[dependency.second]->resolveQueryServerId(dependency.first);
 
-      CONSOLE_BRIDGE_logDebug("dependencyServer %s", dependencyServer.c_str());
+      CONSOLE_BRIDGE_logDebug("dependencyServer %s", dependency_server.c_str());
 
-      bool unloadStatus = rr_references_[dependency.second]->unloadByServerAndQuery(dependencyServer, dependency.first);
+      bool unload_status = rr_references_[dependency.second]->unloadByServerAndQuery(dependency_server, dependency.first);
 
-      if (unloadStatus)
+      if (unload_status)
       {
         rr_catalog_->unloadDependency(id, dependency.first);
       }
@@ -716,31 +716,31 @@ namespace temoto_resource_registrar
     void processTransactionCallback(const TransactionInfo &info)
     {
       std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-      std::thread::id workId = std::this_thread::get_id();
+      std::thread::id work_id = std::this_thread::get_id();
       // query started. Needs to be added to map
       if (info.type_ == 100)
       {
-        running_query_map_[workId] = info.base_query_;
+        running_query_map_[work_id] = info.base_query_;
       }
       // query ended, needs removing from map
       else if (info.type_ == 200)
       {
-        running_query_map_.erase(workId);
+        running_query_map_.erase(work_id);
       }
     }
 
-    void findAndCollectIdQueries(const std::set<std::string> &ids, const std::string &originRr, std::map<UUID, std::pair<std::string, std::string>> &resultMap)
+    void findAndCollectIdQueries(const std::set<std::string> &ids, const std::string &origin_rr, std::map<UUID, std::pair<std::string, std::string>> &result_map)
     {
-      CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries for %i ids. Origin: %s", ids.size(), originRr.c_str());
+      CONSOLE_BRIDGE_logDebug("findAndCollectIdQueries for %i ids. Origin: %s", ids.size(), origin_rr.c_str());
 
       for (const auto &id : ids)
       {
         QueryContainer<std::string> container = rr_catalog_->findOriginalContainer(id);
         CONSOLE_BRIDGE_logDebug("origin of container: %s", container.q_.origin().c_str());
-        if (!container.empty_ && container.q_.origin() == originRr)
+        if (!container.empty_ && container.q_.origin() == origin_rr)
         {
-          std::pair<std::string, std::string> requestResponsePair(container.rawRequest_, container.rawQuery_);
-          resultMap[container.q_.id()] = requestResponsePair;
+          std::pair<std::string, std::string> request_response_pair(container.raw_request_, container.raw_query_);
+          result_map[container.q_.id()] = request_response_pair;
         }
       }
     }

@@ -303,7 +303,7 @@ public:
 
     if (typed_status_fn_ != NULL)
     {
-      MessageType q = Serializer::deserialize<MessageType>(status.serialisedRequest_);
+      MessageType q = Serializer::deserialize<MessageType>(status.serialised_request_);
       typed_status_fn_(q, status);
     }
   }
@@ -713,9 +713,9 @@ TEST_F(RrBaseTest, RegistrarConfigurationTest)
 
     LOG(INFO) << "checking backup catalog contents...";
     QueryContainer<std::string> cont = loadedCatalog.findOriginalContainer("queryId1");
-    EXPECT_EQ(cont.rawQuery_, "qData");
-    EXPECT_EQ(cont.rawRequest_, "reqData");
-    EXPECT_EQ(cont.responsibleServer_, "server1");
+    EXPECT_EQ(cont.raw_query_, "qData");
+    EXPECT_EQ(cont.raw_request_, "reqData");
+    EXPECT_EQ(cont.responsible_server_, "server1");
     EXPECT_EQ(cont.getIdCount(), 1);
 
     EXPECT_EQ(cont.q_.id(), query.id());
@@ -755,7 +755,7 @@ TEST_F(RrBaseTest, CatalogResponseUpdateTest)
 
   QueryContainer<std::string> orig = catalog.findOriginalContainer("queryId1");
 
-  EXPECT_EQ(orig.rawQuery_, "");
+  EXPECT_EQ(orig.raw_query_, "");
 
   catalog.updateResponse("server", "request", "updatedResponse");
 
@@ -763,7 +763,7 @@ TEST_F(RrBaseTest, CatalogResponseUpdateTest)
 
   QueryContainer<std::string> container = catalog.findOriginalContainer("queryId1");
 
-  EXPECT_EQ(container.rawQuery_, "updatedResponse");
+  EXPECT_EQ(container.raw_query_, "updatedResponse");
 }
 
 TEST_F(RrBaseTest, ClientUnloadTest)
@@ -823,14 +823,14 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     std::string targetRr = "targetRr";
     std::string targetServer = "targetServer";
     std::string targetQuery = "targetQuery";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
+    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
 
     EXPECT_EQ(rr.clientCount(), 1);
 
     targetRr = "targetRr2";
     targetServer = "targetServer2";
     targetQuery = "targetQuery2";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
+    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
 
     EXPECT_EQ(rr.clientCount(), 2);
 
@@ -867,7 +867,7 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     targetRr = "targetRr3";
     targetServer = "targetServer3";
     targetQuery = "targetQuery3";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery, NULL, false);
+    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
 
     EXPECT_EQ(rr.clientCount(), 1);
   }

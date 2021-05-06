@@ -12,9 +12,9 @@ namespace temoto_resource_registrar
                    RawData req,
                    RawData data,
                    const std::string &server) : q_(q),
-                                                rawRequest_(req),
-                                                rawQuery_(data),
-                                                responsibleServer_(server),
+                                                raw_request_(req),
+                                                raw_query_(data),
+                                                responsible_server_(server),
                                                 empty_(false)
     {
       storeNewId(q.id(), q.origin());
@@ -32,10 +32,10 @@ namespace temoto_resource_registrar
 
     int getIdCount() { return rr_ids_.size(); }
 
-    RawData rawQuery_;
-    RawData rawRequest_;
+    RawData raw_query_;
+    RawData raw_request_;
     RrQueryBase q_;
-    std::string responsibleServer_;
+    std::string responsible_server_;
 
     std::unordered_map<std::string, std::string> rr_ids_;
 
@@ -47,7 +47,7 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &q_ &rawRequest_ &rawQuery_ &rr_ids_ &responsibleServer_ &empty_;
+      ar &q_ &raw_request_ &raw_query_ &rr_ids_ &responsible_server_ &empty_;
     }
   };
 } // namespace temoto_resource_registrar

@@ -42,20 +42,20 @@ namespace temoto_resource_registrar
   {
   }
 
-  void RrClientBase::internalStatusCallback(const std::string &requestId, const Status &status)
+  void RrClientBase::internalStatusCallback(const std::string &request_id, const Status &status)
   {
   }
 
   template <class UserStatusCb>
-  void RrClientBase::registerUserStatusCb(const std::string &requestId, const UserStatusCb &user_status_cb)
+  void RrClientBase::registerUserStatusCb(const std::string &request_id, const UserStatusCb &user_status_cb)
   {
   }
 
-  void RrClientBase::registerUserStatusCb(const std::string &requestId, void *const &t)
+  void RrClientBase::registerUserStatusCb(const std::string &request_id, void *const &t)
   {
   }
 
-  bool RrClientBase::hasRegisteredCb(const std::string &requestId) const
+  bool RrClientBase::hasRegisteredCb(const std::string &request_id) const
   {
   }
 

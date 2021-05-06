@@ -41,14 +41,14 @@ namespace temoto_resource_registrar
 
     virtual void invoke(const RrQueryBase &query) const;
 
-    virtual void internalStatusCallback(const std::string &requestId, const Status &status);
+    virtual void internalStatusCallback(const std::string &request_id, const Status &status);
 
     template <class UserStatusCb>
-    void registerUserStatusCb(const std::string &requestId, const UserStatusCb &user_status_cb);
+    void registerUserStatusCb(const std::string &request_id, const UserStatusCb &user_status_cb);
 
-    void registerUserStatusCb(const std::string &requestId, void *const &t);
+    void registerUserStatusCb(const std::string &request_id, void *const &t);
 
-    virtual bool hasRegisteredCb(const std::string &requestId) const;
+    virtual bool hasRegisteredCb(const std::string &request_id) const;
 
     virtual std::vector<std::string> registeredCallbackQueries() const;
 

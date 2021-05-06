@@ -105,9 +105,9 @@ namespace temoto_resource_registrar
   public:
     RrCatalog() = default;
 
-    void storeQuery(const ServerName &server, RrQueryBase q, RawData reqData, RawData qData);
+    void storeQuery(const ServerName &server, RrQueryBase q, RawData request_data, RawData query_data);
     void updateResponse(const ServerName &server, RawData request, RawData response);
-    UUID queryExists(const ServerName &server, RawData qData);
+    UUID queryExists(const ServerName &server, RawData request_data);
     RawData processExisting(const ServerName &server, const UUID &id, RrQueryBase q);
     UUID getInitialId(const UUID &id);
 
@@ -116,10 +116,10 @@ namespace temoto_resource_registrar
     ServerName getIdServer(const UUID &id);
     std::unordered_map<UUID, std::string> getAllQueryIds(const std::string &id);
 
-    std::unordered_map<UUID, std::string> getDependencies(const std::string &queryId);
-    void storeDependency(const UUID &queryId, const ServerName &dependencySource, const UUID &dependencyId);
-    void unloadDependency(const UUID &queryId, const UUID &dependencyId);
-    UUID getOriginQueryId(const UUID &queryId);
+    std::unordered_map<UUID, std::string> getDependencies(const std::string &query_id);
+    void storeDependency(const UUID &query_id, const ServerName &dependency_source, const UUID &dependency_id);
+    void unloadDependency(const UUID &query_id, const UUID &dependency_id);
+    UUID getOriginQueryId(const UUID &query_id);
 
     QueryContainer<RawData> findOriginalContainer(const UUID &id);
 

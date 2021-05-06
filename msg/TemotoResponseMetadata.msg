@@ -1,4 +1,4 @@
-string requestId
+string request_id
 # status 200 = success
 # status 500 = error
 int16 status

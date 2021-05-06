@@ -1,6 +1,6 @@
 string target
 int8 status
 string message
-string serialisedRequest
-string serialisedResponse
+string serialised_request
+string serialised_response
 ---

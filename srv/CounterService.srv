@@ -1,5 +1,5 @@
-TemotoRequestMetadata temotoMetadata
-int32 startPoint
+TemotoRequestMetadata temoto_metadata
+int32 start_point
 ---
-TemotoResponseMetadata temotoMetadata
-string prodcastName
+TemotoResponseMetadata temoto_metadata
+string prodcast_name

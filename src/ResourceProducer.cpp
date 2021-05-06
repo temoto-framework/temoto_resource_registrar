@@ -31,8 +31,8 @@ void caller(int loopNr)
 /*
 void RtLoadCB(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res)
 {
-  ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temotoMetadata.requestId);
-  id = res.temotoMetadata.requestId;
+  ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temoto_metadata.requestId);
+  id = res.temoto_metadata.requestId;
 
   //throw resource_registrar::TemotoErrorStack("producer error", "ResourceProducer");
 
@@ -56,8 +56,8 @@ int main(int argc, char **argv)
 {
 
   auto loadCb = [&](temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res) {
-    ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temotoMetadata.requestId);
-    id = res.temotoMetadata.requestId;
+    ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temoto_metadata.request_id);
+    id = res.temoto_metadata.request_id;
 
     boost::thread thread_b(caller, 5);
   };

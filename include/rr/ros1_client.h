@@ -34,7 +34,7 @@ public:
     ROS_INFO_STREAM("invoke for ServiceClass started. Targeting " << id());
     if (client_.call(request))
     {
-      ROS_INFO_STREAM("invoke OK " << request.response.temotoMetadata.requestId);
+      ROS_INFO_STREAM("invoke OK " << request.response.temoto_metadata.request_id);
     }
     else
     {
@@ -47,60 +47,60 @@ public:
  * @brief Invokes a call to the Ros1Server responsible for serving requests of that type. 
  * The request elements are modified to provide a response
  * 
- * @param wrappedRequest - A user defined Ros1Query type request
+ * @param wrapped_request - A user defined Ros1Query type request
  */
-  void invoke(Ros1Query<ServiceClass> &wrappedRequest)
+  void invoke(Ros1Query<ServiceClass> &wrapped_request)
   {
     ROS_INFO_STREAM("invoke for Ros1Query wrapper started");
-    ServiceClass servCall = wrappedRequest.rosQuery();
+    ServiceClass service_call = wrapped_request.rosQuery();
 
-    invoke(servCall);
+    invoke(service_call);
 
-    wrappedRequest = Ros1Query<ServiceClass>(servCall);
+    wrapped_request = Ros1Query<ServiceClass>(service_call);
     ROS_INFO_STREAM("invoke for Ros1Query wrapper completed");
   }
 
-  void registerUserStatusCb(const std::string &requestId, const UserStatusCb &user_status_cb)
+  void registerUserStatusCb(const std::string &request_id, const UserStatusCb &user_status_cb)
   {
     ROS_INFO_STREAM("registerUserStatusCb "
-                    << " - " << id() << " request: " << requestId);
+                    << " - " << id() << " request: " << request_id);
 
-    status_callbacks_[requestId] = user_status_cb;
+    status_callbacks_[request_id] = user_status_cb;
 
-    ROS_INFO_STREAM("check to see if it really registered: " << hasRegisteredCb(requestId) << " nr of callbacks: " << status_callbacks_.size());
+    ROS_INFO_STREAM("check to see if it really registered: " << hasRegisteredCb(request_id) << " nr of callbacks: " << status_callbacks_.size());
 
-    status_query_ids_.push_back(requestId);
+    status_query_ids_.push_back(request_id);
   }
 
-  void internalStatusCallback(const std::string &requestId, const temoto_resource_registrar::Status &status)
+  void internalStatusCallback(const std::string &request_id, const temoto_resource_registrar::Status &status)
   {
     ROS_INFO_STREAM("internalStatusCallback"
-                    << " - " << id() << " request: " << requestId);
+                    << " - " << id() << " request: " << request_id);
 
-    ROS_INFO_STREAM("Determinging if client cas callback for id " << requestId << " nr of callbacks: " << status_callbacks_.size());
-    if (hasRegisteredCb(requestId))
+    ROS_INFO_STREAM("Determinging if client cas callback for id " << request_id << " nr of callbacks: " << status_callbacks_.size());
+    if (hasRegisteredCb(request_id))
     {
       ROS_INFO_STREAM("!Executing user CB!");
-      typename ServiceClass::Request request = MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialisedRequest_);
-      typename ServiceClass::Response response = MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialisedRsponse_);
+      typename ServiceClass::Request request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialised_request_);
+      typename ServiceClass::Response response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialised_response_);
 
       ServiceClass query;
       query.request = request;
       query.response = response;
 
-      query.response.temotoMetadata.requestId = status.id_;
+      query.response.temoto_metadata.request_id = status.id_;
 
-      status_callbacks_[requestId](query, status);
+      status_callbacks_[request_id](query, status);
 
       //user_status_cb_(query, status); // TODO: needs exception handling
     }
   }
 
-  bool hasRegisteredCb(const std::string &requestId) const
+  bool hasRegisteredCb(const std::string &request_id) const
   {
     ROS_INFO_STREAM("hasRegisteredCb "
-                    << " - " << id() << " request: " << requestId);
-    return status_callbacks_.count(requestId) > 0;
+                    << " - " << id() << " request: " << request_id);
+    return status_callbacks_.count(request_id) > 0;
   }
 
 protected:

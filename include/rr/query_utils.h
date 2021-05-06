@@ -1,3 +1,6 @@
+#ifndef TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_UTILS_H
+#define TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_UTILS_H
+
 #include <type_traits>
 
 namespace QueryUtils
@@ -18,3 +21,5 @@ namespace QueryUtils
     };
   };
 }
+
+#endif

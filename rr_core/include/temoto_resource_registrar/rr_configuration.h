@@ -26,15 +26,15 @@ namespace temoto_resource_registrar
       return this;
     }
 
-    Configuration *setSaveOnModify(const bool &saveOnModify)
+    Configuration *setSaveOnModify(const bool &save_on_modify)
     {
-      save_on_modify_ = saveOnModify;
+      save_on_modify_ = save_on_modify;
       return this;
     }
 
-    Configuration *setEraseOnDestruct(const bool &eraseOnDestruct)
+    Configuration *setEraseOnDestruct(const bool &erase_on_destruct)
     {
-      erase_on_destruct_ = eraseOnDestruct;
+      erase_on_destruct_ = erase_on_destruct;
       return this;
     }
 

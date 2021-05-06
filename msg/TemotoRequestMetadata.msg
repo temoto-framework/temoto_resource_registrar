@@ -1,2 +1,2 @@
-string servingRr
-string originRr
+string serving_rr
+string origin_rr

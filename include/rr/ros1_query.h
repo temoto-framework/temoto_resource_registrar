@@ -22,17 +22,17 @@ public:
    * 
    * @param metadata 
    */
-  Ros1Query(const temoto_resource_registrar::TemotoRequestMetadata &requestData,
-            const temoto_resource_registrar::TemotoResponseMetadata &responseData)
+  Ros1Query(const temoto_resource_registrar::TemotoRequestMetadata &request_data,
+            const temoto_resource_registrar::TemotoResponseMetadata &response_data)
   {
-    setRr(requestData.servingRr);
-    setOrigin(requestData.originRr);
+    setRr(request_data.serving_rr);
+    setOrigin(request_data.origin_rr);
 
-    setId(responseData.requestId);
-    setStatus(responseData.status);
+    setId(response_data.request_id);
+    setStatus(response_data.status);
 
-    if (responseData.metadata.size() > 0)
-      setMetadata(Serializer::deserialize<temoto_resource_registrar::QueryMetadata>(responseData.metadata));
+    if (response_data.metadata.size() > 0)
+      setMetadata(Serializer::deserialize<temoto_resource_registrar::QueryMetadata>(response_data.metadata));
   }
 
   /**
@@ -40,7 +40,7 @@ public:
    * 
    * @param query 
    */
-  Ros1Query(const ServiceClass &query) : Ros1Query(query.request.temotoMetadata, query.response.temotoMetadata)
+  Ros1Query(const ServiceClass &query) : Ros1Query(query.request.temoto_metadata, query.response.temoto_metadata)
   {
     typed_query_ = query;
   }
@@ -75,8 +75,8 @@ public:
   {
     ServiceClass sq = rosQuery();
 
-    req.temotoMetadata = sq.request.temotoMetadata;
-    res.temotoMetadata = sq.response.temotoMetadata;
+    req.temoto_metadata = sq.request.temoto_metadata;
+    res.temoto_metadata = sq.response.temoto_metadata;
   }
 
   /**
@@ -87,13 +87,13 @@ public:
   ServiceClass rosQuery()
   {
     ROS_INFO_STREAM("Returning ROS query");
-    
-    typed_query_.request.temotoMetadata.servingRr = rr();
-    typed_query_.request.temotoMetadata.originRr = origin();
 
-    typed_query_.response.temotoMetadata.requestId = id();
-    typed_query_.response.temotoMetadata.status = status();
-    typed_query_.response.temotoMetadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(metadata());
+    typed_query_.request.temoto_metadata.serving_rr = rr();
+    typed_query_.request.temoto_metadata.origin_rr = origin();
+
+    typed_query_.response.temoto_metadata.request_id = id();
+    typed_query_.response.temoto_metadata.status = status();
+    typed_query_.response.temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(metadata());
 
     return typed_query_;
   }

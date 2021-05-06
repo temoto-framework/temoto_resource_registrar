@@ -22,8 +22,8 @@ namespace temoto_resource_registrar
     std::string id_;
     std::string message_;
 
-    std::string serialisedRequest_;
-    std::string serialisedRsponse_;
+    std::string serialised_request_;
+    std::string serialised_response_;
   };
 } // namespace temoto_resource_registrar
 #endif
