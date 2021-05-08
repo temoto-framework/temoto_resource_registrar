@@ -1,25 +1,22 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
 #define TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
 
-#include "ros/console.h"
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 
 #include "temoto_resource_registrar/rr_base.h"
 #include "temoto_resource_registrar/rr_status.h"
 
-#include "temoto_resource_registrar/DataFetchComponent.h"
-#include "temoto_resource_registrar/StatusComponent.h"
-#include "temoto_resource_registrar/UnloadComponent.h"
+#include "tutorial_interfaces/srv/data_fetch_component.hpp"
+#include "tutorial_interfaces/srv/status_component.hpp"
+#include "tutorial_interfaces/srv/unload_component.hpp"
 
 #include "rr/message_serializer.h"
-#include "rr/ros1_client.h"
-#include "rr/ros1_server.h"
+#include "rr/ros2_client.h"
+#include "rr/ros2_server.h"
 
 #include <functional>
 
-#include "rosconsole_bridge/bridge.h"
-
-REGISTER_ROSCONSOLE_BRIDGE;
+using rclcpp::executors::MultiThreadedExecutor;
 
 namespace temoto_resource_registrar
 {
@@ -30,7 +27,7 @@ namespace temoto_resource_registrar
    * internal services will not be started up.
    * 
    */
-  class ResourceRegistrarRos1 : public RrBase
+  class ResourceRegistrarRos2 : public RrBase
   {
   public:
     /**
@@ -39,24 +36,24 @@ namespace temoto_resource_registrar
    * 
    * @param name 
    */
-    ResourceRegistrarRos1(const std::string &name) : RrBase(name)
+    ResourceRegistrarRos2(const std::string &name) : RrBase(name)
     {
     }
 
-    ~ResourceRegistrarRos1()
+    ~ResourceRegistrarRos2()
     {
-      ROS_INFO_STREAM("Destroying RR Ros " << name());
-      ROS_INFO_STREAM("unloading clients");
+      //ROS_INFO_STREAM("Destroying RR Ros " << name());
+      //ROS_INFO_STREAM("unloading clients");
       for (const std::string &client_id : clients_.getIds())
       {
         try
         {
-          ROS_INFO_STREAM("unloading client " << client_id);
+          //ROS_INFO_STREAM("unloading client " << client_id);
           unloadClient(client_id);
         }
         catch (...)
         {
-          ROS_WARN_STREAM("unloading error for client " << client_id);
+          //ROS_WARN_STREAM("unloading error for client " << client_id);
         }
       }
     }
@@ -98,12 +95,12 @@ namespace temoto_resource_registrar
               std::function<void(QueryType, Status)> status_func = NULL,
               bool override_status = false)
     {
-      ROS_INFO_STREAM("calling " << rr << " server " << server);
-      Ros1Query<QueryType> wrapped_base_query(query);
+      //ROS_INFO_STREAM("calling " << rr << " server " << server);
+      Ros2Query<QueryType> wrapped_base_query(query);
 
-      privateCall<Ros1Client<QueryType>,
-                  Ros1Server<QueryType>,
-                  Ros1Query<QueryType>,
+      privateCall<Ros2Client<QueryType>,
+                  Ros2Server<QueryType>,
+                  Ros2Query<QueryType>,
                   std::function<void(QueryType, Status)>>(&rr,
                                                           NULL,
                                                           server,
@@ -113,7 +110,7 @@ namespace temoto_resource_registrar
 
       query = wrapped_base_query.rosQuery();
 
-      ROS_INFO_STREAM("calling " << rr << " server " << server << " done");
+      //ROS_INFO_STREAM("calling " << rr << " server " << server << " done");
     }
 
     /**
@@ -128,18 +125,21 @@ namespace temoto_resource_registrar
      */
     bool unload(const std::string &rr, const std::string &id)
     {
-      ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id);
+      //ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id);
 
       std::string client_name = IDUtils::generateUnload(rr);
-      initClient<UnloadComponent>(client_name, unload_clients_);
+      initClient<tutorial_interfaces::srv::UnloadComponent>(client_name, unload_clients_);
 
-      temoto_resource_registrar::UnloadComponent unload_srv;
-      unload_srv.request.target = id;
+      auto request = std::make_shared<tutorial_interfaces::srv::UnloadComponent::Request>();
+      request->target = id;
 
-      bool res = unload_clients_[client_name]->call(unload_srv);
-      ROS_INFO_STREAM("result: " << res);
+      auto result = unload_clients_[client_name]->async_send_request(request);
+      return rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
 
-      return res;
+      //bool res = unload_clients_[client_name]->call(unload_srv);
+      //ROS_INFO_STREAM("result: " << res);
+
+      //return res;
     }
 
     /**
@@ -154,7 +154,7 @@ namespace temoto_resource_registrar
     template <class QueryType>
     QueryType deSerializeQuery(const QueryContainer<RawData> &container)
     {
-      ROS_INFO_STREAM("deSerializeBaseQuery ROS ");
+      //ROS_INFO_STREAM("deSerializeBaseQuery ROS ");
       QueryType q;
 
       q.request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Request>(container.raw_request_);
@@ -178,13 +178,13 @@ namespace temoto_resource_registrar
     template <class QueryType>
     std::map<std::string, QueryType> getRosChildQueries(const std::string &id, const std::string &server_name)
     {
-      ROS_DEBUG_STREAM("getting RR queries for id " << id << " and server " << server_name);
+      //ROS_DEBUG_STREAM("getting RR queries for id " << id << " and server " << server_name);
       std::map<std::string, std::pair<std::string, std::string>> serialised_queries = getChildQueries(id, server_name);
 
-      ROS_DEBUG_STREAM("Found " << serialised_queries.size() << " queries");
+      //ROS_DEBUG_STREAM("Found " << serialised_queries.size() << " queries");
       std::map<std::string, QueryType> ros_queries;
 
-      ROS_DEBUG_STREAM("Deserializing strings to query type");
+      //ROS_DEBUG_STREAM("Deserializing strings to query type");
       for (const auto &el : serialised_queries)
       {
         QueryType q;
@@ -192,14 +192,14 @@ namespace temoto_resource_registrar
         q.response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Response>(el.second.second);
         ros_queries[el.first] = q;
       }
-      ROS_DEBUG_STREAM("Returning...");
+      //ROS_DEBUG_STREAM("Returning...");
       return ros_queries;
     }
 
     template <class QueryType>
     std::vector<QueryType> getServerQueries(const std::string &server)
     {
-      ROS_INFO_STREAM("getServerQueries printing before processign catalog.");
+      //ROS_INFO_STREAM("getServerQueries printing before processign catalog.");
       std::string server_name = IDUtils::generateServerName(name(), server);
       rr_catalog_->print();
       std::vector<QueryType> out;
@@ -209,7 +209,7 @@ namespace temoto_resource_registrar
         out.push_back(deSerializeQuery<QueryType>(queryContainer));
       }
 
-      ROS_INFO_STREAM("getServerQueries printing after processign catalog.");
+      //ROS_INFO_STREAM("getServerQueries printing after processign catalog.");
       rr_catalog_->print();
 
       return out;
@@ -219,7 +219,7 @@ namespace temoto_resource_registrar
     void updateQueryResponse(const std::string &server,
                              const QueryType &call)
     {
-      ROS_INFO_STREAM("updateQueryResponse for server " << server);
+      //ROS_INFO_STREAM("updateQueryResponse for server " << server);
 
       std::string serialized_request = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Request>(sanityzeData<typename QueryType::Request>(call.request));
       std::string serialized_response = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Response>(sanityzeData<typename QueryType::Response>(call.response));
@@ -227,9 +227,9 @@ namespace temoto_resource_registrar
     }
 
   protected:
-    std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> unload_clients_;
-    std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> status_clients_;
-    std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> fetch_clients_;
+    std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::UnloadComponent>::SharedPtr> unload_clients_;
+    std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::StatusComponent>::SharedPtr> status_clients_;
+    std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr> fetch_clients_;
 
     /**
  * @brief Virtual method that needs to be implemented on every extension of RR_CORE. This method creates and sends the status
@@ -246,63 +246,71 @@ namespace temoto_resource_registrar
 
       std::string client_name = IDUtils::generateStatus(target_rr);
 
-      initClient<StatusComponent>(client_name, status_clients_);
+      initClient<tutorial_interfaces::srv::StatusComponent>(client_name, status_clients_);
 
-      temoto_resource_registrar::StatusComponent status_srv;
-      ROS_INFO_STREAM("callStatusClient");
+      auto request = std::make_shared<tutorial_interfaces::srv::StatusComponent::Request>();
+
+      //temoto_resource_registrar::StatusComponent status_srv;
+      //ROS_INFO_STREAM("callStatusClient");
       auto container = rr_catalog_->findOriginalContainer(status_data.id_);
       if (!container.empty_)
       {
-        ROS_WARN_STREAM("CONTAINER EXISTS");
-        status_srv.request.serialised_request = container.raw_request_;
-        status_srv.request.serialised_response = container.raw_query_;
+        //ROS_WARN_STREAM("CONTAINER EXISTS");
+        request->serialised_request = container.raw_request_;
+        request->serialised_response = container.raw_query_;
 
         status_data.serialised_request_ = container.raw_request_;
         status_data.serialised_response_ = container.raw_query_;
       }
       else
       {
-        ROS_WARN_STREAM("CONTAINER does not EXISTS");
+        //ROS_WARN_STREAM("CONTAINER does not EXISTS");
       }
 
       handleRrServerCb(request_id, status_data);
 
-      status_srv.request.target = status_data.id_;
-      status_srv.request.status = static_cast<int>(status_data.state_);
-      status_srv.request.message = status_data.message_;
+      request->target = status_data.id_;
+      request->status = static_cast<int>(status_data.state_);
+      request->message = status_data.message_;
 
-      ROS_INFO_STREAM("calling status client " << client_name << " target id: " << status_data.id_);
-
-      return status_clients_[client_name]->call(status_srv);
+      //ROS_INFO_STREAM("calling status client " << client_name << " target id: " << status_data.id_);
+      auto result = status_clients_[client_name]->async_send_request(request);
+      return rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
     };
 
     virtual std::map<std::string, std::pair<std::string, std::string>> callDataFetchClient(const std::string &target_rr,
                                                                                            const std::string &origin_rr,
                                                                                            const std::string &server_name)
     {
-      ROS_INFO_STREAM("callDataFetchClient");
+      //ROS_INFO_STREAM("callDataFetchClient");
 
       std::string client_name = IDUtils::generateFetch(target_rr);
-      initClient<DataFetchComponent>(client_name, fetch_clients_);
+      initClient<tutorial_interfaces::srv::DataFetchComponent>(client_name, fetch_clients_);
 
-      temoto_resource_registrar::DataFetchComponent data_fetch_srv;
+      auto request = std::make_shared<tutorial_interfaces::srv::DataFetchComponent::Request>();
 
-      data_fetch_srv.request.origin_rr = origin_rr;
-      data_fetch_srv.request.server_name = server_name;
+      //temoto_resource_registrar::DataFetchComponent data_fetch_srv;
 
-      ROS_INFO_STREAM("calling data fetch client " << client_name << " - " << data_fetch_srv.request);
+      request->origin_rr = origin_rr;
+      request->server_name = server_name;
 
-      fetch_clients_[client_name]->call(data_fetch_srv);
+      //ROS_INFO_STREAM("calling data fetch client " << client_name << " - " << data_fetch_srv.request);
+
+      //fetch_clients_[client_name]->call(data_fetch_srv);
+      auto result = fetch_clients_[client_name]->async_send_request(request);
 
       std::map<std::string, std::pair<std::string, std::string>> res;
 
-      int c = 0;
-      for (const auto &id : data_fetch_srv.response.ids)
+      if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
       {
-        std::pair<std::string, std::string> req_res(data_fetch_srv.response.serialized_requests.at(c),
-                                                       data_fetch_srv.response.serialized_responses.at(c));
-        res[id] = req_res;
-        c++;
+        int c = 0;
+        for (const auto &id : result.get()->ids)
+        {
+          std::pair<std::string, std::string> req_res(result.get()->serialized_requests.at(c),
+                                                      result.get()->serialized_responses.at(c));
+          res[id] = req_res;
+          c++;
+        }
       }
 
       return res;
@@ -324,60 +332,66 @@ namespace temoto_resource_registrar
     }
 
   private:
-    ros::ServiceServer unload_service_;
-    ros::ServiceServer status_service_;
-    ros::ServiceServer fetch_service_;
+    MultiThreadedExecutor executor;
+    std::shared_ptr<rclcpp::Node> node_;
+
+    rclcpp::Service<tutorial_interfaces::srv::UnloadComponent>::SharedPtr unload_service_;
+    rclcpp::Service<tutorial_interfaces::srv::StatusComponent>::SharedPtr status_service_;
+    rclcpp::Service<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr fetch_service_;
 
     template <class ServiceClass>
-    void initClient(const std::string &client_name, std::unordered_map<std::string, std::unique_ptr<ros::ServiceClient>> &client_map)
+    void initClient(const std::string &client_name, std::unordered_map<std::string, typename rclcpp::Client<ServiceClass>::SharedPtr> &client_map)
     {
-      ros::NodeHandle nh;
-
       if (client_map.count(client_name) == 0)
       {
-        ROS_INFO_STREAM("creating client " << client_name);
-        auto sc = nh.serviceClient<ServiceClass>(client_name);
-        auto client = std::make_unique<ros::ServiceClient>(sc);
-        client_map[client_name] = std::move(client);
-        ROS_INFO_STREAM("created client...");
+        //ROS_INFO_STREAM("creating client " << client_name);
+        typename rclcpp::Client<ServiceClass>::SharedPtr ptr = node_->create_client<ServiceClass>(client_name);
+
+        client_map[client_name] = std::move(ptr);
+        //ROS_INFO_STREAM("created client...");
       }
     }
 
     void startServices()
     {
-      ROS_INFO_STREAM("Starting up services...");
-      ros::NodeHandle nh;
-      ROS_INFO_STREAM("Starting unload_service_... " << IDUtils::generateUnload(name()));
-      unload_service_ = nh.advertiseService(IDUtils::generateUnload(name()), &ResourceRegistrarRos1::unloadCallback, this);
-      ROS_INFO_STREAM("Starting status_service_... " << IDUtils::generateStatus(name()));
-      status_service_ = nh.advertiseService(IDUtils::generateStatus(name()), &ResourceRegistrarRos1::statusCallback, this);
-      ROS_INFO_STREAM("Starting fetch_service_... " << IDUtils::generateFetch(name()));
-      fetch_service_ = nh.advertiseService(IDUtils::generateFetch(name()), &ResourceRegistrarRos1::dataFetchCallback, this);
+      node_ = rclcpp::Node::make_shared(name());
+
+      rclcpp::Service<tutorial_interfaces::srv::UnloadComponent>::SharedPtr unload_service_ =
+          node_->create_service<tutorial_interfaces::srv::UnloadComponent>(IDUtils::generateUnload(name()), &ResourceRegistrarRos2::unloadCallback);
+
+      rclcpp::Service<tutorial_interfaces::srv::StatusComponent>::SharedPtr status_service_ =
+          node_->create_service<tutorial_interfaces::srv::StatusComponent>(IDUtils::generateUnload(name()), &ResourceRegistrarRos2::unloadCallback);
+
+      rclcpp::Service<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr fetch_service_ =
+          node_->create_service<tutorial_interfaces::srv::DataFetchComponent>(IDUtils::generateUnload(name()), &ResourceRegistrarRos2::unloadCallback);
+
+      executor.add_node(node_);
     }
 
-    bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
+    void unloadCallback(const std::shared_ptr<tutorial_interfaces::srv::UnloadComponent::Request> req,
+                        std::shared_ptr<tutorial_interfaces::srv::UnloadComponent::Response> res)
     {
-      ROS_INFO_STREAM("printing catalog before unload callback");
+      //ROS_INFO_STREAM("printing catalog before unload callback");
       rr_catalog_->print();
 
-      ROS_INFO_STREAM("unloadCallback " << req.target);
-      std::string id = req.target;
-      ROS_INFO_STREAM("std::string id " << id);
-      res.status = localUnload(id);
-      return true;
+      //ROS_INFO_STREAM("unloadCallback " << req.target);
+      std::string id = req->target;
+      //ROS_INFO_STREAM("std::string id " << id);
+      res->status = localUnload(id);
     }
 
-    bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
+    void statusCallback(const std::shared_ptr<tutorial_interfaces::srv::StatusComponent::Request> req,
+                        std::shared_ptr<tutorial_interfaces::srv::StatusComponent::Response> res)
     {
-      ROS_INFO_STREAM("statusCallback: " << req.target);
-      handleStatus(req.target, {static_cast<Status::State>(req.status), req.target, req.message, req.serialised_request, req.serialised_response});
-      return true;
+      //ROS_INFO_STREAM("statusCallback: " << req.target);
+      handleStatus(req->target, {static_cast<Status::State>(req->status), req->target, req->message, req->serialised_request, req->serialised_response});
     }
 
-    bool dataFetchCallback(DataFetchComponent::Request &req, DataFetchComponent::Response &res)
+    void dataFetchCallback(const std::shared_ptr<tutorial_interfaces::srv::DataFetchComponent::Request> req,
+                           std::shared_ptr<tutorial_interfaces::srv::DataFetchComponent::Response> res)
     {
-      ROS_INFO_STREAM("syncCallback " << req);
-      std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req.origin_rr, req.server_name);
+      //ROS_INFO_STREAM("syncCallback " << req);
+      std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req->origin_rr, req->server_name);
       std::vector<std::string> ids, serialized_requests, serialized_responses;
 
       for (const auto &el : resMap)
@@ -387,10 +401,9 @@ namespace temoto_resource_registrar
         serialized_responses.push_back(el.second.second);
       }
 
-      res.ids = ids;
-      res.serialized_requests = serialized_requests;
-      res.serialized_responses = serialized_responses;
-      return true;
+      res->ids = ids;
+      res->serialized_requests = serialized_requests;
+      res->serialized_responses = serialized_responses;
     }
 
     /**

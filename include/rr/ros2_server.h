@@ -1,15 +1,15 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__ROS_SERVER_H
 #define TEMOTO_RESOURCE_REGISTRAR__ROS_SERVER_H
 
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 
 #include "temoto_resource_registrar/rr_serializer.h"
 #include "temoto_resource_registrar/rr_server_base.h"
 
 #include "rr/message_serializer.h"
 #include "rr/query_utils.h"
-#include "rr/ros1_client.h"
-#include "rr/ros1_query.h"
+#include "rr/ros2_client.h"
+#include "rr/ros2_query.h"
 
 #include <functional>
 #include <sstream>
@@ -23,7 +23,7 @@
  * @tparam ServiceClass - Type of the resource this server will serve.
  */
 template <class ServiceClass>
-class Ros1Server : public temoto_resource_registrar::RrServerBase
+class Ros2Server : public temoto_resource_registrar::RrServerBase
 {
 public:
   /**
@@ -33,7 +33,7 @@ public:
  * @param loadCallback - Users load callback being executed when a unique resource is first requested.
  * @param unLoadCallback - User unload callback being executed when the final consumer of a resource is unloaded.
  */
-  Ros1Server(const std::string &name,
+  Ros2Server(const std::string &name,
              void (*load_callback)(typename ServiceClass::Request &,
                                    typename ServiceClass::Response &),
              void (*unLoad_callback)(typename ServiceClass::Request &,
@@ -47,7 +47,7 @@ public:
     initialize();
   }
 
-  Ros1Server(const std::string &name,
+  Ros2Server(const std::string &name,
              std::function<void(typename ServiceClass::Request &,
                                 typename ServiceClass::Response &)>
                  member_load_cb,
@@ -77,21 +77,21 @@ public:
  */
   bool unloadMessage(const std::string &id)
   {
-    ROS_INFO_STREAM("Starting to unload id: " << id);
+    //ROS_INFO_STREAM("Starting to unload id: " << id);
 
-    ROS_INFO_STREAM("------------------ Catalog");
+    //ROS_INFO_STREAM("------------------ Catalog");
     rr_catalog_->print();
-    ROS_INFO_STREAM("------------------ Catalog");
+    //ROS_INFO_STREAM("------------------ Catalog");
 
-    ROS_INFO_STREAM("loading serialized request and response from catalog.. ");
+    //ROS_INFO_STREAM("loading serialized request and response from catalog.. ");
 
-    ROS_INFO_STREAM("unloadMessage");
+    //ROS_INFO_STREAM("unloadMessage");
     temoto_resource_registrar::QueryContainer<std::string> original_container = rr_catalog_->findOriginalContainer(id);
     std::string serialized_request = original_container.raw_request_;
-    ROS_INFO_STREAM("Catalog data... isEmpty: " << original_container.empty_);
-    ROS_INFO_STREAM("Catalog data... q_.id(): " << original_container.q_.id());
-    ROS_INFO_STREAM("Catalog data... raw_query_: " << original_container.raw_query_);
-    ROS_INFO_STREAM("Catalog data... raw_request_: " << original_container.raw_request_);
+    //ROS_INFO_STREAM("Catalog data... isEmpty: " << original_container.empty_);
+    //ROS_INFO_STREAM("Catalog data... q_.id(): " << original_container.q_.id());
+    //ROS_INFO_STREAM("Catalog data... raw_query_: " << original_container.raw_query_);
+    //ROS_INFO_STREAM("Catalog data... raw_request_: " << original_container.raw_request_);
 
     bool can_unload = false;
 
@@ -107,21 +107,21 @@ public:
 
       response.temoto_metadata.request_id = original_container.q_.id();
 
-      ROS_INFO_STREAM("Found response with legth: " << serialized_response.size());
+      //ROS_INFO_STREAM("Found response with legth: " << serialized_response.size());
     }
     catch (const temoto_resource_registrar::DeserializationException &e)
     {
-      ROS_WARN_STREAM("Request length: " << serialized_request.size());
-      ROS_WARN_STREAM("Response length: " << serialized_response.size());
-      ROS_WARN_STREAM("Some serialization/deserialization issue in server unload");
+      //ROS_WARN_STREAM("Request length: " << serialized_request.size());
+      //ROS_WARN_STREAM("Response length: " << serialized_response.size());
+      //ROS_WARN_STREAM("Some serialization/deserialization issue in server unload");
     }
 
     if (can_unload)
     {
 
-      ROS_INFO_STREAM("Resource can be unloaded. Executing callback.");
-      ROS_INFO_STREAM("req: " << request);
-      ROS_INFO_STREAM("res: " << response);
+      //ROS_INFO_STREAM("Resource can be unloaded. Executing callback.");
+      //ROS_INFO_STREAM("req: " << request);
+      //ROS_INFO_STREAM("res: " << response);
 
       if (typed_unload_callback_ptr_ != NULL)
       {
@@ -134,13 +134,13 @@ public:
     }
     else
     {
-      ROS_INFO_STREAM("Resource can not be unloaded. Printing catalog for debug");
+      //ROS_INFO_STREAM("Resource can not be unloaded. Printing catalog for debug");
     }
 
     rr_catalog_->print();
     rr_catalog_->saveCatalog();
 
-    ROS_INFO_STREAM("unload done for id: " << id << " result: " << (serialized_response.size() > 0));
+    //ROS_INFO_STREAM("unload done for id: " << id << " result: " << (serialized_response.size() > 0));
     return serialized_response.size() > 0;
   }
 
@@ -156,23 +156,23 @@ public:
  */
   bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
-    ROS_WARN_STREAM("Starting serverCallback " << id());
+    //ROS_WARN_STREAM("Starting serverCallback " << id());
 
     typename ServiceClass::Request sanitized_req = sanityzeRequest(req);
 
     bool has_equals_defined = QueryUtils::EqualExists<typename ServiceClass::Request>::value;
-    ROS_INFO_STREAM("request has equals defined?: " << has_equals_defined);
+    //ROS_INFO_STREAM("request has equals defined?: " << has_equals_defined);
 
     std::string serialized_request = temoto_resource_registrar::MessageSerializer::serializeMessage<typename ServiceClass::Request>(sanitized_req);
     std::string request_id = "";
 
-    ROS_INFO_STREAM("checking existance of request in catalog... ");
-    ROS_INFO_STREAM("Message: " << req);
-    ROS_INFO_STREAM("sanitized Message: " << sanitized_req);
+    //ROS_INFO_STREAM("checking existance of request in catalog... ");
+    //ROS_INFO_STREAM("Message: " << req);
+    //ROS_INFO_STREAM("sanitized Message: " << sanitized_req);
 
     if (has_equals_defined)
     {
-      ROS_INFO_STREAM("evaluating uniqueness based on ==");
+      //ROS_INFO_STREAM("evaluating uniqueness based on ==");
       std::vector<temoto_resource_registrar::QueryContainer<std::string>> all_server_requests = rr_catalog_->getUniqueServerQueries(id_);
       for (const auto &q : all_server_requests)
       {
@@ -187,26 +187,26 @@ public:
     }
     else
     {
-      ROS_INFO_STREAM("evaluating uniqueness based on string comparison");
+      //ROS_INFO_STREAM("evaluating uniqueness based on string comparison");
       request_id = this->rr_catalog_->queryExists(id_, serialized_request);
     }
 
     std::string generated_id = generateId();
     res.temoto_metadata.request_id = generated_id;
 
-    ROS_INFO_STREAM("Generated request id: " << generated_id);
+    //ROS_INFO_STREAM("Generated request id: " << generated_id);
 
-    Ros1Query<ServiceClass> wrapped_query = wrap(req, res);
+    Ros2Query<ServiceClass> wrapped_query = wrap(req, res);
 
     if (request_id.size() == 0)
     {
 
       try
       {
-        ROS_INFO("Executing query startup callback");
+        //ROS_INFO("Executing query startup callback");
         transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(100, wrapped_query));
 
-        ROS_INFO("Query is unique. executing callback");
+        //ROS_INFO("Query is unique. executing callback");
         if (typed_load_callback_ptr_ != NULL)
         {
           typed_load_callback_ptr_(req, res);
@@ -216,44 +216,44 @@ public:
           member_load_cb_(req, res);
         }
 
-        ROS_INFO_STREAM("Storing query in catalog...");
+        //ROS_INFO_STREAM("Storing query in catalog...");
 
         rr_catalog_->storeQuery(id_,
                                 wrapped_query,
                                 serialized_request,
                                 sanitizeAndSerialize(res));
 
-        ROS_INFO_STREAM("Stored!");
+        //ROS_INFO_STREAM("Stored!");
       }
       catch (const resource_registrar::TemotoErrorStack &e)
       {
-        ROS_WARN_STREAM("Server encountered an error while executing a callback: " << e.getMessage());
+        //ROS_WARN_STREAM("Server encountered an error while executing a callback: " << e.getMessage());
         wrapped_query.metadata().errorStack().appendError(e);
         // store metadata object as serialized string in response
         res.temoto_metadata.status = 500;
         res.temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(wrapped_query.metadata());
       }
 
-      ROS_INFO("Executing query finished callback");
+      //ROS_INFO("Executing query finished callback");
       transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(200, wrapped_query));
     }
     else
     {
-      ROS_INFO("Request found. No storage needed. Fetching it... ");
+      //ROS_INFO("Request found. No storage needed. Fetching it... ");
       typename ServiceClass::Response fetched_response = fetchResponse(request_id, wrapped_query);
-      ROS_INFO("Fetching done...");
+      //ROS_INFO("Fetching done...");
       fetched_response.temoto_metadata.request_id = generated_id;
       res = fetched_response;
     }
 
     rr_catalog_->saveCatalog();
-    ROS_WARN_STREAM("server call end " << res.temoto_metadata.request_id << " " << id());
+    //ROS_WARN_STREAM("server call end " << res.temoto_metadata.request_id << " " << id());
     return true;
   }
 
   void triggerCallback(const temoto_resource_registrar::Status &status) const
   {
-    ROS_INFO_STREAM("Triggering callback logic..." << id());
+    //ROS_INFO_STREAM("Triggering callback logic..." << id());
     if (member_status_cb_ != NULL)
     {
       typename ServiceClass::Request request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialised_request_);
@@ -271,22 +271,27 @@ protected:
   std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &, const temoto_resource_registrar::Status &)> member_status_cb_;
 
 private:
-  ros::NodeHandle nh_;
-  ros::ServiceServer service_;
+  //ros::NodeHandle nh_;
+  //ros::ServiceServer service_;
+
+  std::shared_ptr<rclcpp::Node> node_;
+  typename rclcpp::Client<ServiceClass>::SharedPtr client_;
 
   virtual void initialize()
   {
-    ROS_INFO_STREAM("Starting up server..." << id_);
-    service_ = nh_.advertiseService(id_, &Ros1Server::serverCallback, this);
-    ROS_INFO_STREAM("Starting up server done!!!");
+    //ROS_INFO_STREAM("Starting up server..." << id_);
+    //service_ = nh_.advertiseService(id_, &Ros2Server::serverCallback, this);
+    //ROS_INFO_STREAM("Starting up server done!!!");
+    std::shared_ptr<rclcpp::Node> node_ = rclcpp::Node::make_shared(id());
+    client_ = node_->create_client<ServiceClass>(id());
   }
 
-  Ros1Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
+  Ros2Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
   {
-    return Ros1Query<ServiceClass>(req.temoto_metadata, res.temoto_metadata);
+    return Ros2Query<ServiceClass>(req.temoto_metadata, res.temoto_metadata);
   }
 
-  typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros1Query<ServiceClass> query) const
+  typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros2Query<ServiceClass> query) const
   {
     std::string serialized_response = rr_catalog_->processExisting(id_, requestId, query);
     typename ServiceClass::Response fetched_response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serialized_response);

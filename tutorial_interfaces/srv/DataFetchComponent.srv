@@ -1,0 +1,6 @@
+string origin_rr
+string server_name
+---
+string[] ids
+string[] serialized_requests
+string[] serialized_responses

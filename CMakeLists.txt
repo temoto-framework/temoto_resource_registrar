@@ -1,134 +1,70 @@
-cmake_minimum_required(VERSION 3.10)
-project(temoto_resource_registrar)
+cmake_minimum_required(VERSION 3.5)
+project(temoto_rr)
 
-add_compile_options(-std=c++14 -Wno-dev)
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
 
-find_package(catkin REQUIRED COMPONENTS 
-  roscpp 
-  actionlib 
-  actionlib_msgs
-  std_msgs
-  message_generation
-  rosconsole_bridge
-)
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+
+find_library(rr_core REQUIRED)
+
 
 find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
 
-#set(rr_core_DIR /usr/local/share/cmake)
-#find_package(rr_core REQUIRED)
-
-add_message_files(
-  FILES
-  TemotoRequestMetadata.msg
-  TemotoResponseMetadata.msg
-)
-
-add_action_files(
-  DIRECTORY action
-  FILES
-)
-
-add_service_files(FILES
-  LoadComponent.srv
-  UnloadComponent.srv
-  StatusComponent.srv
-  DataFetchComponent.srv
-  CounterService.srv
-)
-
-generate_messages(DEPENDENCIES 
-  actionlib_msgs
-  std_msgs
-)
-
-include(ExternalProject)
-
-ExternalProject_Add(rr_core001
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rr_core
-  BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build
-  CMAKE_ARGS
-    -Wno-dev
-  BUILD_COMMAND $(MAKE)
-  INSTALL_COMMAND cmake -E echo "Skipping install step."
-)
-
 set(headers
   include
-  ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/include
 )
-
 set(libraries
   ${Boost_LIBRARIES}
-  ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1
+  rr_core
 )
-
-catkin_package(
-  INCLUDE_DIRS ${headers}
-  LIBRARIES ${libraries}
-  CATKIN_DEPENDS roscpp std_msgs message_generation actionlib_msgs rosconsole_bridge
-  #DEPENDS
-) 
-
 include_directories(
   ${headers}
 )
 
-## producer start
-add_executable(resource_producer 
-  src/ResourceProducer.cpp
-)
 
-add_dependencies(resource_producer
-  ${catkin_EXPORTED_TARGETS}
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  rr_core001
-)
 
-target_link_libraries(resource_producer
-  ${catkin_LIBRARIES}
-  ${libraries}
-)
-## producer end
 
-## consumer start
-add_executable(resource_consumer 
-  src/ResourceConsumer.cpp
-)
+# find dependencies
+find_package(rosidl_default_generators REQUIRED)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(tutorial_interfaces REQUIRED)        # CHANGE
 
-add_dependencies(resource_consumer
-  ${catkin_EXPORTED_TARGETS}
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  rr_core001
-)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/TemotoRequestMetadata.msg"
+  "msg/TemotoResponseMetadata.msg"
+  "srv/LoadComponent.srv"
+  "srv/StatusComponent.srv"
+  "srv/UnloadComponent.srv"
+  "msg/Num.msg"
+  "srv/AddThreeInts.srv"
+ )
 
-target_link_libraries(resource_consumer
-  ${catkin_LIBRARIES}
-  ${libraries}
-)
+add_executable(publisher src/Publisher.cpp)
+ament_target_dependencies(publisher rclcpp tutorial_interfaces)         # CHANGE
 
-## consumer end
+add_executable(subscriber src/Subscriber.cpp)
+ament_target_dependencies(subscriber rclcpp tutorial_interfaces)     # CHANGE
 
-## agent start
-add_executable(resource_agent 
-  src/ResourceAgent.cpp
-)
+add_executable(consumer src/ResourceConsumer.cpp)
+ament_target_dependencies(consumer rclcpp tutorial_interfaces Boost rr_core)     # CHANGE
 
-add_dependencies(resource_agent
-  ${catkin_EXPORTED_TARGETS}
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  rr_core001
-)
+install(TARGETS
+  publisher
+  subscriber
+  consumer
+  DESTINATION lib/${PROJECT_NAME})
 
-target_link_libraries(resource_agent
-  ${catkin_LIBRARIES}
-  ${libraries}
-)
-## agent end
-
-add_custom_command(TARGET rr_core001
-  POST_BUILD
-  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1 
-    ${CATKIN_DEVEL_PREFIX}/lib/librr_core.so.0.0.1
-)
+ament_package()

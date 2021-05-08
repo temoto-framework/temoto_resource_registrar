@@ -1,17 +1,14 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__ROS_SERIALIZER_H
 #define TEMOTO_RESOURCE_REGISTRAR__ROS_SERIALIZER_H
 
-#include "ros/ros.h"
-
-#include <iostream>
-#include <ros/serialization.h>
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/serialization.hpp"
+#include "rcutils/allocator.h"
 
 #include <temoto_resource_registrar/rr_exceptions.h>
 
 namespace temoto_resource_registrar
 {
-
-  namespace ser = ros::serialization;
 
   /**
  * @brief Utility class used for ROS 1 message serialization and deserialization.
@@ -31,21 +28,16 @@ namespace temoto_resource_registrar
     template <class PayloadType>
     static std::string serializeMessage(const PayloadType &payload)
     {
-      // Serialize the payload
-      uint32_t payload_size = ros::serialization::serializationLength(payload);
-      boost::shared_array<uint8_t> buffer(new uint8_t[payload_size]);
-      ser::OStream stream(buffer.get(), payload_size);
-      ser::serialize(stream, payload);
+      rclcpp::SerializedMessage serialized_msg;
+      static rclcpp::Serialization<PayloadType> serializer;
+      serializer.serialize_message(pose_msg.get(), &serialized_msg);
 
-      // Create a string
       std::string payload_string;
 
-      // Fill out the byte array
-      for (uint32_t i = 0; i < payload_size; i++)
+      for (size_t i = 0; i < serialized_msg.size(); ++i)
       {
-        payload_string += (char)buffer.get()[i];
+        payload_string += serialized_msg.get_rcl_serialized_message().buffer[i];
       }
-
       return payload_string;
     }
 
@@ -58,29 +50,18 @@ namespace temoto_resource_registrar
    * @return PayloadType -the deserialized object
    */
     template <class PayloadType>
-    static PayloadType deSerializeMessage(std::string payload_in)
+    static std::shared_ptr<PayloadType> deSerializeMessage(std::string payload_in)
     {
-      uint32_t payload_size = payload_in.size();
+      rcl_serialized_message_t ser_msg_raw;
+      ser_msg_raw.buffer_length = payload_in.size();
+      ser_msg_raw.buffer_capacity = ser_msg_raw.buffer_length;
+      ser_msg_raw.allocator = rcl_get_default_allocator();
+      ser_msg_raw.buffer = reinterpret_cast<uint8_t *>(&payload_in[0]);
+      rclcpp::SerializedMessage serialized_msg(ser_msg_raw);
+      auto msg = std::make_shared<PayloadType>();
+      serializer.deserialize_message(&serialized_msg, msg.get());
 
-      if (payload_size == 0)
-        throw temoto_resource_registrar::DeserializationException("Can not deserialize empty payload");
-
-      boost::shared_array<uint8_t> buffer(new uint8_t[payload_size]);
-
-      // Fill buffer with the serialized payload
-
-      int counter = 0;
-      for (const char byte : payload_in)
-      {
-        (buffer.get())[counter] = (uint32_t)byte;
-        counter++;
-      }
-
-      // Convert the serialized payload to msg
-      ser::IStream stream(buffer.get(), payload_size);
-      PayloadType payload;
-      ser::deserialize(stream, payload);
-      return payload;
+      return msg;
     }
 
   private:

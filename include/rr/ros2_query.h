@@ -1,10 +1,10 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_H
 #define TEMOTO_RESOURCE_REGISTRAR__ROS_QUERY_H
 
-#include "temoto_resource_registrar/TemotoRequestMetadata.h"
-#include "temoto_resource_registrar/TemotoResponseMetadata.h"
 #include "temoto_resource_registrar/rr_query_base.h"
 #include "temoto_resource_registrar/rr_serializer.h"
+#include "tutorial_interfaces/msg/temoto_request_metadata.hpp"
+#include "tutorial_interfaces/msg/temoto_response_metadata.hpp"
 
 /**
  * @brief A wrapper class for temoto_resource_registrar::RrQueryBase. Used as a intermediery container to hande data by the ResourceRegistrar.
@@ -12,18 +12,18 @@
  * @tparam ServiceClass - Type of the server, a ROS1 srv
  */
 template <class ServiceClass>
-class Ros1Query : public temoto_resource_registrar::RrQueryBase
+class Ros2Query : public temoto_resource_registrar::RrQueryBase
 {
 public:
-  Ros1Query() {}
+  Ros2Query() {}
 
   /**
    * @brief Construct a new Ros 1 Query object. Does not store existing field valus of the request.
    * 
    * @param metadata 
    */
-  Ros1Query(const temoto_resource_registrar::TemotoRequestMetadata &request_data,
-            const temoto_resource_registrar::TemotoResponseMetadata &response_data)
+  Ros2Query(const tutorial_interfaces::msg::TemotoRequestMetadata &request_data,
+            const tutorial_interfaces::msg::TemotoResponseMetadata &response_data)
   {
     setRr(request_data.serving_rr);
     setOrigin(request_data.origin_rr);
@@ -40,7 +40,7 @@ public:
    * 
    * @param query 
    */
-  Ros1Query(const ServiceClass &query) : Ros1Query(query.request.temoto_metadata, query.response.temoto_metadata)
+  Ros2Query(const ServiceClass &query) : Ros2Query(query.request.temoto_metadata, query.response.temoto_metadata)
   {
     typed_query_ = query;
   }
@@ -86,7 +86,7 @@ public:
    */
   ServiceClass rosQuery()
   {
-    ROS_INFO_STREAM("Returning ROS query");
+    //ROS_INFO_STREAM("Returning ROS query");
 
     typed_query_.request.temoto_metadata.serving_rr = rr();
     typed_query_.request.temoto_metadata.origin_rr = origin();
