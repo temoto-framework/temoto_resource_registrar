@@ -58,14 +58,14 @@ namespace temoto_resource_registrar
     template <class ResponseClass>
     void storeResponse(ResponseClass &resp);
 
-    void setId(const std::string &id) { requestId_ = id; };
-    std::string id() const { return requestId_; }
+    void setId(const std::string &id) { request_id_ = id; };
+    std::string id() const { return request_id_; }
 
-    void setRr(const std::string &rr) { servingRr_ = rr; }
-    std::string rr() { return servingRr_; }
+    void setRr(const std::string &rr) { serving_rr_ = rr; }
+    std::string rr() { return serving_rr_; }
 
-    void setOrigin(const std::string &rr) { originRr_ = rr; }
-    std::string origin() { return originRr_; }
+    void setOrigin(const std::string &rr) { origin_rr_ = rr; }
+    std::string origin() { return origin_rr_; }
 
     void setStatus(const int &status) { status_ = status; }
     int status() { return status_; }
@@ -74,9 +74,9 @@ namespace temoto_resource_registrar
     QueryMetadata &metadata() { return metadata_; }
 
   protected:
-    std::string requestId_;
-    std::string servingRr_;
-    std::string originRr_;
+    std::string request_id_;
+    std::string serving_rr_;
+    std::string origin_rr_;
 
     int status_;
 
@@ -87,7 +87,7 @@ namespace temoto_resource_registrar
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /* version */)
     {
-      ar &requestId_ &servingRr_ &originRr_ &status_ &metadata_;
+      ar &request_id_ &serving_rr_ &origin_rr_ &status_ &metadata_;
     }
 
   private:

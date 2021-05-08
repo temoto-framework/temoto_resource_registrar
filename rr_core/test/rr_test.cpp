@@ -169,12 +169,12 @@ protected:
 
   friend class boost::serialization::access;
 
-  std::string requestId_;
+  std::string request_id_;
 
   template <class Archive>
   void serialize(Archive &ar, const unsigned int /* version */)
   {
-    ar &requestId_ &typed_request_ &typed_response_;
+    ar &request_id_ &typed_request_ &typed_response_;
   }
 };
 
