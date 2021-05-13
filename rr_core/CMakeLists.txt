@@ -45,29 +45,6 @@ endif ()
 
 include(ExternalProject)
 
-ExternalProject_Add(
-  console_bridge
-  URL https://github.com/ros/console_bridge/archive/master.zip
-  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/console_bridge
-  INSTALL_COMMAND ""
-  LOG_DOWNLOAD ON
-  LOG_INSTALL ON
-)
-
-ExternalProject_Get_Property(console_bridge source_dir binary_dir)
-
-set(CONSOLE_BRIDGE_LIB_INCLUDE "${source_dir}/include")
-file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_LIB_INCLUDE})
-set(CONSOLE_BRIDGE_BIN_LIB_INCLUDE "${binary_dir}")
-file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_BIN_LIB_INCLUDE})
-
-list(APPEND LIB_INCLUDE_DIRS ${CONSOLE_BRIDGE_LIB_INCLUDE})
-list(APPEND LIB_INCLUDE_DIRS ${CONSOLE_BRIDGE_BIN_LIB_INCLUDE})
-
-add_library(libconsole_bridge SHARED IMPORTED)
-set_target_properties(libconsole_bridge PROPERTIES IMPORTED_LOCATION ${binary_dir}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}console_bridge${CMAKE_SHARED_LIBRARY_SUFFIX})
-set_target_properties(libconsole_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIB_INCLUDE_DIRS}")
-
 #############
 # test flag
 #############
@@ -142,7 +119,7 @@ if (test)
   file(GLOB_RECURSE TEST_SOURCES test/*.h test/*.cpp)
 
   add_executable(${TEST_BINARY} ${TEST_SOURCES})
-  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog libconsole_bridge ${LIBRARY_NAME} ${Boost_LIBRARIES})
+  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog ${LIBRARY_NAME} ${Boost_LIBRARIES})
 
   #gtest_discover_tests(${TEST_BINARY}
   #  WORKING_DIRECTORY ${PROJECT_DIR}

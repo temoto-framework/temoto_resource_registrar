@@ -23,49 +23,29 @@
  * @tparam ServiceClass - Type of the resource this server will serve.
  */
 template <class ServiceClass>
-class Ros2Server : public temoto_resource_registrar::RrServerBase
+class Ros2Server : public rclcpp::Node, public temoto_resource_registrar::RrServerBase
 {
-public:
-  /**
- * @brief Construct a new Ros 1 Server object. 
- * 
- * @param name - Name of the server being created. These need to be unique on a ResourceRegistrar basis.
- * @param loadCallback - Users load callback being executed when a unique resource is first requested.
- * @param unLoadCallback - User unload callback being executed when the final consumer of a resource is unloaded.
- */
-  Ros2Server(const std::string &name,
-             void (*load_callback)(typename ServiceClass::Request &,
-                                   typename ServiceClass::Response &),
-             void (*unLoad_callback)(typename ServiceClass::Request &,
-                                     typename ServiceClass::Response &)) : temoto_resource_registrar::RrServerBase(name, NULL, NULL),
-                                                                           typed_load_callback_ptr_(load_callback),
-                                                                           typed_unload_callback_ptr_(unLoad_callback),
-                                                                           member_load_cb_(NULL),
-                                                                           member_unload_cb_(NULL),
-                                                                           member_status_cb_(NULL)
-  {
-    initialize();
-  }
 
+public:
   Ros2Server(const std::string &name,
-             std::function<void(typename ServiceClass::Request &,
-                                typename ServiceClass::Response &)>
+             std::function<void(const std::shared_ptr<typename ServiceClass::Request>,
+                                std::shared_ptr<typename ServiceClass::Response>)>
                  member_load_cb,
-             std::function<void(typename ServiceClass::Request &,
-                                typename ServiceClass::Response &)>
+             std::function<void(const std::shared_ptr<typename ServiceClass::Request>,
+                                std::shared_ptr<typename ServiceClass::Response>)>
                  member_unload_cb,
-             std::function<void(typename ServiceClass::Request &,
-                                typename ServiceClass::Response &,
+             std::function<void(const std::shared_ptr<typename ServiceClass::Request>,
+                                std::shared_ptr<typename ServiceClass::Response>,
                                 const temoto_resource_registrar::Status &)>
                  member_status_cb = NULL)
       : temoto_resource_registrar::RrServerBase(name, NULL, NULL),
+        Node(name),
         member_load_cb_(member_load_cb),
         member_unload_cb_(member_unload_cb),
-        typed_load_callback_ptr_(NULL),
-        typed_unload_callback_ptr_(NULL),
         member_status_cb_(member_status_cb)
   {
-    initialize();
+    //RCLCPP_INFO(rclcpp::get_logger("rclcpp"), name);
+    //initialize();
   }
 
   /**
@@ -97,15 +77,15 @@ public:
 
     std::string serialized_response = rr_catalog_->unload(id_, id, can_unload);
 
-    typename ServiceClass::Request request;
-    typename ServiceClass::Response response;
+    std::shared_ptr<typename ServiceClass::Request> request;
+    std::shared_ptr<typename ServiceClass::Response> response;
 
     try
     {
       request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(serialized_request);
       response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serialized_response);
 
-      response.temoto_metadata.request_id = original_container.q_.id();
+      response->temoto_metadata.request_id = original_container.q_.id();
 
       //ROS_INFO_STREAM("Found response with legth: " << serialized_response.size());
     }
@@ -123,14 +103,7 @@ public:
       //ROS_INFO_STREAM("req: " << request);
       //ROS_INFO_STREAM("res: " << response);
 
-      if (typed_unload_callback_ptr_ != NULL)
-      {
-        typed_unload_callback_ptr_(request, response);
-      }
-      else
-      {
-        member_unload_cb_(request, response);
-      }
+      member_unload_cb_(request, response);
     }
     else
     {
@@ -207,14 +180,8 @@ public:
         transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(100, wrapped_query));
 
         //ROS_INFO("Query is unique. executing callback");
-        if (typed_load_callback_ptr_ != NULL)
-        {
-          typed_load_callback_ptr_(req, res);
-        }
-        else
-        {
-          member_load_cb_(req, res);
-        }
+
+        member_load_cb_(req, res);
 
         //ROS_INFO_STREAM("Storing query in catalog...");
 
@@ -256,25 +223,28 @@ public:
     //ROS_INFO_STREAM("Triggering callback logic..." << id());
     if (member_status_cb_ != NULL)
     {
-      typename ServiceClass::Request request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialised_request_);
-      typename ServiceClass::Response response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialised_response_);
+      std::shared_ptr<typename ServiceClass::Request> request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialised_request_);
+      std::shared_ptr<typename ServiceClass::Response> response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialised_response_);
       member_status_cb_(request, response, status);
     }
   }
 
 protected:
-  void (*typed_load_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
-  void (*typed_unload_callback_ptr_)(typename ServiceClass::Request &, typename ServiceClass::Response &);
-
-  std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &)> member_load_cb_;
-  std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &)> member_unload_cb_;
-  std::function<void(typename ServiceClass::Request &, typename ServiceClass::Response &, const temoto_resource_registrar::Status &)> member_status_cb_;
+  std::function<void(const std::shared_ptr<typename ServiceClass::Request>,
+                     std::shared_ptr<typename ServiceClass::Response>)>
+      member_load_cb_;
+  std::function<void(const std::shared_ptr<typename ServiceClass::Request>,
+                     std::shared_ptr<typename ServiceClass::Response>)>
+      member_unload_cb_;
+  std::function<void(const std::shared_ptr<typename ServiceClass::Request>,
+                     std::shared_ptr<typename ServiceClass::Response>,
+                     const temoto_resource_registrar::Status &)>
+      member_status_cb_;
 
 private:
   //ros::NodeHandle nh_;
   //ros::ServiceServer service_;
 
-  std::shared_ptr<rclcpp::Node> node_;
   typename rclcpp::Client<ServiceClass>::SharedPtr client_;
 
   virtual void initialize()
@@ -282,8 +252,9 @@ private:
     //ROS_INFO_STREAM("Starting up server..." << id_);
     //service_ = nh_.advertiseService(id_, &Ros2Server::serverCallback, this);
     //ROS_INFO_STREAM("Starting up server done!!!");
-    std::shared_ptr<rclcpp::Node> node_ = rclcpp::Node::make_shared(id());
-    client_ = node_->create_client<ServiceClass>(id());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id_);
+    client_ = this->create_client<ServiceClass>(id());
   }
 
   Ros2Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)

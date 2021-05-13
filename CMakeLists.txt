@@ -34,37 +34,23 @@ include_directories(
 )
 
 
-
-
 # find dependencies
 find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tutorial_interfaces REQUIRED)        # CHANGE
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/TemotoRequestMetadata.msg"
-  "msg/TemotoResponseMetadata.msg"
-  "srv/LoadComponent.srv"
-  "srv/StatusComponent.srv"
-  "srv/UnloadComponent.srv"
-  "msg/Num.msg"
-  "srv/AddThreeInts.srv"
- )
-
-add_executable(publisher src/Publisher.cpp)
-ament_target_dependencies(publisher rclcpp tutorial_interfaces)         # CHANGE
-
-add_executable(subscriber src/Subscriber.cpp)
-ament_target_dependencies(subscriber rclcpp tutorial_interfaces)     # CHANGE
-
 add_executable(consumer src/ResourceConsumer.cpp)
-ament_target_dependencies(consumer rclcpp tutorial_interfaces Boost rr_core)     # CHANGE
+target_link_libraries(consumer rr_core)
+ament_target_dependencies(consumer rclcpp tutorial_interfaces Boost)     # CHANGE
+
+add_executable(agent src/ResourceAgent.cpp)
+target_link_libraries(agent rr_core)
+ament_target_dependencies(agent rclcpp tutorial_interfaces Boost)     # CHANGE
 
 install(TARGETS
-  publisher
-  subscriber
   consumer
+  agent
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

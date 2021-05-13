@@ -17,6 +17,8 @@
 #include <functional>
 
 using rclcpp::executors::MultiThreadedExecutor;
+using std::placeholders::_1;
+using std::placeholders::_2;
 
 namespace temoto_resource_registrar
 {
@@ -27,7 +29,7 @@ namespace temoto_resource_registrar
    * internal services will not be started up.
    * 
    */
-  class ResourceRegistrarRos2 : public RrBase
+  class ResourceRegistrarRos2 : public rclcpp::Node, public RrBase
   {
   public:
     /**
@@ -36,7 +38,7 @@ namespace temoto_resource_registrar
    * 
    * @param name 
    */
-    ResourceRegistrarRos2(const std::string &name) : RrBase(name)
+    ResourceRegistrarRos2(const std::string &name) : Node(name), RrBase(name)
     {
     }
 
@@ -96,8 +98,9 @@ namespace temoto_resource_registrar
               bool override_status = false)
     {
       //ROS_INFO_STREAM("calling " << rr << " server " << server);
+      
       Ros2Query<QueryType> wrapped_base_query(query);
-
+      /*
       privateCall<Ros2Client<QueryType>,
                   Ros2Server<QueryType>,
                   Ros2Query<QueryType>,
@@ -109,6 +112,7 @@ namespace temoto_resource_registrar
                                                           override_status);
 
       query = wrapped_base_query.rosQuery();
+      */
 
       //ROS_INFO_STREAM("calling " << rr << " server " << server << " done");
     }
@@ -134,7 +138,8 @@ namespace temoto_resource_registrar
       request->target = id;
 
       auto result = unload_clients_[client_name]->async_send_request(request);
-      return rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
+      return true;
+      //return rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
 
       //bool res = unload_clients_[client_name]->call(unload_srv);
       //ROS_INFO_STREAM("result: " << res);
@@ -275,7 +280,8 @@ namespace temoto_resource_registrar
 
       //ROS_INFO_STREAM("calling status client " << client_name << " target id: " << status_data.id_);
       auto result = status_clients_[client_name]->async_send_request(request);
-      return rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
+      return true;
+      //return rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
     };
 
     virtual std::map<std::string, std::pair<std::string, std::string>> callDataFetchClient(const std::string &target_rr,
@@ -301,7 +307,7 @@ namespace temoto_resource_registrar
 
       std::map<std::string, std::pair<std::string, std::string>> res;
 
-      if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
+      if (false/*rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS*/)
       {
         int c = 0;
         for (const auto &id : result.get()->ids)
@@ -332,9 +338,6 @@ namespace temoto_resource_registrar
     }
 
   private:
-    MultiThreadedExecutor executor;
-    std::shared_ptr<rclcpp::Node> node_;
-
     rclcpp::Service<tutorial_interfaces::srv::UnloadComponent>::SharedPtr unload_service_;
     rclcpp::Service<tutorial_interfaces::srv::StatusComponent>::SharedPtr status_service_;
     rclcpp::Service<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr fetch_service_;
@@ -345,7 +348,7 @@ namespace temoto_resource_registrar
       if (client_map.count(client_name) == 0)
       {
         //ROS_INFO_STREAM("creating client " << client_name);
-        typename rclcpp::Client<ServiceClass>::SharedPtr ptr = node_->create_client<ServiceClass>(client_name);
+        typename rclcpp::Client<ServiceClass>::SharedPtr ptr = this->create_client<ServiceClass>(client_name);
 
         client_map[client_name] = std::move(ptr);
         //ROS_INFO_STREAM("created client...");
@@ -354,18 +357,20 @@ namespace temoto_resource_registrar
 
     void startServices()
     {
-      node_ = rclcpp::Node::make_shared(name());
 
       rclcpp::Service<tutorial_interfaces::srv::UnloadComponent>::SharedPtr unload_service_ =
-          node_->create_service<tutorial_interfaces::srv::UnloadComponent>(IDUtils::generateUnload(name()), &ResourceRegistrarRos2::unloadCallback);
+          this->create_service<tutorial_interfaces::srv::UnloadComponent>(IDUtils::generateUnload(name()), 
+          std::bind(&ResourceRegistrarRos2::unloadCallback, this, _1, _2));
+
 
       rclcpp::Service<tutorial_interfaces::srv::StatusComponent>::SharedPtr status_service_ =
-          node_->create_service<tutorial_interfaces::srv::StatusComponent>(IDUtils::generateUnload(name()), &ResourceRegistrarRos2::unloadCallback);
+          this->create_service<tutorial_interfaces::srv::StatusComponent>(IDUtils::generateStatus(name()), 
+          std::bind(&ResourceRegistrarRos2::statusCallback, this, _1, _2));
 
       rclcpp::Service<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr fetch_service_ =
-          node_->create_service<tutorial_interfaces::srv::DataFetchComponent>(IDUtils::generateUnload(name()), &ResourceRegistrarRos2::unloadCallback);
+          this->create_service<tutorial_interfaces::srv::DataFetchComponent>(IDUtils::generateFetch(name()), 
+          std::bind(&ResourceRegistrarRos2::dataFetchCallback, this, _1, _2));
 
-      executor.add_node(node_);
     }
 
     void unloadCallback(const std::shared_ptr<tutorial_interfaces::srv::UnloadComponent::Request> req,

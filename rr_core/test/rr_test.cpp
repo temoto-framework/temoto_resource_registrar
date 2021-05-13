@@ -1,8 +1,6 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "console_bridge/console.h"
-
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
@@ -70,7 +68,7 @@ class RrBaseTest : public ::testing::Test
 protected:
   RrBaseTest()
   {
-    console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+    //console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
   }
 
   virtual ~RrBaseTest()

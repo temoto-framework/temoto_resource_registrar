@@ -30,7 +30,7 @@ namespace temoto_resource_registrar
     {
       rclcpp::SerializedMessage serialized_msg;
       static rclcpp::Serialization<PayloadType> serializer;
-      serializer.serialize_message(pose_msg.get(), &serialized_msg);
+      serializer.serialize_message(payload.get(), &serialized_msg);
 
       std::string payload_string;
 
@@ -52,6 +52,7 @@ namespace temoto_resource_registrar
     template <class PayloadType>
     static std::shared_ptr<PayloadType> deSerializeMessage(std::string payload_in)
     {
+      static rclcpp::Serialization<PayloadType> serializer;
       rcl_serialized_message_t ser_msg_raw;
       ser_msg_raw.buffer_length = payload_in.size();
       ser_msg_raw.buffer_capacity = ser_msg_raw.buffer_length;

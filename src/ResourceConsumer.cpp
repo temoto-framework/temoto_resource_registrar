@@ -1,147 +1,51 @@
-#include "rr/ros1_resource_registrar.h"
+#include "rr/ros2_resource_registrar.h"
+#include "rr/ros2_client.h"
+#include "rr/ros2_server.h"
+#include "rr/ros2_query.h"
 
-#include "temoto_resource_registrar/LoadComponent.h"
+#include "rclcpp/rclcpp.hpp"
+
+#include "tutorial_interfaces/srv/load_component.hpp"
 
 std::string rrName = "ConsumerRR";
-temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
 
-int counter = 0;
-int shutdownCounter = 5;
-std::string loadId = "";
-
-void statusCallback(temoto_resource_registrar::LoadComponent msg, temoto_resource_registrar::Status status)
-{
-  ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialised_request_.size() << " - " << msg.request.temoto_metadata.origin_rr);
-
-  counter++;
-
-  if (counter == shutdownCounter)
-  {
-
-    rr.printCatalog();
-    auto r = rr.getRosChildQueries<temoto_resource_registrar::LoadComponent>(loadId, "resourceServer");
-
-    for (const auto &el : r)
-    {
-      ROS_INFO_STREAM("id: " << el.first << " - msg: " << el.second.request);
-    }
-
-    ROS_INFO_STREAM("getServerRrQueries size: " << r.size());
-
-    ROS_INFO_STREAM("Counter reached, unloading: " << loadId << " from: "
-                                                   << "AgentRR");
-    bool res = rr.unload("AgentRR", loadId);
-    ROS_INFO_STREAM("Unload result: " << res);
-  }
-}
 
 int main(int argc, char **argv)
 {
-  ROS_INFO("Starting up consumer...");
-  ros::init(argc, argv, "consumer_thing");
-  ros::AsyncSpinner spinner(4); // Use 4 threads
-  spinner.start();
-  rr.init();
+  
+  auto loadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req, std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res) {
 
-  /*std::vector<std::string> dependencies;
-  dependencies.push_back("rr1;;first");
-  dependencies.push_back("rr1;;second");
-  dependencies.push_back("rr1;;third");
+  };
 
-  temoto_resource_registrar::LoadComponent loadCall;
-  loadCall.request.load_target = "CounterService";
-  loadCall.request.Temoto_metadata.request_id = "request_id";
-  loadCall.request.Temoto_metadata.servingRr = "servingRr";
-  loadCall.request.Temoto_metadata.originRr = "originRr";
-  loadCall.request.Temoto_metadata.dependencies = dependencies;
-  loadCall.response.load_message = "OK";
+  auto unloadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req, std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res) {
 
-  ROS_INFO_STREAM("loadCall.request.load_target: " << loadCall.request.load_target);
-  ROS_INFO_STREAM("loadCall.request.Temoto_metadata.request_id: " << loadCall.request.Temoto_metadata.request_id);
-  ROS_INFO_STREAM("loadCall.request.Temoto_metadata.servingRr: " << loadCall.request.Temoto_metadata.servingRr);
-  ROS_INFO_STREAM("loadCall.request.Temoto_metadata.originRr: " << loadCall.request.Temoto_metadata.originRr);
-  ROS_INFO_STREAM("loadCall.response.load_message: " << loadCall.response.load_message);
+  };
 
-  ROS_INFO_STREAM("dependency size: " << loadCall.request.Temoto_metadata.dependencies.size());
-  for (const auto &el : loadCall.request.Temoto_metadata.dependencies)
-  {
-    ROS_INFO_STREAM("dependency: " << el);
-  }
+  auto statusCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req,
+                      std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res,
+                      const temoto_resource_registrar::Status &status) {
 
-  ROS_INFO_STREAM("------------------------------------------------------------");
+  };
 
-  Ros1Query<temoto_resource_registrar::LoadComponent> rosQuery(loadCall);
+  
+  rclcpp::init(argc, argv);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "in main"); 
+  auto rr = std::make_shared<temoto_resource_registrar::ResourceRegistrarRos2>(rrName);
+  rr->init();
 
-  rosQuery.request().Temoto_metadata.request_id = "modified";
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "inited rr"); 
 
-  rosQuery.includeDependency("a", "b");
-  rosQuery.setId("actualId");
-  rosQuery.setRr("actualServingRr");
-  rosQuery.setOrigin("actualOriginRr");
+  //Ros2Client<tutorial_interfaces::srv::LoadComponent> r2("test", "val");
+  //Ros2Query<tutorial_interfaces::srv::LoadComponent> q();
 
-  temoto_resource_registrar::LoadComponent newLoadCall = rosQuery.rosQuery();
+  //Ros2Server<tutorial_interfaces::srv::LoadComponent> s("sss", loadCb, unloadCb, statusCb);
 
-  for (const auto &el : rosQuery.dependencies())
-  {
-    ROS_INFO_STREAM("dependency: " << el.first << " - " << el.second);
-  }
+  auto request = std::make_shared<tutorial_interfaces::srv::LoadComponent::Request>();
+  request -> load_target = "CounterService";
 
-  ROS_INFO_STREAM("------------------------------------------------------------");
+  rr->call<std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request>>("AgentRR", "resourceServer", request);
 
-  ROS_INFO_STREAM("loadCall.request.load_target: " << newLoadCall.request.load_target);
-  ROS_INFO_STREAM("loadCall.request.Temoto_metadata.request_id: " << newLoadCall.request.Temoto_metadata.request_id);
-  ROS_INFO_STREAM("loadCall.request.Temoto_metadata.servingRr: " << newLoadCall.request.Temoto_metadata.servingRr);
-  ROS_INFO_STREAM("loadCall.request.Temoto_metadata.originRr: " << newLoadCall.request.Temoto_metadata.originRr);
-  ROS_INFO_STREAM("loadCall.response.load_message: " << newLoadCall.response.load_message);
-
-  ROS_INFO_STREAM("dependency size: " << newLoadCall.request.Temoto_metadata.dependencies.size());
-  for (const auto &el : newLoadCall.request.Temoto_metadata.dependencies)
-  {
-    ROS_INFO_STREAM("dependency: " << el);
-  }*/
-
-  temoto_resource_registrar::LoadComponent loadCall;
-  loadCall.request.load_target = "CounterService";
-
-  ROS_INFO_STREAM("Calling server with error expectation...");
-  try
-  {
-    rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, statusCallback);
-
-    loadId = loadCall.response.temoto_metadata.request_id;
-  }
-  catch (const resource_registrar::TemotoErrorStack &e)
-  {
-    ROS_WARN_STREAM("Something bad happened. What is the cause i wonder? : " << e.getMessage());
-  }
-
-  /*ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.load_message << "; id: " << load1Id);
-
-  rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, NULL, statusCallback);
-
-  load1Id = loadCall.response.Temoto_metadata.request_id;
-
-  ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall.response.load_message << "; id: " << load1Id);
-
-  //bool unloadRes = rr.unload("AgentRR", load1Id);
-  //ROS_INFO_STREAM("Unload result: " << unloadRes);
-
-
-  temoto_resource_registrar::LoadComponent loadCall2;
-  loadCall2.request.load_target = "TimeService";
-
-  rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall2);
-
-  std::string load2Id = loadCall2.response.Temoto_metadata.request_id;
-
-  ROS_INFO_STREAM("OUTPUT RESULT: " << loadCall2.response.load_message << "; id: " << load2Id);
-
-  rr.unload("AgentRR", load2Id);
-
-  rr.printCatalog();
-*/
-  //ros::spin();
-  ros::waitForShutdown();
-
-  ROS_INFO("Exiting consumer....");
+  rclcpp::shutdown();
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "shutdown"); 
+  return 0;
 }

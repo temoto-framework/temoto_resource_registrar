@@ -1,72 +1,41 @@
-#include "rr/ros1_resource_registrar.h"
+#include "rr/ros2_resource_registrar.h"
 
-#include "temoto_resource_registrar/CounterService.h"
-#include "temoto_resource_registrar/LoadComponent.h"
+#include "tutorial_interfaces/srv/load_component.hpp"
 
 std::string rrName = "AgentRR";
 
 std::string latestId = "";
 
-temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
-
-void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resource_registrar::Status status)
-{
-  ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialised_request_.size() << " - " << msg.request.temoto_metadata.origin_rr);
-
-  for (temoto_resource_registrar::LoadComponent const &i : rr.getServerQueries<temoto_resource_registrar::LoadComponent>("resourceServer"))
-  {
-    ROS_INFO_STREAM("<<<<<<< " << i.response.temoto_metadata.request_id);
-    ROS_INFO_STREAM("<<<<<<< " << i.response.load_message);
-
-    std::map<std::string, temoto_resource_registrar::CounterService> r = rr.getRosChildQueries<temoto_resource_registrar::CounterService>(latestId, "counterServer");
-    ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<dependency result>>>>>>>>>>>>>>>>>>>>>" << r.size());
-  }
-}
-
 int main(int argc, char **argv)
 {
-
-  auto loadCb = [&](temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res) {
-    ROS_INFO("IN LOAD CB ------------------------");
-
-    ROS_INFO_STREAM("1" << req.load_target);
-    if (req.load_target == "CounterService")
-    {
-      ROS_INFO_STREAM("2" << req.load_target);
-      temoto_resource_registrar::CounterService counterSrv;
-      counterSrv.request.start_point = 1;
-
-      rr.call<temoto_resource_registrar::CounterService>("ProducerRR", "counterServer", counterSrv, statusCallback);
-      ROS_INFO_STREAM("3" << req.load_target);
-      latestId = res.temoto_metadata.request_id;
-    }
-    ROS_INFO_STREAM("5" << req.load_target);
-    res.load_message = req.load_target;
-    ROS_INFO("IN LOAD CB------------------------");
+  auto loadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req, std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res) {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "load rr");
   };
 
-  auto unloadCb = [&](temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res) {
-    ROS_INFO("IN UNLOAD CB");
+  auto unloadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req, std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res) {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload rr");
   };
 
-  auto statusCb = [&](temoto_resource_registrar::LoadComponent::Request &req, temoto_resource_registrar::LoadComponent::Response &res, const temoto_resource_registrar::Status &status) {
-    ROS_ERROR_STREAM("Status CB called");
+  auto statusCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req,
+                      std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res,
+                      const temoto_resource_registrar::Status &status) {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "status rr");
   };
 
-  ROS_INFO("Starting up agent.........");
-  ros::init(argc, argv, "agent_thing");
+  rclcpp::init(argc, argv);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "in main");
+  auto rr = std::make_shared<temoto_resource_registrar::ResourceRegistrarRos2>(rrName);
+  rr->init();
 
-  ros::AsyncSpinner spinner(10); // Use 10 threads
-  spinner.start();
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "inited rr");
 
-  rr.init();
+  auto server = std::make_unique<Ros2Server<tutorial_interfaces::srv::LoadComponent>>("resourceServer",
+                                                                                      loadCb,
+                                                                                      unloadCb,
+                                                                                      statusCb);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "reg server");
+  rr->registerServer(std::move(server));
 
-  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::LoadComponent>>("resourceServer", loadCb, unloadCb, statusCb);
-  rr.registerServer(std::move(server));
-
-  ROS_INFO("spinning....");
-  //ros::spin();
-  ros::waitForShutdown();
-
-  ROS_INFO("Exiting agent...");
+  rclcpp::spin(rr);
+  rclcpp::shutdown();
 }
