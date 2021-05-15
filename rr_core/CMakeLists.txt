@@ -211,6 +211,8 @@ target_include_directories(${LIBRARY_NAME} PUBLIC
     $<INSTALL_INTERFACE:include>
     PRIVATE src)
 
+target_link_libraries(${LIBRARY_NAME} libconsole_bridge)
+
 install(TARGETS ${LIBRARY_NAME} EXPORT ${LIBRARY_NAME}-config
     ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
