@@ -20,6 +20,9 @@ void statusCallback(temoto_resource_registrar::CounterService msg, temoto_resour
 
     std::map<std::string, temoto_resource_registrar::CounterService> r = rr.getRosChildQueries<temoto_resource_registrar::CounterService>(latestId, "counterServer");
     ROS_INFO_STREAM("<<<<<<<<<<<<<<<<<<dependency result>>>>>>>>>>>>>>>>>>>>>" << r.size());
+    for (const auto &i : r) {
+      ROS_ERROR_STREAM("Query IDS:" << i.first);
+    }
   }
 }
 

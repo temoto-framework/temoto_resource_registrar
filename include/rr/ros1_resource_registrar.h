@@ -174,6 +174,13 @@ namespace temoto_resource_registrar
       storeClientQueryStatusCb<Ros1Client<ClientQueryType>, std::function<void(ClientQueryType, Status)>>(client_id, query_id, user_callback);
     }
 
+    void registerDependency(const std::string &rr_name,
+                            const std::string &query_id,
+                            const std::string &parent_query_id)
+    {
+      rr_catalog_->storeDependency(parent_query_id, rr_name, query_id);
+    }
+
     /**
  * @brief Get the Ros Child Queries object. Used to get executed queries of a dependency of the query
  * defined. Takes in an query ID and the serverName the dependency used.
@@ -309,7 +316,7 @@ namespace temoto_resource_registrar
       for (const auto &id : data_fetch_srv.response.ids)
       {
         std::pair<std::string, std::string> req_res(data_fetch_srv.response.serialized_requests.at(c),
-                                                       data_fetch_srv.response.serialized_responses.at(c));
+                                                    data_fetch_srv.response.serialized_responses.at(c));
         res[id] = req_res;
         c++;
       }
@@ -388,8 +395,6 @@ namespace temoto_resource_registrar
       TEMOTO_INFO_STREAM_("syncCallback " << req);
       std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req.origin_rr, req.server_name);
       std::vector<std::string> ids, serialized_requests, serialized_responses;
-
-
 
       for (const auto &el : resMap)
       {
