@@ -45,18 +45,18 @@ namespace temoto_resource_registrar
 
     ~ResourceRegistrarRos1()
     {
-      ROS_INFO_STREAM("Destroying RR Ros " << name());
-      ROS_INFO_STREAM("unloading clients");
+      TEMOTO_INFO_STREAM_("Destroying RR Ros " << name());
+      TEMOTO_INFO_STREAM_("unloading clients");
       for (const std::string &client_id : clients_.getIds())
       {
         try
         {
-          ROS_INFO_STREAM("unloading client " << client_id);
+          TEMOTO_INFO_STREAM_("unloading client " << client_id);
           unloadClient(client_id);
         }
         catch (...)
         {
-          ROS_WARN_STREAM("unloading error for client " << client_id);
+          TEMOTO_WARN_STREAM_("unloading error for client " << client_id);
         }
       }
     }
@@ -98,7 +98,7 @@ namespace temoto_resource_registrar
               std::function<void(QueryType, Status)> status_func = NULL,
               bool override_status = false)
     {
-      ROS_INFO_STREAM("calling " << rr << " server " << server);
+      TEMOTO_INFO_STREAM_("calling " << rr << " server " << server);
       Ros1Query<QueryType> wrapped_base_query(query);
 
       privateCall<Ros1Client<QueryType>,
@@ -108,12 +108,11 @@ namespace temoto_resource_registrar
                                                           NULL,
                                                           server,
                                                           wrapped_base_query,
-                                                          status_func,
-                                                          override_status);
+                                                          status_func);
 
       query = wrapped_base_query.rosQuery();
 
-      ROS_INFO_STREAM("calling " << rr << " server " << server << " done");
+      TEMOTO_INFO_STREAM_("calling " << rr << " server " << server << " done");
     }
 
     /**
@@ -128,7 +127,7 @@ namespace temoto_resource_registrar
      */
     bool unload(const std::string &rr, const std::string &id)
     {
-      ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id);
+      TEMOTO_INFO_STREAM_("unload Called for rr " << rr << " id: " << id);
 
       std::string client_name = IDUtils::generateUnload(rr);
       initClient<UnloadComponent>(client_name, unload_clients_);
@@ -137,7 +136,7 @@ namespace temoto_resource_registrar
       unload_srv.request.target = id;
 
       bool res = unload_clients_[client_name]->call(unload_srv);
-      ROS_INFO_STREAM("result: " << res);
+      TEMOTO_INFO_STREAM_("result: " << res);
 
       return res;
     }
@@ -154,7 +153,7 @@ namespace temoto_resource_registrar
     template <class QueryType>
     QueryType deSerializeQuery(const QueryContainer<RawData> &container)
     {
-      ROS_INFO_STREAM("deSerializeBaseQuery ROS ");
+      TEMOTO_INFO_STREAM_("deSerializeBaseQuery ROS ");
       QueryType q;
 
       q.request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Request>(container.raw_request_);
@@ -178,13 +177,13 @@ namespace temoto_resource_registrar
     template <class QueryType>
     std::map<std::string, QueryType> getRosChildQueries(const std::string &id, const std::string &server_name)
     {
-      ROS_DEBUG_STREAM("getting RR queries for id " << id << " and server " << server_name);
+      TEMOTO_DEBUG_STREAM_("getting RR queries for id " << id << " and server " << server_name);
       std::map<std::string, std::pair<std::string, std::string>> serialised_queries = getChildQueries(id, server_name);
 
-      ROS_DEBUG_STREAM("Found " << serialised_queries.size() << " queries");
+      TEMOTO_DEBUG_STREAM_("Found " << serialised_queries.size() << " queries");
       std::map<std::string, QueryType> ros_queries;
 
-      ROS_DEBUG_STREAM("Deserializing strings to query type");
+      TEMOTO_DEBUG_STREAM_("Deserializing strings to query type");
       for (const auto &el : serialised_queries)
       {
         QueryType q;
@@ -192,14 +191,14 @@ namespace temoto_resource_registrar
         q.response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Response>(el.second.second);
         ros_queries[el.first] = q;
       }
-      ROS_DEBUG_STREAM("Returning...");
+      TEMOTO_DEBUG_STREAM_("Returning...");
       return ros_queries;
     }
 
     template <class QueryType>
     std::vector<QueryType> getServerQueries(const std::string &server)
     {
-      ROS_INFO_STREAM("getServerQueries printing before processign catalog.");
+      TEMOTO_INFO_STREAM_("getServerQueries printing before processign catalog.");
       std::string server_name = IDUtils::generateServerName(name(), server);
       rr_catalog_->print();
       std::vector<QueryType> out;
@@ -209,7 +208,7 @@ namespace temoto_resource_registrar
         out.push_back(deSerializeQuery<QueryType>(queryContainer));
       }
 
-      ROS_INFO_STREAM("getServerQueries printing after processign catalog.");
+      TEMOTO_INFO_STREAM_("getServerQueries printing after processign catalog.");
       rr_catalog_->print();
 
       return out;
@@ -219,7 +218,7 @@ namespace temoto_resource_registrar
     void updateQueryResponse(const std::string &server,
                              const QueryType &call)
     {
-      ROS_INFO_STREAM("updateQueryResponse for server " << server);
+      TEMOTO_INFO_STREAM_("updateQueryResponse for server " << server);
 
       std::string serialized_request = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Request>(sanityzeData<typename QueryType::Request>(call.request));
       std::string serialized_response = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Response>(sanityzeData<typename QueryType::Response>(call.response));
@@ -237,7 +236,7 @@ namespace temoto_resource_registrar
  * 
  * @param target_rr 
  * @param request_id 
- * @param statusData 
+ * @param status_srv 
  * @return true 
  * @return false 
  */
@@ -249,7 +248,7 @@ namespace temoto_resource_registrar
       initClient<StatusComponent>(client_name, status_clients_);
 
       temoto_resource_registrar::StatusComponent status_srv;
-      ROS_INFO_STREAM("callStatusClient");
+      TEMOTO_INFO_STREAM_("callStatusClient");
       auto container = rr_catalog_->findOriginalContainer(status_data.id_);
       if (!container.empty_)
       {
@@ -271,7 +270,7 @@ namespace temoto_resource_registrar
       status_srv.request.status = static_cast<int>(status_data.state_);
       status_srv.request.message = status_data.message_;
 
-      ROS_INFO_STREAM("calling status client " << client_name << " target id: " << status_data.id_);
+      TEMOTO_INFO_STREAM_("calling status client " << client_name << " target id: " << status_data.id_);
 
       return status_clients_[client_name]->call(status_srv);
     };
@@ -280,7 +279,7 @@ namespace temoto_resource_registrar
                                                                                            const std::string &origin_rr,
                                                                                            const std::string &server_name)
     {
-      ROS_INFO_STREAM("callDataFetchClient");
+      TEMOTO_INFO_STREAM_("callDataFetchClient");
 
       std::string client_name = IDUtils::generateFetch(target_rr);
       initClient<DataFetchComponent>(client_name, fetch_clients_);
@@ -290,7 +289,7 @@ namespace temoto_resource_registrar
       data_fetch_srv.request.origin_rr = origin_rr;
       data_fetch_srv.request.server_name = server_name;
 
-      ROS_INFO_STREAM("calling data fetch client " << client_name << " - " << data_fetch_srv.request);
+      TEMOTO_INFO_STREAM_("calling data fetch client " << client_name << " - " << data_fetch_srv.request);
 
       fetch_clients_[client_name]->call(data_fetch_srv);
 
@@ -335,50 +334,52 @@ namespace temoto_resource_registrar
 
       if (client_map.count(client_name) == 0)
       {
-        ROS_INFO_STREAM("creating client " << client_name);
+        TEMOTO_INFO_STREAM_("creating client " << client_name);
         auto sc = nh.serviceClient<ServiceClass>(client_name);
         auto client = std::make_unique<ros::ServiceClient>(sc);
         client_map[client_name] = std::move(client);
-        ROS_INFO_STREAM("created client...");
+        TEMOTO_INFO_STREAM_("created client...");
       }
     }
 
     void startServices()
     {
-      ROS_INFO_STREAM("Starting up services...");
+      TEMOTO_INFO_STREAM_("Starting up services...");
       ros::NodeHandle nh;
-      ROS_INFO_STREAM("Starting unload_service_... " << IDUtils::generateUnload(name()));
+      TEMOTO_INFO_STREAM_("Starting unload_service_... " << IDUtils::generateUnload(name()));
       unload_service_ = nh.advertiseService(IDUtils::generateUnload(name()), &ResourceRegistrarRos1::unloadCallback, this);
-      ROS_INFO_STREAM("Starting status_service_... " << IDUtils::generateStatus(name()));
+      TEMOTO_INFO_STREAM_("Starting status_service_... " << IDUtils::generateStatus(name()));
       status_service_ = nh.advertiseService(IDUtils::generateStatus(name()), &ResourceRegistrarRos1::statusCallback, this);
-      ROS_INFO_STREAM("Starting fetch_service_... " << IDUtils::generateFetch(name()));
+      TEMOTO_INFO_STREAM_("Starting fetch_service_... " << IDUtils::generateFetch(name()));
       fetch_service_ = nh.advertiseService(IDUtils::generateFetch(name()), &ResourceRegistrarRos1::dataFetchCallback, this);
     }
 
     bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
     {
-      ROS_INFO_STREAM("printing catalog before unload callback");
+      TEMOTO_INFO_STREAM_("printing catalog before unload callback");
       rr_catalog_->print();
 
-      ROS_INFO_STREAM("unloadCallback " << req.target);
+      TEMOTO_INFO_STREAM_("unloadCallback " << req.target);
       std::string id = req.target;
-      ROS_INFO_STREAM("std::string id " << id);
+      TEMOTO_INFO_STREAM_("std::string id " << id);
       res.status = localUnload(id);
       return true;
     }
 
     bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
     {
-      ROS_INFO_STREAM("statusCallback: " << req.target);
+      TEMOTO_INFO_STREAM_("statusCallback: " << req.target);
       handleStatus(req.target, {static_cast<Status::State>(req.status), req.target, req.message, req.serialised_request, req.serialised_response});
       return true;
     }
 
     bool dataFetchCallback(DataFetchComponent::Request &req, DataFetchComponent::Response &res)
     {
-      ROS_INFO_STREAM("syncCallback " << req);
+      TEMOTO_INFO_STREAM_("syncCallback " << req);
       std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req.origin_rr, req.server_name);
       std::vector<std::string> ids, serialized_requests, serialized_responses;
+
+
 
       for (const auto &el : resMap)
       {

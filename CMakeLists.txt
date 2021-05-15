@@ -3,6 +3,11 @@ project(temoto_resource_registrar)
 
 add_compile_options(-std=c++14 -Wno-dev)
 
+option(TEMOTO_ENABLE_TRACING_ "Use tracer" OFF)
+if(TEMOTO_ENABLE_TRACING_)
+  add_compile_options(-Dtemoto_enable_tracing)
+endif()
+
 find_package(catkin REQUIRED COMPONENTS 
   roscpp 
   actionlib 
@@ -63,6 +68,20 @@ set(libraries
   ${Boost_LIBRARIES}
   ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1
 )
+
+if(TEMOTO_ENABLE_TRACING_)
+  list(APPEND headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/opentracing-cpp/src/opentracing-cpp/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/opentracing-cpp/src/opentracing-cpp/example/tutorial
+    ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/opentracing-cpp/src/opentracing-cpp/3rd_party/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/opentracing-cpp/src/opentracing-cpp-build/include
+  )
+
+  list(APPEND libraries
+    ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/opentracing-cpp/src/opentracing-cpp-build/output/libopentracing.so
+    pthread
+  )
+endif()
 
 catkin_package(
   INCLUDE_DIRS ${headers}

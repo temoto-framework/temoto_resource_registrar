@@ -38,8 +38,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <console_bridge/console.h>
-
 namespace temoto_resource_registrar
 {
   using RawData = std::string;
@@ -138,7 +136,7 @@ namespace temoto_resource_registrar
 
     void saveCatalog()
     {
-      CONSOLE_BRIDGE_logDebug("saving catalog to: %s", (configuration_.location()).c_str());
+      TEMOTO_DEBUG_("saving catalog to: %s", (configuration_.location()).c_str());
       std::ofstream ofs(configuration_.location());
       boost::archive::binary_oarchive oa(ofs);
       oa << *(this);

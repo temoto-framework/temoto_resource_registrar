@@ -19,7 +19,7 @@ public:
 
   Ros1Client(const std::string &rr, const std::string &name) : temoto_resource_registrar::RrClientBase(rr, name)
   {
-    ROS_INFO_STREAM("constructing Ros1Client " << rr << " id: " << name);
+    TEMOTO_INFO_STREAM_("constructing Ros1Client " << rr << " id: " << name);
     client_ = nh_.serviceClient<ServiceClass>(id());
   }
 
@@ -31,16 +31,16 @@ public:
  */
   void invoke(ServiceClass &request)
   {
-    ROS_INFO_STREAM("invoke for ServiceClass started. Targeting " << id());
+    TEMOTO_INFO_STREAM_("invoke for ServiceClass started. Targeting " << id());
     if (client_.call(request))
     {
-      ROS_INFO_STREAM("invoke OK " << request.response.temoto_metadata.request_id);
+      TEMOTO_INFO_STREAM_("invoke OK " << request.response.temoto_metadata.request_id);
     }
     else
     {
       ROS_INFO("FAIL");
     }
-    ROS_INFO_STREAM("invoke for ServiceClass completed");
+    TEMOTO_INFO_STREAM_("invoke for ServiceClass completed");
   }
 
   /**
@@ -51,36 +51,36 @@ public:
  */
   void invoke(Ros1Query<ServiceClass> &wrapped_request)
   {
-    ROS_INFO_STREAM("invoke for Ros1Query wrapper started");
+    TEMOTO_INFO_STREAM_("invoke for Ros1Query wrapper started");
     ServiceClass service_call = wrapped_request.rosQuery();
 
     invoke(service_call);
 
     wrapped_request = Ros1Query<ServiceClass>(service_call);
-    ROS_INFO_STREAM("invoke for Ros1Query wrapper completed");
+    TEMOTO_INFO_STREAM_("invoke for Ros1Query wrapper completed");
   }
 
   void registerUserStatusCb(const std::string &request_id, const UserStatusCb &user_status_cb)
   {
-    ROS_INFO_STREAM("registerUserStatusCb "
+    TEMOTO_INFO_STREAM_("registerUserStatusCb "
                     << " - " << id() << " request: " << request_id);
 
     status_callbacks_[request_id] = user_status_cb;
 
-    ROS_INFO_STREAM("check to see if it really registered: " << hasRegisteredCb(request_id) << " nr of callbacks: " << status_callbacks_.size());
+    TEMOTO_INFO_STREAM_("check to see if it really registered: " << hasRegisteredCb(request_id) << " nr of callbacks: " << status_callbacks_.size());
 
     status_query_ids_.push_back(request_id);
   }
 
   void internalStatusCallback(const std::string &request_id, const temoto_resource_registrar::Status &status)
   {
-    ROS_INFO_STREAM("internalStatusCallback"
+    TEMOTO_INFO_STREAM_("internalStatusCallback"
                     << " - " << id() << " request: " << request_id);
 
-    ROS_INFO_STREAM("Determinging if client cas callback for id " << request_id << " nr of callbacks: " << status_callbacks_.size());
+    TEMOTO_INFO_STREAM_("Determinging if client cas callback for id " << request_id << " nr of callbacks: " << status_callbacks_.size());
     if (hasRegisteredCb(request_id))
     {
-      ROS_INFO_STREAM("!Executing user CB!");
+      TEMOTO_INFO_STREAM_("!Executing user CB!");
       typename ServiceClass::Request request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialised_request_);
       typename ServiceClass::Response response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(status.serialised_response_);
 
@@ -98,7 +98,7 @@ public:
 
   bool hasRegisteredCb(const std::string &request_id) const
   {
-    ROS_INFO_STREAM("hasRegisteredCb "
+    TEMOTO_INFO_STREAM_("hasRegisteredCb "
                     << " - " << id() << " request: " << request_id);
     return status_callbacks_.count(request_id) > 0;
   }

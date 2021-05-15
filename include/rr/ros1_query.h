@@ -31,8 +31,11 @@ public:
     setId(response_data.request_id);
     setStatus(response_data.status);
 
+    if (request_data.metadata.size() > 0)
+      setRequestMetadata(Serializer::deserialize<temoto_resource_registrar::RequestMetadata>(request_data.metadata));
+
     if (response_data.metadata.size() > 0)
-      setMetadata(Serializer::deserialize<temoto_resource_registrar::QueryMetadata>(response_data.metadata));
+      setResponseMetadata(Serializer::deserialize<temoto_resource_registrar::ResponseMetadata>(response_data.metadata));
   }
 
   /**
@@ -86,14 +89,15 @@ public:
    */
   ServiceClass rosQuery()
   {
-    ROS_INFO_STREAM("Returning ROS query");
-
+    TEMOTO_INFO_STREAM_("Returning ROS query");
+    
     typed_query_.request.temoto_metadata.serving_rr = rr();
     typed_query_.request.temoto_metadata.origin_rr = origin();
+    typed_query_.request.temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::RequestMetadata>(requestMetadata());
 
     typed_query_.response.temoto_metadata.request_id = id();
     typed_query_.response.temoto_metadata.status = status();
-    typed_query_.response.temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(metadata());
+    typed_query_.response.temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::ResponseMetadata>(responseMetadata());
 
     return typed_query_;
   }
