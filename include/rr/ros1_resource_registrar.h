@@ -164,6 +164,16 @@ namespace temoto_resource_registrar
       return q;
     }
 
+    template <class ClientQueryType>
+    void registerClientCallback(const std::string &rr_name,
+                                const std::string &server_name,
+                                const std::string &query_id,
+                                std::function<void(ClientQueryType, Status)> user_callback)
+    {
+      std::string client_id = createClient<Ros1Client<ClientQueryType>>(rr_name, server_name);
+      storeClientQueryStatusCb<Ros1Client<ClientQueryType>, std::function<void(ClientQueryType, Status)>>(client_id, query_id, user_callback);
+    }
+
     /**
  * @brief Get the Ros Child Queries object. Used to get executed queries of a dependency of the query
  * defined. Takes in an query ID and the serverName the dependency used.

@@ -460,10 +460,9 @@ namespace temoto_resource_registrar
  * @param server 
  * @param query 
  */
-    template <class CallClientClass, class QueryClass, class StatusCallType>
+    template <class CallClientClass>
     std::string createClient(const std::string &rr,
-                             const std::string &server,
-                             QueryClass &query)
+                             const std::string &server)
     {
       std::string client_name = IDUtils::generateServerName(rr, server);
 
@@ -595,7 +594,7 @@ namespace temoto_resource_registrar
                           QueryClass &query,
                           const StatusCallType &status_callback)
     {
-      std::string client_id = createClient<CallClientClass, QueryClass, StatusCallType>(rr, client_name, query);
+      std::string client_id = createClient<CallClientClass>(rr, client_name);
 
       auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(client_id));
       client.invoke(query);

@@ -9,11 +9,41 @@ int counter = 0;
 int shutdownCounter = 5;
 std::string loadId = "";
 
+void statusCallbackAlternate(temoto_resource_registrar::LoadComponent msg, temoto_resource_registrar::Status status)
+{
+  ROS_INFO_STREAM("-----------------------------------CALLBACK 2" << __func__ << " - " << status.serialised_request_.size() << " - " << msg.request.temoto_metadata.origin_rr);
+
+  counter++;
+
+  if (counter == shutdownCounter)
+  {
+
+    rr.printCatalog();
+    auto r = rr.getRosChildQueries<temoto_resource_registrar::LoadComponent>(loadId, "resourceServer");
+
+    for (const auto &el : r)
+    {
+      ROS_INFO_STREAM("id: " << el.first << " - msg: " << el.second.request);
+    }
+
+    ROS_INFO_STREAM("getServerRrQueries size: " << r.size());
+
+    ROS_INFO_STREAM("Counter reached, unloading: " << loadId << " from: "
+                                                   << "AgentRR");
+    bool res = rr.unload("AgentRR", loadId);
+    ROS_INFO_STREAM("Unload result: " << res);
+  }
+}
+
 void statusCallback(temoto_resource_registrar::LoadComponent msg, temoto_resource_registrar::Status status)
 {
   ROS_INFO_STREAM("-----------------------------------IN " << __func__ << " - " << status.serialised_request_.size() << " - " << msg.request.temoto_metadata.origin_rr);
 
   counter++;
+
+  if (counter == 3) {
+    rr.registerClientCallback<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadId, statusCallbackAlternate);
+  }
 
   if (counter == shutdownCounter)
   {
@@ -109,6 +139,8 @@ int main(int argc, char **argv)
     rr.call<temoto_resource_registrar::LoadComponent>("AgentRR", "resourceServer", loadCall, statusCallback);
 
     loadId = loadCall.response.temoto_metadata.request_id;
+
+    
   }
   catch (const resource_registrar::TemotoErrorStack &e)
   {

@@ -823,14 +823,14 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     std::string targetRr = "targetRr";
     std::string targetServer = "targetServer";
     std::string targetQuery = "targetQuery";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
+    rr.createClient<RrClientBase>(targetRr, targetServer);
 
     EXPECT_EQ(rr.clientCount(), 1);
 
     targetRr = "targetRr2";
     targetServer = "targetServer2";
     targetQuery = "targetQuery2";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
+    rr.createClient<RrClientBase>(targetRr, targetServer);
 
     EXPECT_EQ(rr.clientCount(), 2);
 
@@ -867,7 +867,7 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     targetRr = "targetRr3";
     targetServer = "targetServer3";
     targetQuery = "targetQuery3";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
+    rr.createClient<RrClientBase>(targetRr, targetServer);
 
     EXPECT_EQ(rr.clientCount(), 1);
   }
