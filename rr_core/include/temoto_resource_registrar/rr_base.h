@@ -465,20 +465,30 @@ namespace temoto_resource_registrar
                              const std::string &server,
                              QueryClass &query)
     {
-      std::string clientName = IDUtils::generateServerName(rr, server);
+      std::string client_name = IDUtils::generateServerName(rr, server);
 
-      if (!clients_.exists(clientName))
+      if (!clients_.exists(client_name))
       {
-        //TEMOTO_DEBUG_("creating client! %s", clientName.c_str());
+        //TEMOTO_DEBUG_("creating client! %s", client_name.c_str());
         std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(rr, server);
-        //TEMOTO_DEBUG_("client created! %s", clientName.c_str());
+        //TEMOTO_DEBUG_("client created! %s", client_name.c_str());
         client->setCatalog(rr_catalog_);
         //TEMOTO_DEBUG_("Catalog set.");
         clients_.add(std::move(client));
         //TEMOTO_DEBUG_("Client registered.");
       }
 
-      return clientName;
+      return client_name;
+    }
+
+    template <class CallClientClass, class StatusCallType>
+    void storeClientQueryStatusCb(const std::string client_id, const std::string &query_id, const StatusCallType &status_callback)
+    {
+      if (status_callback != NULL && query_id.size() > 0)
+      {
+        auto client = dynamic_cast<CallClientClass *>(clients_.getElementPtr(client_id));
+        client->registerUserStatusCb(query_id, status_callback);
+      }
     }
 
     virtual void unloadClient(const std::string &client)
@@ -596,15 +606,7 @@ namespace temoto_resource_registrar
       rr_catalog_->storeClientCallRecord(client_id, query.id());
     }
 
-    template <class CallClientClass, class StatusCallType>
-    void storeClientQueryStatusCb(const std::string client_id, const std::string &query_id, const StatusCallType &status_callback)
-    {
-      if (status_callback != NULL && query_id.size() > 0)
-      {
-        auto client = dynamic_cast<CallClientClass *>(clients_.getElementPtr(client_id));
-        client->registerUserStatusCb(query_id, status_callback);
-      }
-    }
+
 
     /**
      * @brief TODO: requires a proper comment.
