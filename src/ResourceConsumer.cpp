@@ -9,10 +9,9 @@
 
 std::string rrName = "ConsumerRR";
 
-
 int main(int argc, char **argv)
 {
-  
+
   auto loadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req, std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res) {
 
   };
@@ -27,25 +26,39 @@ int main(int argc, char **argv)
 
   };
 
-  
   rclcpp::init(argc, argv);
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "in main"); 
+  
+  rclcpp::executors::MultiThreadedExecutor exec;
+
+
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "in main");
   auto rr = std::make_shared<temoto_resource_registrar::ResourceRegistrarRos2>(rrName);
   rr->init();
 
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "inited rr"); 
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "inited rr");
+
+  //rr->sendStatus2();
 
   //Ros2Client<tutorial_interfaces::srv::LoadComponent> r2("test", "val");
   //Ros2Query<tutorial_interfaces::srv::LoadComponent> q();
 
   //Ros2Server<tutorial_interfaces::srv::LoadComponent> s("sss", loadCb, unloadCb, statusCb);
 
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "constructing request");
   auto request = std::make_shared<tutorial_interfaces::srv::LoadComponent::Request>();
-  request -> load_target = "CounterService";
+  request->load_target = "CounterService";
 
-  rr->call<std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request>>("AgentRR", "resourceServer", request);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "executing call");
+
+  rr->call<tutorial_interfaces::srv::LoadComponent>("AgentRR", "resourceServer", request);
+
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "call done");
+
+
+  exec.add_node(rr);
+  exec.spin();
 
   rclcpp::shutdown();
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "shutdown"); 
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "shutdown");
   return 0;
 }

@@ -14,8 +14,8 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_SERIALIZABLE_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_SERIALIZABLE_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_ID_UTILS_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_ID_UTILS_H
 
 #include <string>
 

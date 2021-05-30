@@ -1,6 +1,8 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
+#include "console_bridge/console.h"
+
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
@@ -68,7 +70,7 @@ class RrBaseTest : public ::testing::Test
 protected:
   RrBaseTest()
   {
-    //console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
+    console_bridge::setLogLevel(console_bridge::LogLevel::CONSOLE_BRIDGE_LOG_DEBUG);
   }
 
   virtual ~RrBaseTest()
@@ -251,7 +253,7 @@ public:
       catch (const resource_registrar::TemotoErrorStack &e)
       {
         LOG(INFO) << "server caught a callback exception. returning error to requestor.";
-        query.metadata().errorStack().appendError(e);
+        query.responseMetadata().errorStack().appendError(e);
       }
 
       LOG(INFO) << "Executing query finished callback";
@@ -821,14 +823,14 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     std::string targetRr = "targetRr";
     std::string targetServer = "targetServer";
     std::string targetQuery = "targetQuery";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
+    rr.createClient<RrClientBase>(targetRr, targetServer);
 
     EXPECT_EQ(rr.clientCount(), 1);
 
     targetRr = "targetRr2";
     targetServer = "targetServer2";
     targetQuery = "targetQuery2";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
+    rr.createClient<RrClientBase>(targetRr, targetServer);
 
     EXPECT_EQ(rr.clientCount(), 2);
 
@@ -865,7 +867,7 @@ TEST_F(RrBaseTest, ClientUnloadTest)
     targetRr = "targetRr3";
     targetServer = "targetServer3";
     targetQuery = "targetQuery3";
-    rr.createClient<RrClientBase, std::string, void *const>(targetRr, targetServer, targetQuery);
+    rr.createClient<RrClientBase>(targetRr, targetServer);
 
     EXPECT_EQ(rr.clientCount(), 1);
   }
@@ -1074,6 +1076,7 @@ TEST_F(RrBaseTest, RrServerStatusCallbackTest)
     EXPECT_EQ(status.state_, Status::State::FATAL);
     EXPECT_EQ(status.message_, "message");
     statusCbCnt++;
+    LOG(INFO) << "Status CB finished";
   };
 
   LOG(INFO) << "registering server named 'srv'";

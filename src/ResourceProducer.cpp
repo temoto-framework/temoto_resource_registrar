@@ -80,8 +80,8 @@ int main(int argc, char **argv)
 
   rr.init();
 
-  auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>("counterServer", loadCb, unloadCb, statusCb);
-  rr.registerServer(std::move(server));
+  //auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>("counterServer", loadCb, unloadCb, statusCb);
+  //rr.registerServer(std::move(server));
 
   ROS_INFO("spinning....");
 

@@ -40,6 +40,7 @@ namespace temoto_resource_registrar
 
   void RrClientBase::invoke(const RrQueryBase &query) const
   {
+    std::cout << "base invoke" << std::endl;
   }
 
   void RrClientBase::internalStatusCallback(const std::string &request_id, const Status &status)

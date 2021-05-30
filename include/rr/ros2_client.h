@@ -25,7 +25,16 @@ public:
     //ROS_INFO_STREAM("constructing Ros2Client " << rr << " id: " << name);
     //client_ = nh_.serviceClient<ServiceClass>(id());
 
-    std::shared_ptr<rclcpp::Node> node_ = rclcpp::Node::make_shared(id());
+    node_ = rclcpp::Node::make_shared(name);
+    client_ = node_->create_client<ServiceClass>(id());
+    
+  }
+
+  void setNode(std::shared_ptr<rclcpp::Node> node) {
+    node_ = node;
+  }
+
+  void initialize() {
     client_ = node_->create_client<ServiceClass>(id());
   }
 
@@ -37,6 +46,10 @@ public:
  */
   void invoke(ServiceClass &request)
   {
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke request in async for server:"); 
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id()); 
+
     auto result = client_->async_send_request(request);
 
     if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
@@ -58,11 +71,27 @@ public:
   void invoke(Ros2Query<ServiceClass> &wrapped_request)
   {
     //ROS_INFO_STREAM("invoke for Ros1Query wrapper started");
-    ServiceClass service_call = wrapped_request.rosQuery();
+    //ServiceClass service_call = wrapped_request.rosQuery();
 
-    invoke(service_call);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke request in async for server:"); 
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id()); 
 
-    wrapped_request = Ros2Query<ServiceClass>(service_call);
+    auto result = client_->async_send_request(wrapped_request.request());
+
+    /*
+    if (rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
+    {
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "OK");
+    }
+    else
+    {
+      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "NOK");
+    }
+    */
+
+    //invoke(service_call);
+
+    //wrapped_request = Ros2Query<ServiceClass>(service_call);
     //ROS_INFO_STREAM("invoke for Ros1Query wrapper completed");
   }
 
@@ -112,8 +141,9 @@ public:
 
 protected:
 private:
-  std::shared_ptr<rclcpp::Node> node_;
   typename rclcpp::Client<ServiceClass>::SharedPtr client_;
+
+  std::shared_ptr<rclcpp::Node> node_;
 
   //UserStatusCb user_status_cb_;
   std::unordered_map<std::string, UserStatusCb> status_callbacks_;

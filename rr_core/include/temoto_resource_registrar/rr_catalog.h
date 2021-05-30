@@ -136,10 +136,13 @@ namespace temoto_resource_registrar
 
     void saveCatalog()
     {
+      TEMOTO_DEBUG_("saving catalog to: %s", (configuration_.location()).c_str());
       std::ofstream ofs(configuration_.location());
       boost::archive::binary_oarchive oa(ofs);
       oa << *(this);
       ofs.close();
+
+      TEMOTO_WARN_("Saved Catalog!");
 
       print();
     }

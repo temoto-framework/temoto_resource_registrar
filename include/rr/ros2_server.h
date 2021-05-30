@@ -16,6 +16,9 @@
 #include <string>
 #include <vector>
 
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 /**
  * @brief A wrapper class for the temoto_resource_registrar::RRServerBase. Provides templating to support multiple message types.
  * This class is responsible for executing resource loading and unloading related logic.
@@ -23,11 +26,11 @@
  * @tparam ServiceClass - Type of the resource this server will serve.
  */
 template <class ServiceClass>
-class Ros2Server : public rclcpp::Node, public temoto_resource_registrar::RrServerBase
+class Ros2Server : public temoto_resource_registrar::RrServerBase
 {
 
 public:
-  Ros2Server(const std::string &name,
+  Ros2Server(const std::string &name, std::shared_ptr<rclcpp::Node> node,
              std::function<void(const std::shared_ptr<typename ServiceClass::Request>,
                                 std::shared_ptr<typename ServiceClass::Response>)>
                  member_load_cb,
@@ -39,10 +42,10 @@ public:
                                 const temoto_resource_registrar::Status &)>
                  member_status_cb = NULL)
       : temoto_resource_registrar::RrServerBase(name, NULL, NULL),
-        Node(name),
         member_load_cb_(member_load_cb),
         member_unload_cb_(member_unload_cb),
-        member_status_cb_(member_status_cb)
+        member_status_cb_(member_status_cb),
+        node_(node)
   {
     //RCLCPP_INFO(rclcpp::get_logger("rclcpp"), name);
     //initialize();
@@ -57,6 +60,7 @@ public:
  */
   bool unloadMessage(const std::string &id)
   {
+
     //ROS_INFO_STREAM("Starting to unload id: " << id);
 
     //ROS_INFO_STREAM("------------------ Catalog");
@@ -127,12 +131,14 @@ public:
  * @return true 
  * @return false 
  */
-  bool serverCallback(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
+  void serverCallback(const std::shared_ptr<typename ServiceClass::Request> req, std::shared_ptr<typename ServiceClass::Response> res)
   {
     //ROS_WARN_STREAM("Starting serverCallback " << id());
 
-    typename ServiceClass::Request sanitized_req = sanityzeRequest(req);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "ros 2 server CB gotten");
 
+    std::shared_ptr<typename ServiceClass::Request> sanitized_req = sanityzeRequest(req);
+    
     bool has_equals_defined = QueryUtils::EqualExists<typename ServiceClass::Request>::value;
     //ROS_INFO_STREAM("request has equals defined?: " << has_equals_defined);
 
@@ -150,7 +156,7 @@ public:
       for (const auto &q : all_server_requests)
       {
         std::string ser_req = q.raw_request_;
-        typename ServiceClass::Request request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(ser_req);
+        std::shared_ptr<typename ServiceClass::Request> request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(ser_req);
         if (request == sanitized_req)
         {
           serialized_request = ser_req;
@@ -165,7 +171,7 @@ public:
     }
 
     std::string generated_id = generateId();
-    res.temoto_metadata.request_id = generated_id;
+    res->temoto_metadata.request_id = generated_id;
 
     //ROS_INFO_STREAM("Generated request id: " << generated_id);
 
@@ -195,10 +201,10 @@ public:
       catch (const resource_registrar::TemotoErrorStack &e)
       {
         //ROS_WARN_STREAM("Server encountered an error while executing a callback: " << e.getMessage());
-        wrapped_query.metadata().errorStack().appendError(e);
+        wrapped_query.responseMetadata().errorStack().appendError(e);
         // store metadata object as serialized string in response
-        res.temoto_metadata.status = 500;
-        res.temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::QueryMetadata>(wrapped_query.metadata());
+        res->temoto_metadata.status = 500;
+        res->temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::ResponseMetadata>(wrapped_query.responseMetadata());
       }
 
       //ROS_INFO("Executing query finished callback");
@@ -207,15 +213,16 @@ public:
     else
     {
       //ROS_INFO("Request found. No storage needed. Fetching it... ");
-      typename ServiceClass::Response fetched_response = fetchResponse(request_id, wrapped_query);
+      std::shared_ptr<typename ServiceClass::Response> fetched_response = fetchResponse(request_id, wrapped_query);
       //ROS_INFO("Fetching done...");
-      fetched_response.temoto_metadata.request_id = generated_id;
+      fetched_response->temoto_metadata.request_id = generated_id;
       res = fetched_response;
     }
 
     rr_catalog_->saveCatalog();
     //ROS_WARN_STREAM("server call end " << res.temoto_metadata.request_id << " " << id());
-    return true;
+
+    
   }
 
   void triggerCallback(const temoto_resource_registrar::Status &status) const
@@ -246,43 +253,54 @@ private:
   //ros::ServiceServer service_;
 
   typename rclcpp::Client<ServiceClass>::SharedPtr client_;
+  typename rclcpp::Service<ServiceClass>::SharedPtr service_;
+
+  std::shared_ptr<rclcpp::Node> node_;
+
+  
 
   virtual void initialize()
   {
     //ROS_INFO_STREAM("Starting up server..." << id_);
     //service_ = nh_.advertiseService(id_, &Ros2Server::serverCallback, this);
     //ROS_INFO_STREAM("Starting up server done!!!");
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id());
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id_);
-    client_ = this->create_client<ServiceClass>(id());
+    //client_ = this->serverCallback<ServiceClass>(id());
+    service_ = node_->create_service<ServiceClass>(id(), std::bind(&Ros2Server::serverCallback, this, _1, _2));
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "initialized server with ID:"); 
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id()); 
   }
 
-  Ros2Query<ServiceClass> wrap(typename ServiceClass::Request &req, typename ServiceClass::Response &res)
+  Ros2Query<ServiceClass> wrap(std::shared_ptr<typename ServiceClass::Request> req, std::shared_ptr<typename ServiceClass::Response> res)
   {
-    return Ros2Query<ServiceClass>(req.temoto_metadata, res.temoto_metadata);
+    return Ros2Query<ServiceClass>(req->temoto_metadata, res->temoto_metadata);
   }
 
-  typename ServiceClass::Response fetchResponse(const std::string &requestId, Ros2Query<ServiceClass> query) const
+  std::shared_ptr<typename ServiceClass::Response> fetchResponse(const std::string &requestId, Ros2Query<ServiceClass> query) const
   {
     std::string serialized_response = rr_catalog_->processExisting(id_, requestId, query);
-    typename ServiceClass::Response fetched_response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serialized_response);
+    std::shared_ptr<typename ServiceClass::Response> fetched_response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Response>(serialized_response);
 
     return fetched_response;
   }
 
-  static typename ServiceClass::Request sanityzeRequest(typename ServiceClass::Request data)
+  static std::shared_ptr<typename ServiceClass::Request> sanityzeRequest(const std::shared_ptr<typename ServiceClass::Request> &data)
   {
     typename ServiceClass::Request empty;
-    data.temoto_metadata = empty.temoto_metadata;
-    return data;
+
+    std::shared_ptr<typename ServiceClass::Request> res = std::make_shared<typename ServiceClass::Request>(*data);
+    res->temoto_metadata = empty.temoto_metadata;
+    return res;
   }
 
-  std::string sanitizeAndSerialize(typename ServiceClass::Response res)
+  std::string sanitizeAndSerialize(const std::shared_ptr<typename ServiceClass::Response> &res)
   {
     typename ServiceClass::Response empty;
-    res.temoto_metadata = empty.temoto_metadata;
 
-    std::string serialized = temoto_resource_registrar::MessageSerializer::serializeMessage<typename ServiceClass::Response>(res);
+    std::shared_ptr<typename ServiceClass::Response> copy = std::make_shared<typename ServiceClass::Response>(*res);
+    copy->temoto_metadata = empty.temoto_metadata;
+
+    std::string serialized = temoto_resource_registrar::MessageSerializer::serializeMessage<typename ServiceClass::Response>(copy);
 
     return serialized;
   }

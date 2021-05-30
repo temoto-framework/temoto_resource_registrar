@@ -26,7 +26,7 @@ namespace temoto_resource_registrar
    * @return std::string - string of the serialized message
    */
     template <class PayloadType>
-    static std::string serializeMessage(const PayloadType &payload)
+    static std::string serializeMessage(const std::shared_ptr<PayloadType> &payload)
     {
       rclcpp::SerializedMessage serialized_msg;
       static rclcpp::Serialization<PayloadType> serializer;
