@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   };
 
   rclcpp::init(argc, argv);
-  
+
   rclcpp::executors::MultiThreadedExecutor exec;
 
 
@@ -55,8 +55,8 @@ int main(int argc, char **argv)
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "call done");
 
 
-  exec.add_node(rr);
-  exec.spin();
+  //exec.add_node(rr);
+  //exec.spin();
 
   rclcpp::shutdown();
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "shutdown");

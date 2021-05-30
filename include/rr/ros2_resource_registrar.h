@@ -130,13 +130,13 @@ namespace temoto_resource_registrar
     {
       //ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id);
 
-      //std::string client_name = IDUtils::generateUnload(rr);
-      //initClient<tutorial_interfaces::srv::UnloadComponent>(client_name, unload_clients_);
+      std::string client_name = IDUtils::generateUnload(rr);
+      initClient<tutorial_interfaces::srv::UnloadComponent>(client_name, unload_clients_);
 
-      //auto request = std::make_shared<tutorial_interfaces::srv::UnloadComponent::Request>();
-      //request->target = id;
+      auto request = std::make_shared<tutorial_interfaces::srv::UnloadComponent::Request>();
+      request->target = id;
 
-      //auto result = unload_clients_[client_name]->async_send_request(request);
+      auto result = unload_clients_[client_name]->async_send_request(request);
       return true;
       //return rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
 
@@ -144,26 +144,6 @@ namespace temoto_resource_registrar
       //ROS_INFO_STREAM("result: " << res);
 
       //return res;
-    }
-
-    template <class CallClientClass>
-    std::string createClient(const std::string &rr,
-                             const std::string &server)
-    {
-      std::string client_name = IDUtils::generateServerName(rr, server);
-
-      if (!clients_.exists(client_name))
-      {
-        //TEMOTO_DEBUG_("creating client! %s", client_name.c_str());
-        std::unique_ptr<CallClientClass> client = std::make_unique<CallClientClass>(rr, server);
-        //TEMOTO_DEBUG_("client created! %s", client_name.c_str());
-        client->setCatalog(rr_catalog_);
-        //TEMOTO_DEBUG_("Catalog set.");
-        clients_.add(std::move(client));
-        //TEMOTO_DEBUG_("Client registered.");
-      }
-
-      return client_name;
     }
 
     void sendStatus2()
@@ -195,20 +175,24 @@ namespace temoto_resource_registrar
  * @param container 
  * @return QueryType 
  */
-    /*template <class QueryType>
-    QueryType deSerializeQuery(const QueryContainer<RawData> &container)
+    template <class QueryType>
+    std::pair<
+        std::shared_ptr<typename QueryType::Request>,
+        std::shared_ptr<typename QueryType::Response>>
+    deSerializeQuery(const QueryContainer<RawData> &container)
     {
       //ROS_INFO_STREAM("deSerializeBaseQuery ROS ");
-      QueryType q;
+      std::pair<
+          std::shared_ptr<typename QueryType::Request>,
+          std::shared_ptr<typename QueryType::Response>>
+          queryPair(temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Request>(container.raw_request_),
+                    temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Response>(container.raw_query_));
 
-      q.request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Request>(container.raw_request_);
-      q.response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Response>(container.raw_query_);
+      queryPair.second->temoto_metadata.request_id = container.q_.id();
 
-      q.response.temoto_metadata.request_id = container.q_.id();
-
-      return q;
+      return queryPair;
     }
-*/
+
     /**
  * @brief Get the Ros Child Queries object. Used to get executed queries of a dependency of the query
  * defined. Takes in an query ID and the serverName the dependency used.
@@ -219,34 +203,45 @@ namespace temoto_resource_registrar
  * type can exist, this is why a name needs to be defined.
  * @return std::map<std::string, QueryType> 
  */
-    /*template <class QueryType>
+    template <class QueryType>
     std::map<std::string, QueryType> getRosChildQueries(const std::string &id, const std::string &server_name)
     {
       //ROS_DEBUG_STREAM("getting RR queries for id " << id << " and server " << server_name);
       std::map<std::string, std::pair<std::string, std::string>> serialised_queries = getChildQueries(id, server_name);
 
       //ROS_DEBUG_STREAM("Found " << serialised_queries.size() << " queries");
-      std::map<std::string, QueryType> ros_queries;
+      std::map<std::string,
+               std::pair<
+                   std::shared_ptr<typename QueryType::Request>,
+                   std::shared_ptr<typename QueryType::Response>>>
+          ros_queries;
 
       //ROS_DEBUG_STREAM("Deserializing strings to query type");
       for (const auto &el : serialised_queries)
       {
-        QueryType q;
-        q.request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Request>(el.second.first);
-        q.response = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Response>(el.second.second);
-        ros_queries[el.first] = q;
+        std::pair<
+            std::shared_ptr<typename QueryType::Request>,
+            std::shared_ptr<typename QueryType::Response>>
+            request_response_pair(
+                temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Request>(el.second.first),
+                temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Response>(el.second.second));
+
+        ros_queries[el.first] = request_response_pair;
       }
       //ROS_DEBUG_STREAM("Returning...");
       return ros_queries;
-    }*/
+    }
 
-    /*template <class QueryType>
+    template <class QueryType>
     std::vector<QueryType> getServerQueries(const std::string &server)
     {
       //ROS_INFO_STREAM("getServerQueries printing before processign catalog.");
       std::string server_name = IDUtils::generateServerName(name(), server);
       rr_catalog_->print();
-      std::vector<QueryType> out;
+      std::vector<std::pair<
+          std::shared_ptr<typename QueryType::Request>,
+          std::shared_ptr<typename QueryType::Response>>>
+          out;
 
       for (auto const &queryContainer : rr_catalog_->getUniqueServerQueries(server_name))
       {
@@ -257,18 +252,20 @@ namespace temoto_resource_registrar
       rr_catalog_->print();
 
       return out;
-    }*/
+    }
 
-    /*template <class QueryType>
+    template <class QueryType>
     void updateQueryResponse(const std::string &server,
-                             const QueryType &call)
+                             const std::pair<
+                                 std::shared_ptr<typename QueryType::Request>,
+                                 std::shared_ptr<typename QueryType::Response>> &call)
     {
       //ROS_INFO_STREAM("updateQueryResponse for server " << server);
 
-      std::string serialized_request = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Request>(sanityzeData<typename QueryType::Request>(call.request));
-      std::string serialized_response = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Response>(sanityzeData<typename QueryType::Response>(call.response));
+      std::string serialized_request = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Request>(sanityzeData<typename QueryType::Request>(call.first));
+      std::string serialized_response = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Response>(sanityzeData<typename QueryType::Response>(call.second));
       updateQuery(server, serialized_request, serialized_response);
-    }*/
+    }
 
   protected:
     std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::UnloadComponent>::SharedPtr> unload_clients_;
@@ -323,7 +320,7 @@ namespace temoto_resource_registrar
       //return rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
     };
 
-    /*
+    
     virtual std::map<std::string, std::pair<std::string, std::string>> callDataFetchClient(const std::string &target_rr,
                                                                                            const std::string &origin_rr,
                                                                                            const std::string &server_name)
@@ -346,10 +343,9 @@ namespace temoto_resource_registrar
       auto result = fetch_clients_[client_name]->async_send_request(request);
 
       std::map<std::string, std::pair<std::string, std::string>> res;
-
-      if (false/*rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS*/
-    /*)
-  /*    {
+/*
+      if (rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
+      {
         int c = 0;
         for (const auto &id : result.get()->ids)
         {
@@ -359,10 +355,10 @@ namespace temoto_resource_registrar
           c++;
         }
       }
-
+*/
       return res;
     }
-*/
+
     /**
  * @brief ROS 1 implementation of the unloadResource method. 
  * 
@@ -438,7 +434,7 @@ namespace temoto_resource_registrar
       //ROS_INFO_STREAM("unloadCallback " << req.target);
       std::string id = req->target;
       //ROS_INFO_STREAM("std::string id " << id);
-      //  res->status = localUnload(id);
+      res->status = localUnload(id);
     }
 
     void statusCallback(const std::shared_ptr<tutorial_interfaces::srv::StatusComponent::Request> req,
@@ -446,14 +442,14 @@ namespace temoto_resource_registrar
     {
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "got status");
       //ROS_INFO_STREAM("statusCallback: " << req.target);
-      //handleStatus(req->target, {static_cast<Status::State>(req->status), req->target, req->message, req->serialised_request, req->serialised_response});
+      handleStatus(req->target, {static_cast<Status::State>(req->status), req->target, req->message, req->serialised_request, req->serialised_response});
     }
 
     void dataFetchCallback(const std::shared_ptr<tutorial_interfaces::srv::DataFetchComponent::Request> req,
                            std::shared_ptr<tutorial_interfaces::srv::DataFetchComponent::Response> res)
     {
       //ROS_INFO_STREAM("syncCallback " << req);
-      /*std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req->origin_rr, req->server_name);
+      std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req->origin_rr, req->server_name);
       std::vector<std::string> ids, serialized_requests, serialized_responses;
 
       for (const auto &el : resMap)
@@ -466,7 +462,6 @@ namespace temoto_resource_registrar
       res->ids = ids;
       res->serialized_requests = serialized_requests;
       res->serialized_responses = serialized_responses;
-    */
     }
 
     /**
@@ -476,14 +471,16 @@ namespace temoto_resource_registrar
  * @param data 
  * @return MsgClass 
  */
-    /*  template <class MsgClass>
-    static MsgClass sanityzeData(MsgClass data)
+    template <class MsgClass>
+    static MsgClass sanityzeData(const std::shared_ptr<MsgClass> &data)
     {
       MsgClass empty;
-      data.temoto_metadata = empty.temoto_metadata;
-      return data;
+      
+      std::shared_ptr<MsgClass> copy = std::make_shared<MsgClass>(*data);
+
+      copy->temoto_metadata = empty.temoto_metadata;
+      return copy;
     }
-    */
   };
 }
 #endif

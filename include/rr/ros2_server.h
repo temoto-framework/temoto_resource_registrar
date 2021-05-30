@@ -138,7 +138,7 @@ public:
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "ros 2 server CB gotten");
 
     std::shared_ptr<typename ServiceClass::Request> sanitized_req = sanityzeRequest(req);
-    
+
     bool has_equals_defined = QueryUtils::EqualExists<typename ServiceClass::Request>::value;
     //ROS_INFO_STREAM("request has equals defined?: " << has_equals_defined);
 
@@ -148,7 +148,7 @@ public:
     //ROS_INFO_STREAM("checking existance of request in catalog... ");
     //ROS_INFO_STREAM("Message: " << req);
     //ROS_INFO_STREAM("sanitized Message: " << sanitized_req);
-
+has_equals_defined = false;
     if (has_equals_defined)
     {
       //ROS_INFO_STREAM("evaluating uniqueness based on ==");
@@ -167,6 +167,8 @@ public:
     else
     {
       //ROS_INFO_STREAM("evaluating uniqueness based on string comparison");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Ser. req. " + serialized_request);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%i", serialized_request.size());
       request_id = this->rr_catalog_->queryExists(id_, serialized_request);
     }
 
@@ -174,12 +176,12 @@ public:
     res->temoto_metadata.request_id = generated_id;
 
     //ROS_INFO_STREAM("Generated request id: " << generated_id);
-
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Generated request id: " + generated_id);
     Ros2Query<ServiceClass> wrapped_query = wrap(req, res);
 
     if (request_id.size() == 0)
     {
-
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Request is unique");
       try
       {
         //ROS_INFO("Executing query startup callback");
@@ -213,6 +215,7 @@ public:
     else
     {
       //ROS_INFO("Request found. No storage needed. Fetching it... ");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Request found. No storage needed. Fetching it... ");
       std::shared_ptr<typename ServiceClass::Response> fetched_response = fetchResponse(request_id, wrapped_query);
       //ROS_INFO("Fetching done...");
       fetched_response->temoto_metadata.request_id = generated_id;
@@ -221,8 +224,6 @@ public:
 
     rr_catalog_->saveCatalog();
     //ROS_WARN_STREAM("server call end " << res.temoto_metadata.request_id << " " << id());
-
-    
   }
 
   void triggerCallback(const temoto_resource_registrar::Status &status) const
@@ -257,8 +258,6 @@ private:
 
   std::shared_ptr<rclcpp::Node> node_;
 
-  
-
   virtual void initialize()
   {
     //ROS_INFO_STREAM("Starting up server..." << id_);
@@ -267,8 +266,8 @@ private:
     //client_ = this->serverCallback<ServiceClass>(id());
     service_ = node_->create_service<ServiceClass>(id(), std::bind(&Ros2Server::serverCallback, this, _1, _2));
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "initialized server with ID:"); 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id()); 
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "initialized server with ID:");
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id());
   }
 
   Ros2Query<ServiceClass> wrap(std::shared_ptr<typename ServiceClass::Request> req, std::shared_ptr<typename ServiceClass::Response> res)
