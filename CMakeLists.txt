@@ -19,7 +19,7 @@ endif()
 find_library(rr_core REQUIRED)
 
 
-find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
+find_package(Boost REQUIRED COMPONENTS system filesystem serialization thread)
 
 set(headers
   include

@@ -17,6 +17,8 @@ namespace temoto_resource_registrar
                                                 responsible_server_(server),
                                                 empty_(false)
     {
+      std::cout << "\t\tstroning new id: " <<q.id() << " ;origin " << q.origin() << std::endl;
+
       storeNewId(q.id(), q.origin());
     };
 

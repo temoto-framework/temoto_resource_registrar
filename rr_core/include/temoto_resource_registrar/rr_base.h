@@ -308,8 +308,11 @@ namespace temoto_resource_registrar
       ////TEMOTO_DEBUG_("core sendStatus %s", status_data.id_);
 
       std::unordered_map<std::string, std::string> notify_ids = rr_catalog_->getAllQueryIds(status_data.id_);
+      
       for (auto const &not_id : notify_ids)
       {
+
+        std::cout << "\t callStatusClient for rr" << not_id.second << std::endl;
         ////TEMOTO_DEBUG_("\t callStatusClient for rr %s", not_id.second.c_str());
 
         bool status_result = callStatusClient(not_id.second, quiery_id, status_data);
@@ -575,7 +578,7 @@ namespace temoto_resource_registrar
 
     virtual bool callStatusClient(const std::string &target_rr, const std::string &request_id, Status status_data)
     {
-      ////TEMOTO_DEBUG_("target rr for status: %s", target_rr.c_str());
+      //TEMOTO_DEBUG_("target rr for status: %s", target_rr.c_str());
 
       auto container = rr_catalog_->findOriginalContainer(status_data.id_);
 

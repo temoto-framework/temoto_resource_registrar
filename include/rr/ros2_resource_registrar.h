@@ -17,10 +17,6 @@
 
 #include <functional>
 
-using rclcpp::executors::MultiThreadedExecutor;
-using std::placeholders::_1;
-using std::placeholders::_2;
-
 namespace temoto_resource_registrar
 {
 
@@ -90,13 +86,15 @@ namespace temoto_resource_registrar
  * @param server - Name of the target Ros1Server.
  * @param query - User query as a QueryType srv object.
  * @param status_func - Optional. User defined status function. Executed when a status is sent by a downstream server.
- * @param override_status - Optional. Forces overwriting of the client status function.
  */
     template <class QueryType>
-    void call(const std::string &rr,
-              const std::string &server,
-              std::shared_ptr<typename QueryType::Request> query,
-              std::function<void(QueryType, Status)> status_func = NULL)
+    Ros2Query<QueryType> call(const std::string &rr,
+                              const std::string &server,
+                              std::shared_ptr<typename QueryType::Request> query,
+                              std::function<void(const std::shared_ptr<typename QueryType::Request> &,
+                                                 std::shared_ptr<typename QueryType::Response>,
+                                                 const temoto_resource_registrar::Status &)>
+                                  status_func = NULL)
     {
       //ROS_INFO_STREAM("calling " << rr << " server " << server);
 
@@ -105,13 +103,15 @@ namespace temoto_resource_registrar
       privateCall<Ros2Client<QueryType>,
                   Ros2Server<QueryType>,
                   Ros2Query<QueryType>,
-                  std::function<void(QueryType, Status)>>(&rr,
-                                                          NULL,
-                                                          server,
-                                                          wrapped_base_query,
-                                                          status_func);
+                  std::function<void(const std::shared_ptr<typename QueryType::Request> &,
+                                     std::shared_ptr<typename QueryType::Response>,
+                                     const temoto_resource_registrar::Status &)>>(&rr,
+                                                                                  NULL,
+                                                                                  server,
+                                                                                  wrapped_base_query,
+                                                                                  status_func);
 
-      //query = wrapped_base_query.rosQuery();
+      return wrapped_base_query;
 
       //ROS_INFO_STREAM("calling " << rr << " server " << server << " done");
     }
@@ -144,26 +144,6 @@ namespace temoto_resource_registrar
       //ROS_INFO_STREAM("result: " << res);
 
       //return res;
-    }
-
-    void sendStatus2()
-    {
-      //callStatusClient("AgentRR", "", {temoto_resource_registrar::Status::State::FATAL, "ID", "MSG"});
-
-      std::string client_name = IDUtils::generateStatus("AgentRR");
-
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "client name is: " + client_name);
-
-      initClient<tutorial_interfaces::srv::StatusComponent>(client_name, status_clients_);
-
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "req assembly");
-      auto request = std::make_shared<tutorial_interfaces::srv::StatusComponent::Request>();
-
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "async send");
-
-      status_clients_[client_name]->async_send_request(request);
-
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "async send done");
     }
 
     /**
@@ -272,6 +252,63 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::StatusComponent>::SharedPtr> status_clients_;
     std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr> fetch_clients_;
 
+std::string string_to_hex(const std::string& input)
+{
+    static const char hex_digits[] = "0123456789ABCDEF";
+
+    std::string output;
+    output.reserve(input.length() * 2);
+    for (unsigned char c : input)
+    {
+        output.push_back(hex_digits[c >> 4]);
+        output.push_back(hex_digits[c & 15]);
+    }
+    return output;
+}
+
+#include <stdexcept>
+
+int hex_value(unsigned char hex_digit)
+{
+    static const signed char hex_values[256] = {
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    };
+    int value = hex_values[hex_digit];
+    if (value == -1) throw std::invalid_argument("invalid hex digit");
+    return value;
+}
+
+std::string hex_to_string(const std::string& input)
+{
+    const auto len = input.length();
+    if (len & 1) throw std::invalid_argument("odd length");
+
+    std::string output;
+    output.reserve(len / 2);
+    for (auto it = input.begin(); it != input.end(); )
+    {
+        int hi = hex_value(*it++);
+        int lo = hex_value(*it++);
+        output.push_back(hi << 4 | lo);
+    }
+    return output;
+}
+
     /**
  * @brief Virtual method that needs to be implemented on every extension of RR_CORE. This method creates and sends the status
  * callback to a target that is defined in the statusData.
@@ -284,7 +321,6 @@ namespace temoto_resource_registrar
  */
     virtual bool callStatusClient(const std::string &target_rr, const std::string &request_id, Status status_data)
     {
-
       std::string client_name = IDUtils::generateStatus(target_rr);
 
       initClient<tutorial_interfaces::srv::StatusComponent>(client_name, status_clients_);
@@ -297,11 +333,15 @@ namespace temoto_resource_registrar
       if (!container.empty_)
       {
         //ROS_WARN_STREAM("CONTAINER EXISTS");
-        request->serialised_request = container.raw_request_;
-        request->serialised_response = container.raw_query_;
+        request->serialised_request = string_to_hex(container.raw_request_);
+        request->serialised_response = string_to_hex(container.raw_query_);
 
         status_data.serialised_request_ = container.raw_request_;
         status_data.serialised_response_ = container.raw_query_;
+
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "container is there. Here are sizes:");
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%i", request->serialised_request.size());
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%i", request->serialised_response.size());
       }
       else
       {
@@ -315,12 +355,12 @@ namespace temoto_resource_registrar
       request->message = status_data.message_;
 
       //ROS_INFO_STREAM("calling status client " << client_name << " target id: " << status_data.id_);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Calling client with id: " + client_name + " target id: " + status_data.id_);
       auto result = status_clients_[client_name]->async_send_request(request);
       return true;
       //return rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
     };
 
-    
     virtual std::map<std::string, std::pair<std::string, std::string>> callDataFetchClient(const std::string &target_rr,
                                                                                            const std::string &origin_rr,
                                                                                            const std::string &server_name)
@@ -343,7 +383,7 @@ namespace temoto_resource_registrar
       auto result = fetch_clients_[client_name]->async_send_request(request);
 
       std::map<std::string, std::pair<std::string, std::string>> res;
-/*
+      /*
       if (rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
       {
         int c = 0;
@@ -409,15 +449,15 @@ namespace temoto_resource_registrar
 
       unload_service_ =
           this->create_service<tutorial_interfaces::srv::UnloadComponent>(IDUtils::generateUnload(name()),
-                                                                          std::bind(&ResourceRegistrarRos2::unloadCallback, this, _1, _2));
+                                                                          std::bind(&ResourceRegistrarRos2::unloadCallback, this, std::placeholders::_1, std::placeholders::_2));
 
       status_service_ =
           this->create_service<tutorial_interfaces::srv::StatusComponent>(IDUtils::generateStatus(name()),
-                                                                          std::bind(&ResourceRegistrarRos2::statusCallback, this, _1, _2));
+                                                                          std::bind(&ResourceRegistrarRos2::statusCallback, this, std::placeholders::_1, std::placeholders::_2));
 
       fetch_service_ =
           this->create_service<tutorial_interfaces::srv::DataFetchComponent>(IDUtils::generateFetch(name()),
-                                                                             std::bind(&ResourceRegistrarRos2::dataFetchCallback, this, _1, _2));
+                                                                             std::bind(&ResourceRegistrarRos2::dataFetchCallback, this, std::placeholders::_1, std::placeholders::_2));
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "completed....");
 
@@ -442,7 +482,19 @@ namespace temoto_resource_registrar
     {
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "got status");
       //ROS_INFO_STREAM("statusCallback: " << req.target);
-      handleStatus(req->target, {static_cast<Status::State>(req->status), req->target, req->message, req->serialised_request, req->serialised_response});
+      int status = req->status;
+      std::string target = req->target;
+      std::string message = req->message;
+      std::string serialised_request = hex_to_string(req->serialised_request);
+      std::string serialised_response = hex_to_string(req->serialised_response);
+
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+target);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+message);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+serialised_request);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+serialised_response);
+
+
+      handleStatus(target, {static_cast<Status::State>(status), target, message, serialised_request, serialised_response});
     }
 
     void dataFetchCallback(const std::shared_ptr<tutorial_interfaces::srv::DataFetchComponent::Request> req,
@@ -475,7 +527,7 @@ namespace temoto_resource_registrar
     static MsgClass sanityzeData(const std::shared_ptr<MsgClass> &data)
     {
       MsgClass empty;
-      
+
       std::shared_ptr<MsgClass> copy = std::make_shared<MsgClass>(*data);
 
       copy->temoto_metadata = empty.temoto_metadata;

@@ -31,24 +31,13 @@ public:
     setId(response_data.request_id);
     setStatus(response_data.status);
 
+    /*
     if (request_data.metadata.size() > 0)
       setRequestMetadata(Serializer::deserialize<temoto_resource_registrar::RequestMetadata>(request_data.metadata));
-
+*/
     if (response_data.metadata.size() > 0)
       setResponseMetadata(Serializer::deserialize<temoto_resource_registrar::ResponseMetadata>(response_data.metadata));
   }
-
-  /**
-   * @brief Construct a new Ros 1 Query object. Stores existing request data.
-   * 
-   * @param query 
-   */
-  /*
-  Ros2Query(const std::shared_ptr<ServiceClass> &query) : Ros2Query(query->request.temoto_metadata, query->response.temoto_metadata)
-  {
-    typed_query_ = query;
-  }
-  */
 
   Ros2Query(const std::shared_ptr<typename ServiceClass::Request> &request)
   {
@@ -61,6 +50,17 @@ public:
     typed_query_req_ = request;
   }
 
+  void response(const std::shared_ptr<typename ServiceClass::Response> &response)
+  {
+    typed_query_res_ = response;
+
+    setId(response->temoto_metadata.request_id);
+    setStatus(response->temoto_metadata.status);
+
+    if (response->temoto_metadata.metadata.size() > 0)
+      setResponseMetadata(Serializer::deserialize<temoto_resource_registrar::ResponseMetadata>(response->temoto_metadata.metadata));
+  }
+
   /**
    * @brief Returs the reference of the stored srv request.
    * 
@@ -68,6 +68,11 @@ public:
    */
   std::shared_ptr<typename ServiceClass::Request> request()
   {
+    typed_query_req_->temoto_metadata.serving_rr = rr();
+    typed_query_req_->temoto_metadata.origin_rr = origin();
+
+    typed_query_req_->temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::RequestMetadata>(requestMetadata());
+
     return typed_query_req_;
   }
 
@@ -78,6 +83,10 @@ public:
  */
   std::shared_ptr<typename ServiceClass::Response> response()
   {
+    typed_query_res_->temoto_metadata.request_id = id();
+    typed_query_res_->temoto_metadata.status = status();
+    typed_query_res_->temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::ResponseMetadata>(responseMetadata());
+
     return typed_query_res_;
   }
 

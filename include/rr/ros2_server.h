@@ -16,9 +16,6 @@
 #include <string>
 #include <vector>
 
-using std::placeholders::_1;
-using std::placeholders::_2;
-
 /**
  * @brief A wrapper class for the temoto_resource_registrar::RRServerBase. Provides templating to support multiple message types.
  * This class is responsible for executing resource loading and unloading related logic.
@@ -148,7 +145,7 @@ public:
     //ROS_INFO_STREAM("checking existance of request in catalog... ");
     //ROS_INFO_STREAM("Message: " << req);
     //ROS_INFO_STREAM("sanitized Message: " << sanitized_req);
-has_equals_defined = false;
+    has_equals_defined = false;
     if (has_equals_defined)
     {
       //ROS_INFO_STREAM("evaluating uniqueness based on ==");
@@ -253,7 +250,7 @@ private:
   //ros::NodeHandle nh_;
   //ros::ServiceServer service_;
 
-  typename rclcpp::Client<ServiceClass>::SharedPtr client_;
+  //typename rclcpp::Client<ServiceClass>::SharedPtr client_;
   typename rclcpp::Service<ServiceClass>::SharedPtr service_;
 
   std::shared_ptr<rclcpp::Node> node_;
@@ -264,7 +261,7 @@ private:
     //service_ = nh_.advertiseService(id_, &Ros2Server::serverCallback, this);
     //ROS_INFO_STREAM("Starting up server done!!!");
     //client_ = this->serverCallback<ServiceClass>(id());
-    service_ = node_->create_service<ServiceClass>(id(), std::bind(&Ros2Server::serverCallback, this, _1, _2));
+    service_ = node_->create_service<ServiceClass>(id(), std::bind(&Ros2Server::serverCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "initialized server with ID:");
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id());
