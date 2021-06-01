@@ -319,27 +319,15 @@ namespace temoto_resource_registrar
 
     virtual void handleStatus(const std::string &request_id, Status status_data)
     {
-      //TEMOTO_DEBUG_("entered handleStatus &s - %s - %s", name().c_str(), request_id.c_str(), status_data.id_.c_str());
+      TEMOTO_DEBUG_("entered handleStatus %s - %s - %s", name().c_str(), request_id.c_str(), status_data.id_.c_str());
+
       std::string original_id = rr_catalog_->getOriginQueryId(status_data.id_);
-
-      //TEMOTO_DEBUG_("query id %s", original_id.c_str());
-
-      if (original_id.size())
-      {
-        std::unordered_map<std::string, std::string> dependency_map = rr_catalog_->getDependencies(original_id);
-        std::string firstId = dependency_map.begin()->first;
-        // stop attempt if dependency
-        if (status_data.id_ != firstId)
-        {
-          return;
-        }
-      }
-
       std::string client_name = rr_catalog_->getIdClient(status_data.id_);
+      TEMOTO_DEBUG_("query id %s", original_id.c_str());
 
       if (clients_.exists(client_name))
       {
-        //TEMOTO_DEBUG_("\t\tcalling callback of client %s", client_name.c_str());
+        TEMOTO_DEBUG_("calling callback of client %s", client_name.c_str());
         clients_.runCallback(client_name, request_id, status_data);
       }
 
@@ -347,25 +335,25 @@ namespace temoto_resource_registrar
       {
         status_data.id_ = original_id;
 
-        //TEMOTO_DEBUG_("handleStatus");
+        TEMOTO_DEBUG_("handleStatus");
         auto container = rr_catalog_->findOriginalContainer(status_data.id_);
         if (!container.empty_)
         {
-          //TEMOTO_DEBUG_("\t\t\t!container.empty_");
+          TEMOTO_DEBUG_("!container.empty_");
           status_data.serialised_request_ = container.raw_request_;
           status_data.serialised_response_ = container.raw_query_;
         }
         else
         {
-          //TEMOTO_DEBUG_("\t\t\tcontainer.empty_");
+          TEMOTO_DEBUG_("container.empty_");
         }
 
-        //TEMOTO_DEBUG_("\t\tsendStatus to target %s", status_data.id_.c_str());
+        TEMOTO_DEBUG_("sendStatus to target %s", status_data.id_.c_str());
 
         std::async(&RrBase::sendStatus, this, original_id, status_data);
       }
 
-      //TEMOTO_DEBUG_("-----exited handleStatus %s", status_data.id_.c_str());
+      TEMOTO_DEBUG_("-----exited handleStatus %s", status_data.id_.c_str());
     }
 
     std::map<std::string, std::pair<std::string, std::string>> getChildQueries(const std::string &id, const std::string &server_name)

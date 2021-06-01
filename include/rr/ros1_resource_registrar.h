@@ -179,6 +179,7 @@ namespace temoto_resource_registrar
                             const std::string &parent_query_id)
     {
       rr_catalog_->storeDependency(parent_query_id, rr_name, query_id);
+      autoSaveCatalog();
     }
 
     /**
