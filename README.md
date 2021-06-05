@@ -7,9 +7,9 @@ flexibility.
 ## How to install
 
 This package contains of 3 parts:
-* [The rr_core library](temoto_resource_registrar/rr_core)
+* [The rr_core library](rr_core)
 * The ROS2 extension
-* [The ROS 2 communication interfaces](temoto_resource_registrar/rr_interfaces)
+* [The ROS 2 communication interfaces](rr_interfaces)
 
 
 1. Firstly rr_core needs to be built and installed according to its instructions
@@ -22,9 +22,9 @@ colcon build
 ## What is included
 
 This POC includes a RR system containing of [3 nodes](temoto_resource_registrar/src):
-* [A resource consumer]( temoto_resource_registrar/src/ResourceConsumer.cpp), requireing resources.
-* [A resource agent]( temoto_resource_registrar/src/ResourceAgent.cpp), relaying consumer requests to producers.
-* [A resource producer]( temoto_resource_registrar/src/ResourceProducer.cpp), data generators for potential consumers.
+* [A resource consumer]( src/ResourceConsumer.cpp), requireing resources.
+* [A resource agent]( src/ResourceAgent.cpp), relaying consumer requests to producers.
+* [A resource producer]( src/ResourceProducer.cpp), data generators for potential consumers.
 
 These nodes to the following:
 * The consumer requests a counter resource from the agent
