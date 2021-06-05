@@ -3,13 +3,13 @@
 
 #include "temoto_resource_registrar/rr_query_base.h"
 #include "temoto_resource_registrar/rr_serializer.h"
-#include "tutorial_interfaces/msg/temoto_request_metadata.hpp"
-#include "tutorial_interfaces/msg/temoto_response_metadata.hpp"
+#include "rr_interfaces/msg/temoto_request_metadata.hpp"
+#include "rr_interfaces/msg/temoto_response_metadata.hpp"
 
 /**
  * @brief A wrapper class for temoto_resource_registrar::RrQueryBase. Used as a intermediery container to hande data by the ResourceRegistrar.
  * 
- * @tparam ServiceClass - Type of the server, a ROS1 srv
+ * @tparam ServiceClass - Type of the server, a ROS2 srv
  */
 template <class ServiceClass>
 class Ros2Query : public temoto_resource_registrar::RrQueryBase
@@ -18,12 +18,12 @@ public:
   Ros2Query() {}
 
   /**
-   * @brief Construct a new Ros 1 Query object. Does not store existing field valus of the request.
+   * @brief Construct a new Ros2 Query object. Does not store existing field valus of the request.
    * 
    * @param metadata 
    */
-  Ros2Query(const tutorial_interfaces::msg::TemotoRequestMetadata &request_data,
-            const tutorial_interfaces::msg::TemotoResponseMetadata &response_data)
+  Ros2Query(const rr_interfaces::msg::TemotoRequestMetadata &request_data,
+            const rr_interfaces::msg::TemotoResponseMetadata &response_data)
   {
     setRr(request_data.serving_rr);
     setOrigin(request_data.origin_rr);

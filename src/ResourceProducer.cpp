@@ -8,7 +8,7 @@
 
 #include "rr/ros2_resource_registrar.h"
 
-#include "tutorial_interfaces/srv/counter_service.hpp"
+#include "rr_interfaces/srv/counter_service.hpp"
 
 std::string rrName = "ProducerRR";
 
@@ -30,7 +30,7 @@ void caller(int loopNr)
 
 int main(int argc, char **argv)
 {
-  auto loadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::CounterService::Request> req, std::shared_ptr<tutorial_interfaces::srv::CounterService::Response> res) {
+  auto loadCb = [&](const std::shared_ptr<rr_interfaces::srv::CounterService::Request> req, std::shared_ptr<rr_interfaces::srv::CounterService::Response> res) {
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "load rr");
 
     id = res->temoto_metadata.request_id;
@@ -38,12 +38,12 @@ int main(int argc, char **argv)
     boost::thread thread_b(caller, 6);
   };
 
-  auto unloadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::CounterService::Request> req, std::shared_ptr<tutorial_interfaces::srv::CounterService::Response> res) {
+  auto unloadCb = [&](const std::shared_ptr<rr_interfaces::srv::CounterService::Request> req, std::shared_ptr<rr_interfaces::srv::CounterService::Response> res) {
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload rr");
   };
 
-  auto statusCb = [&](const std::shared_ptr<tutorial_interfaces::srv::CounterService::Request> req,
-                      std::shared_ptr<tutorial_interfaces::srv::CounterService::Response> res,
+  auto statusCb = [&](const std::shared_ptr<rr_interfaces::srv::CounterService::Request> req,
+                      std::shared_ptr<rr_interfaces::srv::CounterService::Response> res,
                       const temoto_resource_registrar::Status &status) {
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "status rr");
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "inited rr");
 
-  auto server = std::make_unique<Ros2Server<tutorial_interfaces::srv::CounterService>>("counterServer",
+  auto server = std::make_unique<Ros2Server<rr_interfaces::srv::CounterService>>("counterServer",
                                                                                       rr,
                                                                                       loadCb,
                                                                                       unloadCb,

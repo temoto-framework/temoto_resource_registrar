@@ -1,14 +1,14 @@
-#ifndef TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
-#define TEMOTO_RESOURCE_REGISTRAR__ROS1_RESOURCE_REGISTRAR_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__ROS2_RESOURCE_REGISTRAR_H
+#define TEMOTO_RESOURCE_REGISTRAR__ROS2_RESOURCE_REGISTRAR_H
 
 #include "rclcpp/rclcpp.hpp"
 
 #include "temoto_resource_registrar/rr_base.h"
 #include "temoto_resource_registrar/rr_status.h"
 
-#include "tutorial_interfaces/srv/data_fetch_component.hpp"
-#include "tutorial_interfaces/srv/status_component.hpp"
-#include "tutorial_interfaces/srv/unload_component.hpp"
+#include "rr_interfaces/srv/data_fetch_component.hpp"
+#include "rr_interfaces/srv/status_component.hpp"
+#include "rr_interfaces/srv/unload_component.hpp"
 
 #include "rr/message_serializer.h"
 #include "rr/ros2_client.h"
@@ -20,7 +20,7 @@ namespace temoto_resource_registrar
 {
 
   /**
-   * @brief Implementation of the temoto_resource_registrar::RrBase to work on ROS1. 
+   * @brief Implementation of the temoto_resource_registrar::RrBase to work on ROS2. 
    * The init() function should be called once ROS is initialized. Else unload and other
    * internal services will not be started up.
    * 
@@ -73,16 +73,16 @@ namespace temoto_resource_registrar
  * -- Directly access the target RR and call its server, executing appropriate logic
  * - If it is an external call:
  * -- If not done yet create a new client to communicate with the server. Existing cliets are cached.
- * -- Send the users request to the server. This uses the Ros1Client::invoce(Ros1Query<ServiceClass> &wrappedRequest) method
+ * -- Send the users request to the server. This uses the Ros2Client::invoce(Ros2Query<ServiceClass> &wrappedRequest) method
  * -- If the request is unique, the server will execute the user defined loadCallback and return the response. Else a cached response is returned.
  * - Check if a status function was attached to the query. This status function will be called if a status update is sent upstream from the server.
  * 
  * Status functions can be defined for every client. Every client can have only one status function. If it is needed to re-define said function
  * it can be done by raising the overrideStatus parameter. This change applies to all requests done with that client.
  * 
- * @tparam QueryType - Type of the query being executed. It is a normal ROS1 srv.
+ * @tparam QueryType - Type of the query being executed. It is a normal ROS2 srv.
  * @param rr - Name of the target ResourceRegistrar.
- * @param server - Name of the target Ros1Server.
+ * @param server - Name of the target Ros2Server.
  * @param query - User query as a QueryType srv object.
  * @param status_func - Optional. User defined status function. Executed when a status is sent by a downstream server.
  */
@@ -134,17 +134,17 @@ namespace temoto_resource_registrar
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id);
 
       std::string client_name = IDUtils::generateUnload(rr);
-      initClient<tutorial_interfaces::srv::UnloadComponent>(client_name, unload_clients_, unload_callback_group_);
+      initClient<rr_interfaces::srv::UnloadComponent>(client_name, unload_clients_, unload_callback_group_);
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "client %s created", client_name.c_str());
 
-      auto request = std::make_shared<tutorial_interfaces::srv::UnloadComponent::Request>();
+      auto request = std::make_shared<rr_interfaces::srv::UnloadComponent::Request>();
       request->target = id;
 
       bool res = false;
       bool query_complete = false;
 
-      auto inner_client_callback = [&, this](rclcpp::Client<tutorial_interfaces::srv::UnloadComponent>::SharedFuture inner_future)
+      auto inner_client_callback = [&, this](rclcpp::Client<rr_interfaces::srv::UnloadComponent>::SharedFuture inner_future)
       {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "[inner service] callback executed");
         auto result = inner_future.get();
@@ -207,7 +207,11 @@ namespace temoto_resource_registrar
  * @return std::map<std::string, QueryType> 
  */
     template <class QueryType>
-    std::map<std::string, QueryType> getRosChildQueries(const std::string &id, const std::string &server_name)
+    std::map<std::string,
+             std::pair<
+                 std::shared_ptr<typename QueryType::Request>,
+                 std::shared_ptr<typename QueryType::Response>>>
+    getRosChildQueries(const std::string &id, const std::string &server_name)
     {
       //ROS_DEBUG_STREAM("getting RR queries for id " << id << " and server " << server_name);
       std::map<std::string, std::pair<std::string, std::string>> serialised_queries = getChildQueries(id, server_name);
@@ -236,7 +240,10 @@ namespace temoto_resource_registrar
     }
 
     template <class QueryType>
-    std::vector<QueryType> getServerQueries(const std::string &server)
+    std::vector<std::pair<
+        std::shared_ptr<typename QueryType::Request>,
+        std::shared_ptr<typename QueryType::Response>>>
+    getServerQueries(const std::string &server)
     {
       //ROS_INFO_STREAM("getServerQueries printing before processign catalog.");
       std::string server_name = IDUtils::generateServerName(name(), server);
@@ -271,9 +278,9 @@ namespace temoto_resource_registrar
     }
 
   protected:
-    std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::UnloadComponent>::SharedPtr> unload_clients_;
-    std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::StatusComponent>::SharedPtr> status_clients_;
-    std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr> fetch_clients_;
+    std::unordered_map<std::string, typename rclcpp::Client<rr_interfaces::srv::UnloadComponent>::SharedPtr> unload_clients_;
+    std::unordered_map<std::string, typename rclcpp::Client<rr_interfaces::srv::StatusComponent>::SharedPtr> status_clients_;
+    std::unordered_map<std::string, typename rclcpp::Client<rr_interfaces::srv::DataFetchComponent>::SharedPtr> fetch_clients_;
 
     rclcpp::callback_group::CallbackGroup::SharedPtr unload_callback_group_;
     rclcpp::callback_group::CallbackGroup::SharedPtr status_callback_group_;
@@ -592,9 +599,9 @@ namespace temoto_resource_registrar
     {
       std::string client_name = IDUtils::generateStatus(target_rr);
 
-      initClient<tutorial_interfaces::srv::StatusComponent>(client_name, status_clients_, status_callback_group_);
+      initClient<rr_interfaces::srv::StatusComponent>(client_name, status_clients_, status_callback_group_);
 
-      auto request = std::make_shared<tutorial_interfaces::srv::StatusComponent::Request>();
+      auto request = std::make_shared<rr_interfaces::srv::StatusComponent::Request>();
 
       //temoto_resource_registrar::StatusComponent status_srv;
       //ROS_INFO_STREAM("callStatusClient");
@@ -637,9 +644,9 @@ namespace temoto_resource_registrar
       //ROS_INFO_STREAM("callDataFetchClient");
 
       std::string client_name = IDUtils::generateFetch(target_rr);
-      initClient<tutorial_interfaces::srv::DataFetchComponent>(client_name, fetch_clients_, fetch_callback_group_);
+      initClient<rr_interfaces::srv::DataFetchComponent>(client_name, fetch_clients_, fetch_callback_group_);
 
-      auto request = std::make_shared<tutorial_interfaces::srv::DataFetchComponent::Request>();
+      auto request = std::make_shared<rr_interfaces::srv::DataFetchComponent::Request>();
 
       //temoto_resource_registrar::DataFetchComponent data_fetch_srv;
 
@@ -674,7 +681,7 @@ namespace temoto_resource_registrar
  * @param id 
  * @param dependency 
  */
-  virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
+    virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
     {
       bool unload_status = unload(dependency.second, dependency.first);
       if (unload_status)
@@ -684,9 +691,9 @@ namespace temoto_resource_registrar
     }
 
   private:
-    rclcpp::Service<tutorial_interfaces::srv::UnloadComponent>::SharedPtr unload_service_;
-    rclcpp::Service<tutorial_interfaces::srv::StatusComponent>::SharedPtr status_service_;
-    rclcpp::Service<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr fetch_service_;
+    rclcpp::Service<rr_interfaces::srv::UnloadComponent>::SharedPtr unload_service_;
+    rclcpp::Service<rr_interfaces::srv::StatusComponent>::SharedPtr status_service_;
+    rclcpp::Service<rr_interfaces::srv::DataFetchComponent>::SharedPtr fetch_service_;
 
     std::shared_ptr<ResourceRegistrarRos2> shared_ptr_;
 
@@ -723,22 +730,25 @@ namespace temoto_resource_registrar
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Starting services....");
 
       unload_service_ =
-          this->create_service<tutorial_interfaces::srv::UnloadComponent>(IDUtils::generateUnload(name()),
-                                                                          std::bind(&ResourceRegistrarRos2::unloadCallback, this, std::placeholders::_1, std::placeholders::_2)/*,
+          this->create_service<rr_interfaces::srv::UnloadComponent>(IDUtils::generateUnload(name()),
+                                                                          std::bind(&ResourceRegistrarRos2::unloadCallback, this, std::placeholders::_1, std::placeholders::_2) /*,
                                                                           rmw_qos_profile_services_default,
-                                                                          unload_callback_group_*/);
+                                                                          unload_callback_group_*/
+          );
 
       status_service_ =
-          this->create_service<tutorial_interfaces::srv::StatusComponent>(IDUtils::generateStatus(name()),
-                                                                          std::bind(&ResourceRegistrarRos2::statusCallback, this, std::placeholders::_1, std::placeholders::_2)/*,
+          this->create_service<rr_interfaces::srv::StatusComponent>(IDUtils::generateStatus(name()),
+                                                                          std::bind(&ResourceRegistrarRos2::statusCallback, this, std::placeholders::_1, std::placeholders::_2) /*,
                                                                           rmw_qos_profile_services_default,
-                                                                          status_callback_group_*/);
+                                                                          status_callback_group_*/
+          );
 
       fetch_service_ =
-          this->create_service<tutorial_interfaces::srv::DataFetchComponent>(IDUtils::generateFetch(name()),
-                                                                             std::bind(&ResourceRegistrarRos2::dataFetchCallback, this, std::placeholders::_1, std::placeholders::_2)/*,
+          this->create_service<rr_interfaces::srv::DataFetchComponent>(IDUtils::generateFetch(name()),
+                                                                             std::bind(&ResourceRegistrarRos2::dataFetchCallback, this, std::placeholders::_1, std::placeholders::_2) /*,
                                                                              rmw_qos_profile_services_default,
-                                                                             fetch_callback_group_*/);
+                                                                             fetch_callback_group_*/
+          );
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "completed....");
 
@@ -746,8 +756,8 @@ namespace temoto_resource_registrar
       //exec_.spin();
     }
 
-    void unloadCallback(const std::shared_ptr<tutorial_interfaces::srv::UnloadComponent::Request> req,
-                        std::shared_ptr<tutorial_interfaces::srv::UnloadComponent::Response> res)
+    void unloadCallback(const std::shared_ptr<rr_interfaces::srv::UnloadComponent::Request> req,
+                        std::shared_ptr<rr_interfaces::srv::UnloadComponent::Response> res)
     {
       //ROS_INFO_STREAM("printing catalog before unload callback");
 
@@ -762,8 +772,8 @@ namespace temoto_resource_registrar
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "finished unload");
     }
 
-    void statusCallback(const std::shared_ptr<tutorial_interfaces::srv::StatusComponent::Request> req,
-                        std::shared_ptr<tutorial_interfaces::srv::StatusComponent::Response> res)
+    void statusCallback(const std::shared_ptr<rr_interfaces::srv::StatusComponent::Request> req,
+                        std::shared_ptr<rr_interfaces::srv::StatusComponent::Response> res)
     {
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "got status");
       //ROS_INFO_STREAM("statusCallback: " << req.target);
@@ -781,8 +791,8 @@ namespace temoto_resource_registrar
       handleStatus(target, {static_cast<Status::State>(status), target, message, serialised_request, serialised_response});
     }
 
-    void dataFetchCallback(const std::shared_ptr<tutorial_interfaces::srv::DataFetchComponent::Request> req,
-                           std::shared_ptr<tutorial_interfaces::srv::DataFetchComponent::Response> res)
+    void dataFetchCallback(const std::shared_ptr<rr_interfaces::srv::DataFetchComponent::Request> req,
+                           std::shared_ptr<rr_interfaces::srv::DataFetchComponent::Response> res)
     {
       //ROS_INFO_STREAM("syncCallback " << req);
       std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req->origin_rr, req->server_name);

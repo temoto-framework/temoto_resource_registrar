@@ -251,31 +251,21 @@ namespace temoto_resource_registrar
     bool localUnload(const std::string &id)
     {
       //TEMOTO_DEBUG_("localUnload id: %s", id.c_str());
-      std::cout << 1 << std::endl;
-
       std::string serverId = rr_catalog_->getIdServer(id);
-      std::cout << 2 << std::endl;
 
       //TEMOTO_DEBUG_("serverId id: %s", serverId.c_str());
 
       auto dependency_map = rr_catalog_->getDependencies(id);
-      std::cout << 3 << std::endl;
       if (dependency_map.size() > 0)
       {
         //TEMOTO_DEBUG_("dependencyMap.size() > 0");
-        std::cout << 4 << std::endl;
         for (auto const &dependency : dependency_map)
         {
-          std::cout << 5 << std::endl;
           unloadResource(id, dependency);
-          std::cout << 6 << std::endl;
         }
       }
-      std::cout << 7 << std::endl;
       bool res = unloadByServerAndQuery(serverId, id);
-      std::cout << 8 << std::endl;
       autoSaveCatalog();
-      std::cout << 9 << std::endl;
       return res;
     }
 

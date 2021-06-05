@@ -43,10 +43,10 @@ public:
   }
 
   /**
- * @brief Invokes a call to the Ros1Server responsible for serving requests of that type. 
+ * @brief Invokes a call to the Ros2Server responsible for serving requests of that type. 
  * The request elements are modified to provide a response
  * 
- * @param request - A user defined ROS1 srv type request.
+ * @param request - A user defined ROS2 srv type request.
  */
   void invoke(ServiceClass &request)
   {
@@ -67,14 +67,14 @@ public:
   }
 
   /**
- * @brief Invokes a call to the Ros1Server responsible for serving requests of that type. 
+ * @brief Invokes a call to the Ros2Server responsible for serving requests of that type. 
  * The request elements are modified to provide a response
  * 
- * @param wrapped_request - A user defined Ros1Query type request
+ * @param wrapped_request - A user defined Ros2Query type request
  */
   void invoke(Ros2Query<ServiceClass> &wrapped_request)
   {
-    //ROS_INFO_STREAM("invoke for Ros1Query wrapper started");
+    //ROS_INFO_STREAM("invoke for Ros2Query wrapper started");
     //ServiceClass service_call = wrapped_request.rosQuery();
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke request in async for server:");
@@ -96,7 +96,7 @@ public:
     //invoke(service_call);
 
     //wrapped_request = Ros2Query<ServiceClass>(service_call);
-    //ROS_INFO_STREAM("invoke for Ros1Query wrapper completed");
+    //ROS_INFO_STREAM("invoke for Ros2Query wrapper completed");
   }
 
   void registerUserStatusCb(const std::string &request_id, const UserStatusCb &user_status_cb)

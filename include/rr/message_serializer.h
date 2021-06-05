@@ -11,14 +11,14 @@ namespace temoto_resource_registrar
 {
 
   /**
- * @brief Utility class used for ROS 1 message serialization and deserialization.
+ * @brief Utility class used for ROS2 message serialization and deserialization.
  * 
  */
   class MessageSerializer
   {
   public:
     /**
-   * @brief The serialization method for messages takes in a ROS 1 type message and returns a serialized string of said message.
+   * @brief The serialization method for messages takes in a ROS2 type message and returns a serialized string of said message.
    * ROS serialization (ros::serialization) and deserialization mechanisms are used for this.
    * 
    * @tparam PayloadType - type of the message being serialized

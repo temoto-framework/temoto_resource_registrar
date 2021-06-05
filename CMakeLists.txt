@@ -38,19 +38,19 @@ include_directories(
 find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(tutorial_interfaces REQUIRED)        # CHANGE
+find_package(rr_interfaces REQUIRED)        # CHANGE
 
 add_executable(consumer src/ResourceConsumer.cpp)
 target_link_libraries(consumer rr_core)
-ament_target_dependencies(consumer rclcpp tutorial_interfaces Boost)     # CHANGE
+ament_target_dependencies(consumer rclcpp rr_interfaces Boost)     # CHANGE
 
 add_executable(agent src/ResourceAgent.cpp)
 target_link_libraries(agent rr_core)
-ament_target_dependencies(agent rclcpp tutorial_interfaces Boost)     # CHANGE
+ament_target_dependencies(agent rclcpp rr_interfaces Boost)     # CHANGE
 
 add_executable(producer src/ResourceProducer.cpp)
 target_link_libraries(producer rr_core)
-ament_target_dependencies(producer rclcpp tutorial_interfaces Boost)     # CHANGE
+ament_target_dependencies(producer rclcpp rr_interfaces Boost)     # CHANGE
 
 install(TARGETS
   consumer
