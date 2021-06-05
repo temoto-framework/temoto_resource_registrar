@@ -337,6 +337,7 @@ namespace temoto_resource_registrar
       if (unload_status)
       {
         rr_catalog_->unloadDependency(id, dependency.first);
+        autoSaveCatalog();
       }
     }
 
