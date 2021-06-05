@@ -154,9 +154,10 @@ namespace temoto_resource_registrar
     };
 
     RrBase(std::string name) : name_(name),
-                               rr_catalog_(std::make_shared<RrCatalog>()){
-                                   //TEMOTO_INFO_("constructed rr %s", name.c_str());
-                               };
+                               rr_catalog_(std::make_shared<RrCatalog>())
+    {
+      //TEMOTO_INFO_("constructed rr %s", name.c_str());
+    };
 
     /**
  * @brief Destroy the Rr Base object. Here we do the cleanup for backup storage and clients. Since unloadClient(const std::string &id)
@@ -251,6 +252,7 @@ namespace temoto_resource_registrar
     bool localUnload(const std::string &id)
     {
       //TEMOTO_DEBUG_("localUnload id: %s", id.c_str());
+
       std::string serverId = rr_catalog_->getIdServer(id);
 
       //TEMOTO_DEBUG_("serverId id: %s", serverId.c_str());
@@ -288,8 +290,9 @@ namespace temoto_resource_registrar
       //auto dynamic_ref = dynamic_cast<const ServType &>(server_ref);
 
       //dynamic_ref.processQuery(query);
+      reinterpret_cast<ServType *>(servers_.getElementPtr(server))->processQuery(query);
 
-      servers_.getElementPtr(server)->processQuery(query);
+      
     }
 
     void printCatalog() { rr_catalog_->print(); }
@@ -307,11 +310,8 @@ namespace temoto_resource_registrar
       ////TEMOTO_DEBUG_("core sendStatus %s", status_data.id_);
 
       std::unordered_map<std::string, std::string> notify_ids = rr_catalog_->getAllQueryIds(status_data.id_);
-
       for (auto const &not_id : notify_ids)
       {
-
-        std::cout << "\t callStatusClient for rr" << not_id.second << std::endl;
         ////TEMOTO_DEBUG_("\t callStatusClient for rr %s", not_id.second.c_str());
 
         bool status_result = callStatusClient(not_id.second, quiery_id, status_data);
@@ -322,27 +322,15 @@ namespace temoto_resource_registrar
 
     virtual void handleStatus(const std::string &request_id, Status status_data)
     {
-      //TEMOTO_DEBUG_("entered handleStatus &s - %s - %s", name().c_str(), request_id.c_str(), status_data.id_.c_str());
+      TEMOTO_DEBUG_("entered handleStatus %s - %s - %s", name().c_str(), request_id.c_str(), status_data.id_.c_str());
+
       std::string original_id = rr_catalog_->getOriginQueryId(status_data.id_);
-
-      //TEMOTO_DEBUG_("query id %s", original_id.c_str());
-
-      if (original_id.size())
-      {
-        std::unordered_map<std::string, std::string> dependency_map = rr_catalog_->getDependencies(original_id);
-        std::string firstId = dependency_map.begin()->first;
-        // stop attempt if dependency
-        if (status_data.id_ != firstId)
-        {
-          return;
-        }
-      }
-
       std::string client_name = rr_catalog_->getIdClient(status_data.id_);
+      TEMOTO_DEBUG_("query id %s", original_id.c_str());
 
       if (clients_.exists(client_name))
       {
-        //TEMOTO_DEBUG_("\t\tcalling callback of client %s", client_name.c_str());
+        TEMOTO_DEBUG_("calling callback of client %s", client_name.c_str());
         clients_.runCallback(client_name, request_id, status_data);
       }
 
@@ -350,25 +338,25 @@ namespace temoto_resource_registrar
       {
         status_data.id_ = original_id;
 
-        //TEMOTO_DEBUG_("handleStatus");
+        TEMOTO_DEBUG_("handleStatus");
         auto container = rr_catalog_->findOriginalContainer(status_data.id_);
         if (!container.empty_)
         {
-          //TEMOTO_DEBUG_("\t\t\t!container.empty_");
+          TEMOTO_DEBUG_("!container.empty_");
           status_data.serialised_request_ = container.raw_request_;
           status_data.serialised_response_ = container.raw_query_;
         }
         else
         {
-          //TEMOTO_DEBUG_("\t\t\tcontainer.empty_");
+          TEMOTO_DEBUG_("container.empty_");
         }
 
-        //TEMOTO_DEBUG_("\t\tsendStatus to target %s", status_data.id_.c_str());
+        TEMOTO_DEBUG_("sendStatus to target %s", status_data.id_.c_str());
 
         std::async(&RrBase::sendStatus, this, original_id, status_data);
       }
 
-      //TEMOTO_DEBUG_("-----exited handleStatus %s", status_data.id_.c_str());
+      TEMOTO_DEBUG_("-----exited handleStatus %s", status_data.id_.c_str());
     }
 
     std::map<std::string, std::pair<std::string, std::string>> getChildQueries(const std::string &id, const std::string &server_name)
@@ -575,7 +563,7 @@ namespace temoto_resource_registrar
 
     virtual bool callStatusClient(const std::string &target_rr, const std::string &request_id, Status status_data)
     {
-      //TEMOTO_DEBUG_("target rr for status: %s", target_rr.c_str());
+      ////TEMOTO_DEBUG_("target rr for status: %s", target_rr.c_str());
 
       auto container = rr_catalog_->findOriginalContainer(status_data.id_);
 
@@ -597,24 +585,17 @@ namespace temoto_resource_registrar
                           QueryClass &query,
                           const StatusCallType &status_callback)
     {
-
-      std::cout << "handleClientCall" << std::endl;
-
       std::string client_id = createClient<CallClientClass>(rr, client_name);
 
-      std::cout << "client created" << std::endl;
-
-      //auto client = dynamic_cast<const CallClientClass &>(clients_.getElement(client_id));
-      //client.invoke(query);
       reinterpret_cast<CallClientClass *>(clients_.getElementPtr(client_id))->invoke(query);
-
-      std::cout << "invoke" << std::endl;
 
       storeClientQueryStatusCb<CallClientClass, StatusCallType>(client_id, query.id(), status_callback);
 
       std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
       rr_catalog_->storeClientCallRecord(client_id, query.id());
     }
+
+
 
     /**
      * @brief TODO: requires a proper comment.
@@ -634,7 +615,7 @@ namespace temoto_resource_registrar
      */
     template <class CallClientClass, class ServType, class QueryType, class StatusCallType>
     void privateCall(const std::string *rr, RrBase *target, const std::string &server, QueryType &query, const StatusCallType &status_callback)
-    {
+    { 
       START_SPAN
 
       std::thread::id work_id = std::this_thread::get_id();
@@ -645,8 +626,6 @@ namespace temoto_resource_registrar
 
       //TEMOTO_DEBUG_("setting origin");
 
-      std::cout << "executing private call" << std::endl;
-
       std::string target_rr_name, server_name;
 
       if ((rr != NULL) && (target == NULL))
@@ -656,9 +635,9 @@ namespace temoto_resource_registrar
 
       server_name = IDUtils::generateServerName(target_rr_name, server);
 
-#ifdef temoto_enable_tracing
+      #ifdef temoto_enable_tracing
       query.requestMetadata().setSpanContext(TEMOTO_LOG_ATTR.topParentSpanContext());
-#endif
+      #endif
 
       // In case we have a client call, not a internal call
       if ((rr != NULL) && (target == NULL))
