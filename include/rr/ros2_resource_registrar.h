@@ -9,7 +9,6 @@
 #include "tutorial_interfaces/srv/data_fetch_component.hpp"
 #include "tutorial_interfaces/srv/status_component.hpp"
 #include "tutorial_interfaces/srv/unload_component.hpp"
-#include "tutorial_interfaces/srv/add_two_ints.hpp"
 
 #include "rr/message_serializer.h"
 #include "rr/ros2_client.h"
@@ -130,15 +129,39 @@ namespace temoto_resource_registrar
     {
       //ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id);
 
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload called");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), rr);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id);
+
       std::string client_name = IDUtils::generateUnload(rr);
-      initClient<tutorial_interfaces::srv::UnloadComponent>(client_name, unload_clients_);
+      initClient<tutorial_interfaces::srv::UnloadComponent>(client_name, unload_clients_, unload_callback_group_);
+
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "client %s created", client_name.c_str());
 
       auto request = std::make_shared<tutorial_interfaces::srv::UnloadComponent::Request>();
       request->target = id;
 
-      auto result = unload_clients_[client_name]->async_send_request(request);
-      return true;
-      //return rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
+      bool res = false;
+      bool query_complete = false;
+
+      auto inner_client_callback = [&, this](rclcpp::Client<tutorial_interfaces::srv::UnloadComponent>::SharedFuture inner_future)
+      {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "[inner service] callback executed");
+        auto result = inner_future.get();
+        res = result->status;
+        query_complete = true;
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "[inner service] callback finished");
+      };
+
+      auto result = unload_clients_[client_name]->async_send_request(request, inner_client_callback);
+
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "waiting for future");
+
+      while (!query_complete && rclcpp::ok())
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+      return res;
 
       //bool res = unload_clients_[client_name]->call(unload_srv);
       //ROS_INFO_STREAM("result: " << res);
@@ -252,62 +275,308 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::StatusComponent>::SharedPtr> status_clients_;
     std::unordered_map<std::string, typename rclcpp::Client<tutorial_interfaces::srv::DataFetchComponent>::SharedPtr> fetch_clients_;
 
-std::string string_to_hex(const std::string& input)
-{
-    static const char hex_digits[] = "0123456789ABCDEF";
+    rclcpp::callback_group::CallbackGroup::SharedPtr unload_callback_group_;
+    rclcpp::callback_group::CallbackGroup::SharedPtr status_callback_group_;
+    rclcpp::callback_group::CallbackGroup::SharedPtr fetch_callback_group_;
 
-    std::string output;
-    output.reserve(input.length() * 2);
-    for (unsigned char c : input)
+    std::string string_to_hex(const std::string &input)
     {
+      static const char hex_digits[] = "0123456789ABCDEF";
+
+      std::string output;
+      output.reserve(input.length() * 2);
+      for (unsigned char c : input)
+      {
         output.push_back(hex_digits[c >> 4]);
         output.push_back(hex_digits[c & 15]);
+      }
+      return output;
     }
-    return output;
-}
 
 #include <stdexcept>
 
-int hex_value(unsigned char hex_digit)
-{
-    static const signed char hex_values[256] = {
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    };
-    int value = hex_values[hex_digit];
-    if (value == -1) throw std::invalid_argument("invalid hex digit");
-    return value;
-}
-
-std::string hex_to_string(const std::string& input)
-{
-    const auto len = input.length();
-    if (len & 1) throw std::invalid_argument("odd length");
-
-    std::string output;
-    output.reserve(len / 2);
-    for (auto it = input.begin(); it != input.end(); )
+    int hex_value(unsigned char hex_digit)
     {
+      static const signed char hex_values[256] = {
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+      };
+      int value = hex_values[hex_digit];
+      if (value == -1)
+        throw std::invalid_argument("invalid hex digit");
+      return value;
+    }
+
+    std::string hex_to_string(const std::string &input)
+    {
+      const auto len = input.length();
+      if (len & 1)
+        throw std::invalid_argument("odd length");
+
+      std::string output;
+      output.reserve(len / 2);
+      for (auto it = input.begin(); it != input.end();)
+      {
         int hi = hex_value(*it++);
         int lo = hex_value(*it++);
         output.push_back(hi << 4 | lo);
+      }
+      return output;
     }
-    return output;
-}
 
     /**
  * @brief Virtual method that needs to be implemented on every extension of RR_CORE. This method creates and sends the status
@@ -323,7 +592,7 @@ std::string hex_to_string(const std::string& input)
     {
       std::string client_name = IDUtils::generateStatus(target_rr);
 
-      initClient<tutorial_interfaces::srv::StatusComponent>(client_name, status_clients_);
+      initClient<tutorial_interfaces::srv::StatusComponent>(client_name, status_clients_, status_callback_group_);
 
       auto request = std::make_shared<tutorial_interfaces::srv::StatusComponent::Request>();
 
@@ -368,7 +637,7 @@ std::string hex_to_string(const std::string& input)
       //ROS_INFO_STREAM("callDataFetchClient");
 
       std::string client_name = IDUtils::generateFetch(target_rr);
-      initClient<tutorial_interfaces::srv::DataFetchComponent>(client_name, fetch_clients_);
+      initClient<tutorial_interfaces::srv::DataFetchComponent>(client_name, fetch_clients_, fetch_callback_group_);
 
       auto request = std::make_shared<tutorial_interfaces::srv::DataFetchComponent::Request>();
 
@@ -400,12 +669,12 @@ std::string hex_to_string(const std::string& input)
     }
 
     /**
- * @brief ROS 1 implementation of the unloadResource method. 
+ * @brief ROS 2 implementation of the unloadResource method. 
  * 
  * @param id 
  * @param dependency 
  */
-    /*  virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
+  virtual void unloadResource(const std::string &id, const std::pair<const std::string, std::string> &dependency)
     {
       bool unload_status = unload(dependency.second, dependency.first);
       if (unload_status)
@@ -413,7 +682,7 @@ std::string hex_to_string(const std::string& input)
         rr_catalog_->unloadDependency(id, dependency.first);
       }
     }
-*/
+
   private:
     rclcpp::Service<tutorial_interfaces::srv::UnloadComponent>::SharedPtr unload_service_;
     rclcpp::Service<tutorial_interfaces::srv::StatusComponent>::SharedPtr status_service_;
@@ -426,12 +695,15 @@ std::string hex_to_string(const std::string& input)
     //rclcpp::executors::MultiThreadedExecutor exec_;
 
     template <class ServiceClass>
-    void initClient(const std::string &client_name, std::unordered_map<std::string, typename rclcpp::Client<ServiceClass>::SharedPtr> &client_map)
+    void initClient(
+        const std::string &client_name,
+        std::unordered_map<std::string, typename rclcpp::Client<ServiceClass>::SharedPtr> &client_map,
+        rclcpp::callback_group::CallbackGroup::SharedPtr group)
     {
       if (client_map.count(client_name) == 0)
       {
         //ROS_INFO_STREAM("creating client " << client_name);
-        typename rclcpp::Client<ServiceClass>::SharedPtr ptr = this->create_client<ServiceClass>(client_name);
+        typename rclcpp::Client<ServiceClass>::SharedPtr ptr = this->create_client<ServiceClass>(client_name, rmw_qos_profile_services_default, group);
 
         client_map[client_name] = std::move(ptr);
         //ROS_INFO_STREAM("created client...");
@@ -444,20 +716,29 @@ std::string hex_to_string(const std::string& input)
       //node_ = rclcpp::Node::make_shared(name() + "_internal");
 
       //callback_group_ = node_->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
+      unload_callback_group_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
+      status_callback_group_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
+      fetch_callback_group_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Starting services....");
 
       unload_service_ =
           this->create_service<tutorial_interfaces::srv::UnloadComponent>(IDUtils::generateUnload(name()),
-                                                                          std::bind(&ResourceRegistrarRos2::unloadCallback, this, std::placeholders::_1, std::placeholders::_2));
+                                                                          std::bind(&ResourceRegistrarRos2::unloadCallback, this, std::placeholders::_1, std::placeholders::_2)/*,
+                                                                          rmw_qos_profile_services_default,
+                                                                          unload_callback_group_*/);
 
       status_service_ =
           this->create_service<tutorial_interfaces::srv::StatusComponent>(IDUtils::generateStatus(name()),
-                                                                          std::bind(&ResourceRegistrarRos2::statusCallback, this, std::placeholders::_1, std::placeholders::_2));
+                                                                          std::bind(&ResourceRegistrarRos2::statusCallback, this, std::placeholders::_1, std::placeholders::_2)/*,
+                                                                          rmw_qos_profile_services_default,
+                                                                          status_callback_group_*/);
 
       fetch_service_ =
           this->create_service<tutorial_interfaces::srv::DataFetchComponent>(IDUtils::generateFetch(name()),
-                                                                             std::bind(&ResourceRegistrarRos2::dataFetchCallback, this, std::placeholders::_1, std::placeholders::_2));
+                                                                             std::bind(&ResourceRegistrarRos2::dataFetchCallback, this, std::placeholders::_1, std::placeholders::_2)/*,
+                                                                             rmw_qos_profile_services_default,
+                                                                             fetch_callback_group_*/);
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "completed....");
 
@@ -469,12 +750,16 @@ std::string hex_to_string(const std::string& input)
                         std::shared_ptr<tutorial_interfaces::srv::UnloadComponent::Response> res)
     {
       //ROS_INFO_STREAM("printing catalog before unload callback");
+
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload called");
       rr_catalog_->print();
 
       //ROS_INFO_STREAM("unloadCallback " << req.target);
       std::string id = req->target;
       //ROS_INFO_STREAM("std::string id " << id);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "local unload for id %s", id.c_str());
       res->status = localUnload(id);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "finished unload");
     }
 
     void statusCallback(const std::shared_ptr<tutorial_interfaces::srv::StatusComponent::Request> req,
@@ -488,11 +773,10 @@ std::string hex_to_string(const std::string& input)
       std::string serialised_request = hex_to_string(req->serialised_request);
       std::string serialised_response = hex_to_string(req->serialised_response);
 
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+target);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+message);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+serialised_request);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t"+serialised_response);
-
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + target);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + message);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + serialised_request);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + serialised_response);
 
       handleStatus(target, {static_cast<Status::State>(status), target, message, serialised_request, serialised_response});
     }

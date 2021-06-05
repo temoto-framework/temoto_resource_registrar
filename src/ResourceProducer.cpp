@@ -4,98 +4,81 @@
 #include <mutex>
 #include <thread>
 
-#include "rr/ros1_resource_registrar.h"
-
-#include "temoto_resource_registrar/CounterService.h"
-#include "temoto_resource_registrar/temoto_error.h"
-
 #include <boost/thread/thread.hpp>
 
-std::string rrName = "ProducerRR";
-temoto_resource_registrar::ResourceRegistrarRos1 rr(rrName);
+#include "rr/ros2_resource_registrar.h"
 
-bool loaded = false;
+#include "tutorial_interfaces/srv/counter_service.hpp"
+
+std::string rrName = "ProducerRR";
+
+std::string latestId = "";
 std::string id = "";
+
+std::shared_ptr<temoto_resource_registrar::ResourceRegistrarRos2> rr;
 
 void caller(int loopNr)
 {
   for (int n = 0; n < loopNr; ++n)
   {
     std::string message = "some message i need to see";
-    ROS_INFO("caller...");
-    rr.sendStatus(id, {temoto_resource_registrar::Status::State::FATAL, id, message});
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "caller...");
+    rr->sendStatus(id, {temoto_resource_registrar::Status::State::FATAL, id, message});
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 
-/*
-void RtLoadCB(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res)
-{
-  ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temoto_metadata.requestId);
-  id = res.temoto_metadata.requestId;
-
-  //throw resource_registrar::TemotoErrorStack("producer error", "ResourceProducer");
-
-  //auto fa = std::async(std::launch::async, caller);
-
-  boost::thread thread_b(caller, 5);
-}
-
-void RtUnloadCB(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res)
-{
-  ROS_INFO_STREAM("IN UNLOAD CB CounterService. ID: " << req << " - " << res);
-}
-
-void RtStatusCb(temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res, const temoto_resource_registrar::Status &status)
-{
-  ROS_WARN_STREAM("STATUS!");
-}
-*/
-
 int main(int argc, char **argv)
 {
+  auto loadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::CounterService::Request> req, std::shared_ptr<tutorial_interfaces::srv::CounterService::Response> res) {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "load rr");
 
-  auto loadCb = [&](temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res) {
-    ROS_INFO_STREAM("IN LOAD CB CounterService " << res.temoto_metadata.request_id);
-    id = res.temoto_metadata.request_id;
+    id = res->temoto_metadata.request_id;
 
-    boost::thread thread_b(caller, 5);
+    boost::thread thread_b(caller, 6);
   };
 
-  auto unloadCb = [&](temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res) {
-    ROS_INFO_STREAM("IN UNLOAD CB CounterService. ID: " << req << " - " << res);
+  auto unloadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::CounterService::Request> req, std::shared_ptr<tutorial_interfaces::srv::CounterService::Response> res) {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload rr");
   };
 
-  auto statusCb = [&](temoto_resource_registrar::CounterService::Request &req, temoto_resource_registrar::CounterService::Response &res, const temoto_resource_registrar::Status &status) {
-    ROS_ERROR_STREAM("Status CB called");
+  auto statusCb = [&](const std::shared_ptr<tutorial_interfaces::srv::CounterService::Request> req,
+                      std::shared_ptr<tutorial_interfaces::srv::CounterService::Response> res,
+                      const temoto_resource_registrar::Status &status) {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "status rr");
+
+    //boost::thread thread_b(caller, 5);
   };
 
-  ROS_INFO("Starting up producer...");
-  ros::init(argc, argv, "producer_thing");
-  ros::NodeHandle n;
-  ros::Rate loop_rate(10);
+  rclcpp::init(argc, argv);
 
-  ros::AsyncSpinner spinner(4); // Use 4 threads
-  spinner.start();
+  rclcpp::executors::MultiThreadedExecutor exec;
+  //exec.add_node(rr);
 
-  rr.init();
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "in main");
+  rr = std::make_shared<temoto_resource_registrar::ResourceRegistrarRos2>(rrName);
 
-  //auto server = std::make_unique<Ros1Server<temoto_resource_registrar::CounterService>>("counterServer", loadCb, unloadCb, statusCb);
-  //rr.registerServer(std::move(server));
+  
 
-  ROS_INFO("spinning....");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "inited rr");
 
-  /*while (ros::ok())
-  {
-    ros::spinOnce();
-    loop_rate.sleep();
-    if (loaded) {
-      auto fa = std::async(std::launch::async, caller);
-      loaded = false;
-    }
-  }*/
-  //ros::spin();
-  ros::waitForShutdown();
+  auto server = std::make_unique<Ros2Server<tutorial_interfaces::srv::CounterService>>("counterServer",
+                                                                                      rr,
+                                                                                      loadCb,
+                                                                                      unloadCb,
+                                                                                      statusCb);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "reg server");
 
-  ROS_INFO("Exiting producer...");
+  rr->init();
+  rr->registerServer(std::move(server));
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "reg server done");
+
+  //rclcpp::shutdown();
+
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "spinning rr");
+
+  exec.add_node(rr);
+  exec.spin();
+  //rclcpp::spin(rr);
+  rclcpp::shutdown();
 }

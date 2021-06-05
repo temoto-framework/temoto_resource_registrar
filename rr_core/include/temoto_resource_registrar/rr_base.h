@@ -251,22 +251,31 @@ namespace temoto_resource_registrar
     bool localUnload(const std::string &id)
     {
       //TEMOTO_DEBUG_("localUnload id: %s", id.c_str());
+      std::cout << 1 << std::endl;
 
       std::string serverId = rr_catalog_->getIdServer(id);
+      std::cout << 2 << std::endl;
 
       //TEMOTO_DEBUG_("serverId id: %s", serverId.c_str());
 
       auto dependency_map = rr_catalog_->getDependencies(id);
+      std::cout << 3 << std::endl;
       if (dependency_map.size() > 0)
       {
         //TEMOTO_DEBUG_("dependencyMap.size() > 0");
+        std::cout << 4 << std::endl;
         for (auto const &dependency : dependency_map)
         {
+          std::cout << 5 << std::endl;
           unloadResource(id, dependency);
+          std::cout << 6 << std::endl;
         }
       }
+      std::cout << 7 << std::endl;
       bool res = unloadByServerAndQuery(serverId, id);
+      std::cout << 8 << std::endl;
       autoSaveCatalog();
+      std::cout << 9 << std::endl;
       return res;
     }
 
@@ -308,7 +317,7 @@ namespace temoto_resource_registrar
       ////TEMOTO_DEBUG_("core sendStatus %s", status_data.id_);
 
       std::unordered_map<std::string, std::string> notify_ids = rr_catalog_->getAllQueryIds(status_data.id_);
-      
+
       for (auto const &not_id : notify_ids)
       {
 
@@ -483,8 +492,6 @@ namespace temoto_resource_registrar
 
       return client_name;
     }
-
-
 
     template <class CallClientClass, class StatusCallType>
     void storeClientQueryStatusCb(const std::string client_id, const std::string &query_id, const StatusCallType &status_callback)

@@ -48,9 +48,14 @@ add_executable(agent src/ResourceAgent.cpp)
 target_link_libraries(agent rr_core)
 ament_target_dependencies(agent rclcpp tutorial_interfaces Boost)     # CHANGE
 
+add_executable(producer src/ResourceProducer.cpp)
+target_link_libraries(producer rr_core)
+ament_target_dependencies(producer rclcpp tutorial_interfaces Boost)     # CHANGE
+
 install(TARGETS
   consumer
   agent
+  producer
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

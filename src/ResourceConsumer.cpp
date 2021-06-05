@@ -33,21 +33,9 @@ int main(int argc, char **argv)
 
     if (counter == shutdownCounter)
     {
-
-      //rr.printCatalog();
-      //auto r = rr.getRosChildQueries<temoto_resource_registrar::LoadComponent>(loadId, "resourceServer");
-
-      //for (const auto &el : r)
-      //{
-      //  ROS_INFO_STREAM("id: " << el.first << " - msg: " << el.second.request);
-      //}
-
-      //ROS_INFO_STREAM("getServerRrQueries size: " << r.size());
-
-      //ROS_INFO_STREAM("Counter reached, unloading: " << loadId << " from: " << "AgentRR");
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "counter reached, unloading: " + loadId);
       bool res = rr->unload("AgentRR", loadId);
-      //ROS_INFO_STREAM("Unload result: " << res);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload result: %d", res);
     }
   };
 
@@ -62,7 +50,7 @@ int main(int argc, char **argv)
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "constructing request");
   auto request = std::make_shared<tutorial_interfaces::srv::LoadComponent::Request>();
-  request->load_target = "CounterService";
+  request->load_target = "counterServer";
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "executing call");
 
@@ -70,14 +58,14 @@ int main(int argc, char **argv)
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "call done");
 
-  std::string requestId = res.response() -> temoto_metadata.request_id;
+  loadId = res.response() -> temoto_metadata.request_id;
 
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), requestId);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), loadId);
 
-  //exec.add_node(rr);
-  //exec.spin();
+  exec.add_node(rr);
+  exec.spin();
 
-  rclcpp::spin(rr);
+  //rclcpp::spin(rr);
   rclcpp::shutdown();
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "shutdown");
   return 0;

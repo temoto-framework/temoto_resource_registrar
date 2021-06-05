@@ -9,6 +9,7 @@
 #include "rr/ros2_resource_registrar.h"
 
 #include "tutorial_interfaces/srv/load_component.hpp"
+#include "tutorial_interfaces/srv/counter_service.hpp"
 
 std::string rrName = "AgentRR";
 
@@ -17,47 +18,47 @@ std::string id = "";
 
 std::shared_ptr<temoto_resource_registrar::ResourceRegistrarRos2> rr;
 
-void caller(int loopNr)
-{
-  for (int n = 0; n < loopNr; ++n)
-  {
-    std::string message = "some message i need to see";
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "caller...");
-    rr->sendStatus(id, {temoto_resource_registrar::Status::State::FATAL, id, message});
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
-}
-
 int main(int argc, char **argv)
 {
-  auto loadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req, std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res) {
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "load rr");
-
-    id = res->temoto_metadata.request_id;
-
-    boost::thread thread_b(caller, 6);
+  auto statusCallback = [&](const std::shared_ptr<tutorial_interfaces::srv::CounterService::Request> req,
+                            std::shared_ptr<tutorial_interfaces::srv::CounterService::Response> res,
+                            const temoto_resource_registrar::Status &status)
+  {
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "status rr");
   };
 
-  auto unloadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req, std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res) {
+  auto loadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req,
+                    std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res)
+  {
+    if (req->load_target == "counterServer")
+    {
+      auto request = std::make_shared<tutorial_interfaces::srv::CounterService::Request>();
+      request->start_point = 1;
+      rr->call<tutorial_interfaces::srv::CounterService>("ProducerRR", "counterServer", request, statusCallback);
+    }
+    res->load_message = req->load_target;
+  };
+
+  auto unloadCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req,
+                      std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res)
+  {
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload rr");
   };
 
   auto statusCb = [&](const std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Request> req,
                       std::shared_ptr<tutorial_interfaces::srv::LoadComponent::Response> res,
-                      const temoto_resource_registrar::Status &status) {
+                      const temoto_resource_registrar::Status &status)
+  {
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "status rr");
-
-    //boost::thread thread_b(caller, 5);
   };
 
   rclcpp::init(argc, argv);
 
   rclcpp::executors::MultiThreadedExecutor exec;
+  //exec.add_node(rr);
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "in main");
   rr = std::make_shared<temoto_resource_registrar::ResourceRegistrarRos2>(rrName);
-
-  //exec.add_node(rr);
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "inited rr");
 
@@ -76,8 +77,8 @@ int main(int argc, char **argv)
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "spinning rr");
 
-  //exec.add_node(rr);
-  //exec.spin();
-  rclcpp::spin(rr);
+  exec.add_node(rr);
+  exec.spin();
+  //rclcpp::spin(rr);
   rclcpp::shutdown();
 }
