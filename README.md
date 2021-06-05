@@ -2,6 +2,9 @@
 
 This is a implementation of the rr_core library on ROS1. It is meant to replace the existing resource registrar used inside TeMoto to allow for a more flexible and extendable resource management system.
 
+This library was developed as part of a Masters thesis that can be found here:
+[Design and Implementation of a Generalized Resource Management Architecture in the TeMoto Software Framework](https://www.ims.ut.ee/www-public2/at/2021/msc/atprog-courses-magistrit55-loti.05.036-allan-kustavus-text-20210520.pdf)
+
 ## How to install
 
 This package contains of 3 parts:
