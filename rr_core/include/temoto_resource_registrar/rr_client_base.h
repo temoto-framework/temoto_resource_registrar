@@ -17,23 +17,51 @@
 #ifndef TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 #define TEMOTO_RESOURCE_REGISTRAR__RR_CLIENT_BASE_H
 
-#include "rr_registry.h"
+#include "rr_catalog.h"
+#include "rr_identifiable.h"
+#include "rr_query_base.h"
+#include "rr_status.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 namespace temoto_resource_registrar
 {
-  class RrClientBase
+  class RrClientBase : public Identifiable<std::string>
   {
   public:
-    RrClientBase(const std::string &name, RrRegistryPtr rr_registry)
-        : rr_registry_(rr_registry)
-    {
-    }
+    RrClientBase(const std::string &rr, const std::string &name);
 
-    void wrappedCallback();
+    virtual void wrappedCallback();
+
+    virtual std::string id() const;
+
+    void setCatalog(const RrCatalogPtr &reg);
+
+    virtual void invoke(const RrQueryBase &query) const;
+
+    virtual void internalStatusCallback(const std::string &request_id, const Status &status);
+
+    template <class UserStatusCb>
+    void registerUserStatusCb(const std::string &request_id, const UserStatusCb &user_status_cb);
+
+    void registerUserStatusCb(const std::string &request_id, void *const &t);
+
+    virtual bool hasRegisteredCb(const std::string &request_id) const;
+
+    virtual std::vector<std::string> registeredCallbackQueries() const;
+
+    std::string rr() const;
+
+  protected:
+    std::string rr_;
+    std::string name_;
+    RrCatalogPtr rr_catalog_;
+    std::vector<std::string> status_query_ids_;
 
   private:
-    RrRegistryPtr rr_registry_;
-    std::string name_;
+    std::string id_;
   };
 
 } // namespace temoto_resource_registrar

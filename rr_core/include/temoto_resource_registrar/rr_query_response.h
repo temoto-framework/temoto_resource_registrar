@@ -14,22 +14,17 @@
  * limitations under the License.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_REGISTRY_H
-#define TEMOTO_RESOURCE_REGISTRAR__RR_REGISTRY_H
+#ifndef TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_RESPONSE_H
+#define TEMOTO_RESOURCE_REGISTRAR__RR_QUERY_RESPONSE_H
 
-#include <memory>
+#include <string>
 
 namespace temoto_resource_registrar
 {
-
-  class RrRegistry
+  class RrQueryResponse
   {
   public:
-    RrRegistry() = default;
+  private:
   };
-
-  typedef std::shared_ptr<RrRegistry> RrRegistryPtr;
-
 } // namespace temoto_resource_registrar
-
 #endif
