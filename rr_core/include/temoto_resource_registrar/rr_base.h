@@ -676,7 +676,7 @@ namespace temoto_resource_registrar
       {
         //TEMOTO_DEBUG_("------------------------------------- has a dependency requirement");
         RrQueryBase bq = running_query_map_[work_id];
-        std::cout << "!!!Query " << query.id() << " is dependency of " << bq.id() << ". Stroring it" << std::endl;
+        TEMOTO_DEBUG_STREAM_("Query " << query.id() << " is dependency of " << bq.id() << ". Stroring it");
 
         rr_catalog_->storeDependency(bq.id(), query.rr(), query.id());
       }

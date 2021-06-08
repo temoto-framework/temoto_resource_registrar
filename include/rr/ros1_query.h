@@ -59,10 +59,10 @@ public:
   }
 
   /**
- * @brief Returs the reference of the stored srv response.
- * 
- * @return ServiceClass::Response 
- */
+   * @brief Returs the reference of the stored srv response.
+   * 
+   * @return ServiceClass::Response 
+   */
   typename ServiceClass::Response response()
   {
     return typed_query_.response;
@@ -89,7 +89,7 @@ public:
    */
   ServiceClass rosQuery()
   {
-    TEMOTO_INFO_STREAM_("Returning ROS query");
+    TEMOTO_DEBUG_STREAM_("Returning ROS query");
     
     typed_query_.request.temoto_metadata.serving_rr = rr();
     typed_query_.request.temoto_metadata.origin_rr = origin();

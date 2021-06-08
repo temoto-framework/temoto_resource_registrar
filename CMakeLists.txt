@@ -54,6 +54,7 @@ ExternalProject_Add(rr_core001
   CMAKE_ARGS
     -Wno-dev
   BUILD_COMMAND $(MAKE)
+  BUILD_ALWAYS true
   INSTALL_COMMAND cmake -E echo "Skipping install step."
 )
 

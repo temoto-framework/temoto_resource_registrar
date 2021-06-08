@@ -26,6 +26,7 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/unordered_map.hpp>
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -64,13 +65,15 @@ namespace temoto_resource_registrar
 
     void print() const
     {
-      std::cout << "{";
+      std::stringstream ss;
+      ss << "{";
       for (auto const &i : id_rr_map_)
       {
 
-        std::cout << i.first << ": " << i.second << ", ";
+        ss << i.first << ": " << i.second << ", ";
       }
-      std::cout << "}" << std::endl;
+      ss << "}" << std::endl;
+      TEMOTO_DEBUG_(ss.str().c_str());
     }
 
     std::unordered_map<std::string, std::string> dependencies() const { return id_rr_map_; }
@@ -142,9 +145,8 @@ namespace temoto_resource_registrar
       oa << *(this);
       ofs.close();
 
-      CONSOLE_BRIDGE_logWarn("Saved Catalog!");
-
-      print();
+      TEMOTO_DEBUG_("Saved Catalog!");
+      //print();
     }
 
     void updateConfiguration(Configuration &conf)

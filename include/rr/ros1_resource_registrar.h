@@ -45,13 +45,13 @@ namespace temoto_resource_registrar
 
     ~ResourceRegistrarRos1()
     {
-      TEMOTO_INFO_STREAM_("Destroying RR Ros " << name());
-      TEMOTO_INFO_STREAM_("unloading clients");
+      TEMOTO_DEBUG_STREAM_("Destroying RR Ros " << name());
+      TEMOTO_DEBUG_STREAM_("unloading clients");
       for (const std::string &client_id : clients_.getIds())
       {
         try
         {
-          TEMOTO_INFO_STREAM_("unloading client " << client_id);
+          TEMOTO_DEBUG_STREAM_("unloading client " << client_id);
           unloadClient(client_id);
         }
         catch (...)
@@ -98,7 +98,7 @@ namespace temoto_resource_registrar
               std::function<void(QueryType, Status)> status_func = NULL,
               bool override_status = false)
     {
-      TEMOTO_INFO_STREAM_("calling " << rr << " server " << server);
+      TEMOTO_DEBUG_STREAM_("calling " << rr << " server " << server);
       Ros1Query<QueryType> wrapped_base_query(query);
 
       privateCall<Ros1Client<QueryType>,
@@ -112,7 +112,7 @@ namespace temoto_resource_registrar
 
       query = wrapped_base_query.rosQuery();
 
-      TEMOTO_INFO_STREAM_("calling " << rr << " server " << server << " done");
+      TEMOTO_DEBUG_STREAM_("calling " << rr << " server " << server << " done");
     }
 
     /**
@@ -127,7 +127,7 @@ namespace temoto_resource_registrar
      */
     bool unload(const std::string &rr, const std::string &id)
     {
-      TEMOTO_INFO_STREAM_("unload Called for rr " << rr << " id: " << id);
+      TEMOTO_DEBUG_STREAM_("unload Called for rr " << rr << " id: " << id);
 
       std::string client_name = IDUtils::generateUnload(rr);
       initClient<UnloadComponent>(client_name, unload_clients_);
@@ -136,7 +136,7 @@ namespace temoto_resource_registrar
       unload_srv.request.target = id;
 
       bool res = unload_clients_[client_name]->call(unload_srv);
-      TEMOTO_INFO_STREAM_("result: " << res);
+      TEMOTO_DEBUG_STREAM_("result: " << res);
 
       return res;
     }
@@ -153,7 +153,7 @@ namespace temoto_resource_registrar
     template <class QueryType>
     QueryType deSerializeQuery(const QueryContainer<RawData> &container)
     {
-      TEMOTO_INFO_STREAM_("deSerializeBaseQuery ROS ");
+      TEMOTO_DEBUG_STREAM_("deSerializeBaseQuery ROS ");
       QueryType q;
 
       q.request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename QueryType::Request>(container.raw_request_);
@@ -216,7 +216,7 @@ namespace temoto_resource_registrar
     template <class QueryType>
     std::vector<QueryType> getServerQueries(const std::string &server)
     {
-      TEMOTO_INFO_STREAM_("getServerQueries printing before processign catalog.");
+      TEMOTO_DEBUG_STREAM_("getServerQueries printing before processign catalog.");
       std::string server_name = IDUtils::generateServerName(name(), server);
       rr_catalog_->print();
       std::vector<QueryType> out;
@@ -226,7 +226,7 @@ namespace temoto_resource_registrar
         out.push_back(deSerializeQuery<QueryType>(queryContainer));
       }
 
-      TEMOTO_INFO_STREAM_("getServerQueries printing after processign catalog.");
+      TEMOTO_DEBUG_STREAM_("getServerQueries printing after processign catalog.");
       rr_catalog_->print();
 
       return out;
@@ -236,7 +236,7 @@ namespace temoto_resource_registrar
     void updateQueryResponse(const std::string &server,
                              const QueryType &call)
     {
-      TEMOTO_INFO_STREAM_("updateQueryResponse for server " << server);
+      TEMOTO_DEBUG_STREAM_("updateQueryResponse for server " << server);
 
       std::string serialized_request = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Request>(sanityzeData<typename QueryType::Request>(call.request));
       std::string serialized_response = temoto_resource_registrar::MessageSerializer::serializeMessage<typename QueryType::Response>(sanityzeData<typename QueryType::Response>(call.response));
@@ -266,7 +266,7 @@ namespace temoto_resource_registrar
       initClient<StatusComponent>(client_name, status_clients_);
 
       temoto_resource_registrar::StatusComponent status_srv;
-      TEMOTO_INFO_STREAM_("callStatusClient");
+      TEMOTO_DEBUG_STREAM_("callStatusClient");
       auto container = rr_catalog_->findOriginalContainer(status_data.id_);
       if (!container.empty_)
       {
@@ -288,7 +288,7 @@ namespace temoto_resource_registrar
       status_srv.request.status = static_cast<int>(status_data.state_);
       status_srv.request.message = status_data.message_;
 
-      TEMOTO_INFO_STREAM_("calling status client " << client_name << " target id: " << status_data.id_);
+      TEMOTO_DEBUG_STREAM_("calling status client " << client_name << " target id: " << status_data.id_);
 
       return status_clients_[client_name]->call(status_srv);
     };
@@ -297,7 +297,7 @@ namespace temoto_resource_registrar
                                                                                            const std::string &origin_rr,
                                                                                            const std::string &server_name)
     {
-      TEMOTO_INFO_STREAM_("callDataFetchClient");
+      TEMOTO_DEBUG_STREAM_("callDataFetchClient");
 
       std::string client_name = IDUtils::generateFetch(target_rr);
       initClient<DataFetchComponent>(client_name, fetch_clients_);
@@ -307,7 +307,7 @@ namespace temoto_resource_registrar
       data_fetch_srv.request.origin_rr = origin_rr;
       data_fetch_srv.request.server_name = server_name;
 
-      TEMOTO_INFO_STREAM_("calling data fetch client " << client_name << " - " << data_fetch_srv.request);
+      TEMOTO_DEBUG_STREAM_("calling data fetch client " << client_name << " - " << data_fetch_srv.request);
 
       fetch_clients_[client_name]->call(data_fetch_srv);
 
@@ -353,48 +353,48 @@ namespace temoto_resource_registrar
 
       if (client_map.count(client_name) == 0)
       {
-        TEMOTO_INFO_STREAM_("creating client " << client_name);
+        TEMOTO_DEBUG_STREAM_("creating client " << client_name);
         auto sc = nh.serviceClient<ServiceClass>(client_name);
         auto client = std::make_unique<ros::ServiceClient>(sc);
         client_map[client_name] = std::move(client);
-        TEMOTO_INFO_STREAM_("created client...");
+        TEMOTO_DEBUG_STREAM_("created client...");
       }
     }
 
     void startServices()
     {
-      TEMOTO_INFO_STREAM_("Starting up services...");
+      TEMOTO_DEBUG_STREAM_("Starting up services...");
       ros::NodeHandle nh;
-      TEMOTO_INFO_STREAM_("Starting unload_service_... " << IDUtils::generateUnload(name()));
+      TEMOTO_DEBUG_STREAM_("Starting unload_service_... " << IDUtils::generateUnload(name()));
       unload_service_ = nh.advertiseService(IDUtils::generateUnload(name()), &ResourceRegistrarRos1::unloadCallback, this);
-      TEMOTO_INFO_STREAM_("Starting status_service_... " << IDUtils::generateStatus(name()));
+      TEMOTO_DEBUG_STREAM_("Starting status_service_... " << IDUtils::generateStatus(name()));
       status_service_ = nh.advertiseService(IDUtils::generateStatus(name()), &ResourceRegistrarRos1::statusCallback, this);
-      TEMOTO_INFO_STREAM_("Starting fetch_service_... " << IDUtils::generateFetch(name()));
+      TEMOTO_DEBUG_STREAM_("Starting fetch_service_... " << IDUtils::generateFetch(name()));
       fetch_service_ = nh.advertiseService(IDUtils::generateFetch(name()), &ResourceRegistrarRos1::dataFetchCallback, this);
     }
 
     bool unloadCallback(UnloadComponent::Request &req, UnloadComponent::Response &res)
     {
-      TEMOTO_INFO_STREAM_("printing catalog before unload callback");
+      TEMOTO_DEBUG_STREAM_("printing catalog before unload callback");
       rr_catalog_->print();
 
-      TEMOTO_INFO_STREAM_("unloadCallback " << req.target);
+      TEMOTO_DEBUG_STREAM_("unloadCallback " << req.target);
       std::string id = req.target;
-      TEMOTO_INFO_STREAM_("std::string id " << id);
+      TEMOTO_DEBUG_STREAM_("std::string id " << id);
       res.status = localUnload(id);
       return true;
     }
 
     bool statusCallback(StatusComponent::Request &req, StatusComponent::Response &res)
     {
-      TEMOTO_INFO_STREAM_("statusCallback: " << req.target);
+      TEMOTO_DEBUG_STREAM_("statusCallback: " << req.target);
       handleStatus(req.target, {static_cast<Status::State>(req.status), req.target, req.message, req.serialised_request, req.serialised_response});
       return true;
     }
 
     bool dataFetchCallback(DataFetchComponent::Request &req, DataFetchComponent::Response &res)
     {
-      TEMOTO_INFO_STREAM_("syncCallback " << req);
+      TEMOTO_DEBUG_STREAM_("syncCallback " << req);
       std::map<UUID, std::pair<std::string, std::string>> resMap = handleDataFetch(req.origin_rr, req.server_name);
       std::vector<std::string> ids, serialized_requests, serialized_responses;
 
