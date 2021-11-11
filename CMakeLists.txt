@@ -151,4 +151,5 @@ add_custom_command(TARGET rr_core001
   POST_BUILD
   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/build/librr_core.so.0.0.1 
     ${CATKIN_DEVEL_PREFIX}/lib/librr_core.so.0.0.1
+    COMMAND mkdir "~/.temoto"
 )
