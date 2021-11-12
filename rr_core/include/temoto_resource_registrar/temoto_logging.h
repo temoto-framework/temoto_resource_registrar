@@ -23,6 +23,7 @@
 #include <typeinfo>
 #include <sstream>
 #include <boost/core/demangle.hpp>
+#include <boost/algorithm/string.hpp>
 #include <console_bridge/console.h>
 #include <iostream>
 #include <exception>
@@ -33,7 +34,7 @@
 #endif
 
 // Logging prefix macro definitions
-#define GET_CLASS_NAME boost::core::demangle(typeid(*this).name())
+#define GET_CLASS_NAME TEMOTO_LOG_ATTR.getClassName(boost::core::demangle(typeid(*this).name()))
 #define GET_NAME_FF TEMOTO_LOG_ATTR.getNsWithSlash() + __func__
 #define GET_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + GET_CLASS_NAME + "::" + __func__
 
@@ -180,6 +181,13 @@ public:
     {
       return std::string();
     }
+  }
+
+  std::string getClassName(std::string class_name_full) const
+  {
+    std::vector<std::string> tokens;
+    boost::split(tokens, class_name_full, boost::is_any_of("::"));
+    return tokens.back();
   }
 
   void setSubsystemName(const std::string& subsystem_name)

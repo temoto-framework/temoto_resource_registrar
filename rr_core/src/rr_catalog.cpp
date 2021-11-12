@@ -15,6 +15,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "temoto_resource_registrar/rr_catalog.h"
+#include <sstream>
 
 namespace temoto_resource_registrar
 {
@@ -24,17 +25,13 @@ namespace temoto_resource_registrar
                              RawData request_data,
                              RawData query_data)
   {
-
-    std::cout << "in store query.." << std::endl;
-
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
-    std::cout << "locking..." << std::endl;
     id_query_map_[request_data] = QueryContainer<RawData>(q, request_data, query_data, server);
-    std::cout << "id_query_map_[request_data] set" << std::endl;
+    //std::cout << "id_query_map_[request_data] set" << std::endl;
     server_id_map_[server].insert(q.id());
-    std::cout << "server_id_map_[server] set" << std::endl;
+    //std::cout << "server_id_map_[server] set" << std::endl;
 
-    std::cout << "storage done... current state of catalog:" << std::endl;
+    TEMOTO_DEBUG_STREAM_("storage done... current state of catalog: \n");
     print();
   }
 
@@ -81,7 +78,7 @@ namespace temoto_resource_registrar
   {
     std::string request = "";
 
-    std::cout << "processExisting" << std::endl;
+    //std::cout << "processExisting" << std::endl;
 
     request = findOriginalContainer(id).raw_request_;
 
@@ -98,7 +95,7 @@ namespace temoto_resource_registrar
 
   UUID RrCatalog::getInitialId(const std::string &id)
   {
-    std::cout << "getInitialId" << std::endl;
+    //std::cout << "getInitialId" << std::endl;
     return getOriginQueryId(id);
   }
 
@@ -116,7 +113,7 @@ namespace temoto_resource_registrar
 
     if (removed_el_cnt)
     {
-      std::cout << "unload" << std::endl;
+      //std::cout << "unload" << std::endl;
       QueryContainer<RawData> qc = findOriginalContainer(id);
 
       if (qc.responsible_server_.size())
@@ -147,23 +144,23 @@ namespace temoto_resource_registrar
 
   QueryContainer<RawData> RrCatalog::findOriginalContainer(const std::string &id)
   {
-    std::cout << "findOriginalContainer: " << id << std::endl;
+    //std::cout << "findOriginalContainer: " << id << std::endl;
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &query_entry : id_query_map_)
     {
       if (query_entry.second.rr_ids_.count(id))
       {
-        std::cout << "Found!: " << query_entry.second.q_.id() << std::endl;
+        //std::cout << "Found!: " << query_entry.second.q_.id() << std::endl;
         return query_entry.second;
       }
     }
-    std::cout << "Not found! Returning raw container" << std::endl;
+    TEMOTO_DEBUG_("ID: '%s' Not found! Returning raw container", id.c_str());
     return QueryContainer<RawData>();
   }
 
   ServerName RrCatalog::getIdServer(const std::string &id)
   {
-    std::cout << "getIdServer: " << id << std::endl;
+    //std::cout << "getIdServer: " << id << std::endl;
     return findOriginalContainer(id).responsible_server_;
   }
 
@@ -252,7 +249,7 @@ namespace temoto_resource_registrar
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
     for (auto const &query_id : server_id_map_[server])
     {
-      std::cout << "getUniqueServerQueries" << std::endl;
+      //std::cout << "getUniqueServerQueries" << std::endl;
       QueryContainer<RawData> container = findOriginalContainer(query_id);
       if (added_messages.count(container.q_.id()) == 0)
       {
@@ -268,12 +265,12 @@ namespace temoto_resource_registrar
   {
     std::lock_guard<std::recursive_mutex> lock(modify_mutex_);
 
-    std::cout << "getClientIds for client " << client << std::endl;
+    TEMOTO_DEBUG_STREAM_("getClientIds for client " << client);
 
     if (client_id_map_.count(client) > 0)
       return client_id_map_[client];
 
-    std::cout << "none found" << std::endl;
+    //std::cout << "none found" << std::endl;
 
     throw ElementNotFoundException(("Client " + client + " not found").c_str());
   }
@@ -302,68 +299,70 @@ namespace temoto_resource_registrar
     throw ElementNotFoundException("Server not found");
   }
 
+
   void RrCatalog::print()
   {
-    std::cout << "server_rr_: " << server_rr_.size() << std::endl;
+    std::stringstream ss;
+    ss << "server_rr_: " << server_rr_.size() << std::endl;
     for (auto const &i : server_rr_)
     {
-      std::cout << "{" << std::endl;
-      std::cout << i.first << ": ";
-      std::cout << i.second << ",";
-      std::cout << std::endl;
-      std::cout << "}" << std::endl;
+      ss << "{" << std::endl;
+      ss << i.first << ": ";
+      ss << i.second << ",";
+      ss << std::endl;
+      ss << "}" << std::endl;
     }
 
-    std::cout << "client_id_map_: " << std::endl;
+    ss << "client_id_map_: " << std::endl;
     for (auto const &i : client_id_map_)
     {
-      std::cout << "{" << std::endl;
-      std::cout << i.first << ": ";
+      ss << "{" << std::endl;
+      ss << i.first << ": ";
       for (auto const &j : i.second)
       {
-        std::cout << j << ", ";
+        ss << j << ", ";
       }
-      std::cout << std::endl;
-      std::cout << "}" << std::endl;
+      ss << std::endl;
+      ss << "}" << std::endl;
     }
 
-    std::cout << "server_id_map_: " << std::endl;
+    ss << "server_id_map_: " << std::endl;
     for (auto const &i : server_id_map_)
     {
-      std::cout << "{" << std::endl;
-      std::cout << i.first << ": ";
+      ss << "{" << std::endl;
+      ss << i.first << ": ";
       for (auto const &j : i.second)
       {
-        std::cout << j << ", ";
+        ss << j << ", ";
       }
-      std::cout << std::endl;
-      std::cout << "}" << std::endl;
+      ss << std::endl;
+      ss << "}" << std::endl;
     }
 
-    std::cout << "id_query_map_: " << std::endl;
+    ss << "id_query_map_: " << std::endl;
     for (auto const &i : id_query_map_)
     {
-      std::cout << "{" << std::endl;
-      std::cout << i.first << ": ";
+      ss << "{" << std::endl;
+      ss << i.first << ": ";
       for (auto const &j : i.second.rr_ids_)
       {
-        std::cout << j.first << ": " << j.second << "; ";
+        ss << j.first << ": " << j.second << "; ";
       }
-      std::cout << std::endl;
-      std::cout << "}" << std::endl;
+      ss << std::endl;
+      ss << "}" << std::endl;
     }
 
-    std::cout << "id_dependency_map: " << std::endl;
+    ss << "id_dependency_map: " << std::endl;
     for (auto const &i : id_dependency_map_)
     {
-      std::cout << "{" << std::endl;
-      std::cout << i.first << ": ";
+      ss << "{" << std::endl;
+      ss << i.first << ": ";
 
       i.second.print();
 
-      std::cout << std::endl;
-      std::cout << "}" << std::endl;
+      ss << std::endl;
+      ss << "}" << std::endl;
     }
+    TEMOTO_DEBUG_(ss.str().c_str());
   }
-
 } // namespace temoto_resource_registrar
