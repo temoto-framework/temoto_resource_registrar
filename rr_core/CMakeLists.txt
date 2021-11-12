@@ -6,11 +6,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(ExternalProject)
 
 file(GLOB HEADERS
-    "include/*.h"
+  "include/*.h"
 )
 
 file(GLOB SOURCES
-    "src/*.cpp"
+  "src/*.cpp"
 )
 
 set(LIBRARIES)
@@ -62,9 +62,9 @@ include_directories(
 )
 
 project(${LIBRARY_NAME} 
-    LANGUAGES CXX 
-    VERSION 0.0.1 
-    DESCRIPTION "temoto rr core library"
+  LANGUAGES CXX 
+  VERSION 0.0.1 
+  DESCRIPTION "temoto rr core library"
 )
 
 add_library(${LIBRARY_NAME} SHARED
@@ -82,8 +82,8 @@ target_link_libraries(${LIBRARY_NAME}
 )
 
 set_target_properties(${LIBRARY_NAME} PROPERTIES 
-    VERSION ${PROJECT_VERSION}
-    LINKER_LANGUAGE CXX
+  VERSION ${PROJECT_VERSION}
+  LINKER_LANGUAGE CXX
 )
 
 include(GNUInstallDirs)
@@ -94,32 +94,34 @@ configure_file(${LIBRARY_NAME}.pc.in ${LIBRARY_NAME}.pc @ONLY)
 
 find_package (Boost 1.65.1 COMPONENTS system filesystem serialization REQUIRED)
 if (Boost_FOUND)
-    include_directories (SYSTEM ${Boost_INCLUDE_DIR})
+  include_directories (SYSTEM ${Boost_INCLUDE_DIR})
 endif ()
 
-ExternalProject_Add(
-  console_bridge
-  URL https://github.com/ros/console_bridge/archive/master.zip
-  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/console_bridge
-  INSTALL_COMMAND ""
-  LOG_DOWNLOAD ON
-  LOG_INSTALL ON
-)
+find_package(console_bridge)
 
-ExternalProject_Get_Property(console_bridge source_dir binary_dir)
+# ExternalProject_Add(
+#   console_bridge
+#   URL https://github.com/ros/console_bridge/archive/master.zip
+#   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/console_bridge
+#   INSTALL_COMMAND ""
+#   LOG_DOWNLOAD ON
+#   LOG_INSTALL ON
+# )
 
-set(CONSOLE_BRIDGE_LIB_INCLUDE "${source_dir}/include")
-file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_LIB_INCLUDE})
-set(CONSOLE_BRIDGE_BIN_LIB_INCLUDE "${binary_dir}")
-file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_BIN_LIB_INCLUDE})
+# ExternalProject_Get_Property(console_bridge source_dir binary_dir)
 
-list(APPEND LIB_INCLUDE_DIRS ${CONSOLE_BRIDGE_LIB_INCLUDE})
-list(APPEND LIB_INCLUDE_DIRS ${CONSOLE_BRIDGE_BIN_LIB_INCLUDE})
+# set(CONSOLE_BRIDGE_LIB_INCLUDE "${source_dir}/include")
+# file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_LIB_INCLUDE})
+# set(CONSOLE_BRIDGE_BIN_LIB_INCLUDE "${binary_dir}")
+# file(MAKE_DIRECTORY ${CONSOLE_BRIDGE_BIN_LIB_INCLUDE})
 
-add_library(libconsole_bridge SHARED IMPORTED)
-add_dependencies(libconsole_bridge console_bridge)
-set_target_properties(libconsole_bridge PROPERTIES IMPORTED_LOCATION ${binary_dir}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}console_bridge${CMAKE_SHARED_LIBRARY_SUFFIX})
-set_target_properties(libconsole_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIB_INCLUDE_DIRS}")
+# list(APPEND LIB_INCLUDE_DIRS ${CONSOLE_BRIDGE_LIB_INCLUDE})
+# list(APPEND LIB_INCLUDE_DIRS ${CONSOLE_BRIDGE_BIN_LIB_INCLUDE})
+
+# add_library(libconsole_bridge SHARED IMPORTED)
+# add_dependencies(libconsole_bridge console_bridge)
+# set_target_properties(libconsole_bridge PROPERTIES IMPORTED_LOCATION ${binary_dir}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}console_bridge${CMAKE_SHARED_LIBRARY_SUFFIX})
+# set_target_properties(libconsole_bridge PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIB_INCLUDE_DIRS}")
 
 #############
 # test flag
@@ -195,7 +197,7 @@ if (test)
   file(GLOB_RECURSE TEST_SOURCES test/*.h test/*.cpp)
 
   add_executable(${TEST_BINARY} ${TEST_SOURCES})
-  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog libconsole_bridge ${LIBRARY_NAME} ${Boost_LIBRARIES})
+  target_link_libraries(${TEST_BINARY} libgtest libgmock libglog console_bridge ${LIBRARY_NAME} ${Boost_LIBRARIES})
 
   #gtest_discover_tests(${TEST_BINARY}
   #  WORKING_DIRECTORY ${PROJECT_DIR}
@@ -207,16 +209,19 @@ endif()
 
 
 target_include_directories(${LIBRARY_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    PRIVATE src)
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  PRIVATE src
+)
 
-target_link_libraries(${LIBRARY_NAME} libconsole_bridge)
+target_link_libraries(${LIBRARY_NAME} console_bridge)
 
 install(TARGETS ${LIBRARY_NAME} EXPORT ${LIBRARY_NAME}-config
-    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
+  ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(EXPORT ${LIBRARY_NAME}-config DESTINATION share/cmake)
