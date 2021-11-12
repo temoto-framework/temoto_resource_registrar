@@ -16,11 +16,14 @@
 
 #include "temoto_resource_registrar/rr_client_base.h"
 #include "temoto_resource_registrar/rr_id_utils.h"
+#include "temoto_resource_registrar/rr_exceptions.h"
 
 namespace temoto_resource_registrar
 {
   RrClientBase::RrClientBase(const std::string &rr, const std::string &name)
-      : name_(name), rr_(rr), id_(IDUtils::generateServerName(rr, name))
+  : name_(name)
+  , rr_(rr)
+  , id_(IDUtils::generateServerName(rr, name))
   {
   }
 
@@ -57,6 +60,8 @@ namespace temoto_resource_registrar
 
   bool RrClientBase::hasRegisteredCb(const std::string &request_id) const
   {
+    throw NotImplementedException("'hasRegisteredCb' is not implemented in the base class");
+    return false;
   }
 
   std::vector<std::string> RrClientBase::registeredCallbackQueries() const
