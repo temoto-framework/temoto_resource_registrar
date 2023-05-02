@@ -156,6 +156,6 @@ add_custom_command(TARGET rr_core001
 IF(NOT(EXISTS $ENV{HOME}/.temoto))  
   add_custom_command(TARGET rr_core001
     POST_BUILD
-    COMMAND mkdir $ENV{HOME}/.temoto
+    COMMAND mkdir -p $ENV{HOME}/.temoto
   )
 endif()

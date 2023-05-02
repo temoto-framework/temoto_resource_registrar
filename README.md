@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # RR Core implementation on ROS1
 
 This is a implementation of the rr_core library on ROS1. It is meant to replace the existing resource registrar used inside TeMoto to allow for a more flexible and extendable resource management system.
