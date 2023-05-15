@@ -37,6 +37,7 @@
 
 #define FWD_TEMOTO_ERRSTACK_FF(error_stack) error_stack.appendError("forwarding", GET_NAME_FF)
 #define FWD_TEMOTO_ERRSTACK(error_stack) error_stack.appendError("forwarding", GET_NAME)
+#define FWD_TEMOTO_ERRSTACK_WMSG(error_stack, message) error_stack.appendError(message, GET_NAME)
 
 namespace resource_registrar
 {
