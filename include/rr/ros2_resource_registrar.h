@@ -130,8 +130,8 @@ namespace temoto_resource_registrar
       //ROS_INFO_STREAM("unload Called for rr " << rr << " id: " << id);
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload called");
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), rr);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), rr.c_str());
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id.c_str());
 
       std::string client_name = IDUtils::generateUnload(rr);
       initClient<rr_interfaces::srv::UnloadComponent>(client_name, unload_clients_, unload_callback_group_);
@@ -282,9 +282,9 @@ namespace temoto_resource_registrar
     std::unordered_map<std::string, typename rclcpp::Client<rr_interfaces::srv::StatusComponent>::SharedPtr> status_clients_;
     std::unordered_map<std::string, typename rclcpp::Client<rr_interfaces::srv::DataFetchComponent>::SharedPtr> fetch_clients_;
 
-    rclcpp::callback_group::CallbackGroup::SharedPtr unload_callback_group_;
-    rclcpp::callback_group::CallbackGroup::SharedPtr status_callback_group_;
-    rclcpp::callback_group::CallbackGroup::SharedPtr fetch_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr unload_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr status_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr fetch_callback_group_;
 
     std::string string_to_hex(const std::string &input)
     {
@@ -631,7 +631,7 @@ namespace temoto_resource_registrar
       request->message = status_data.message_;
 
       //ROS_INFO_STREAM("calling status client " << client_name << " target id: " << status_data.id_);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Calling client with id: " + client_name + " target id: " + status_data.id_);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("Calling client with id: " + client_name + " target id: " + status_data.id_).c_str());
       auto result = status_clients_[client_name]->async_send_request(request);
       return true;
       //return rclcpp::spin_until_future_complete(this, result) == rclcpp::executor::FutureReturnCode::SUCCESS;
@@ -705,7 +705,7 @@ namespace temoto_resource_registrar
     void initClient(
         const std::string &client_name,
         std::unordered_map<std::string, typename rclcpp::Client<ServiceClass>::SharedPtr> &client_map,
-        rclcpp::callback_group::CallbackGroup::SharedPtr group)
+        rclcpp::CallbackGroup::SharedPtr group)
     {
       if (client_map.count(client_name) == 0)
       {
@@ -723,9 +723,9 @@ namespace temoto_resource_registrar
       //node_ = rclcpp::Node::make_shared(name() + "_internal");
 
       //callback_group_ = node_->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
-      unload_callback_group_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
-      status_callback_group_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
-      fetch_callback_group_ = this->create_callback_group(rclcpp::callback_group::CallbackGroupType::MutuallyExclusive);
+      unload_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+      status_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+      fetch_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Starting services....");
 
@@ -783,10 +783,10 @@ namespace temoto_resource_registrar
       std::string serialised_request = hex_to_string(req->serialised_request);
       std::string serialised_response = hex_to_string(req->serialised_response);
 
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + target);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + message);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + serialised_request);
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "\t" + serialised_response);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("\t" + target).c_str());
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("\t" + message).c_str());
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("\t" + serialised_request).c_str());
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("\t" + serialised_response).c_str());
 
       handleStatus(target, {static_cast<Status::State>(status), target, message, serialised_request, serialised_response});
     }

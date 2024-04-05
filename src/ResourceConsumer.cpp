@@ -15,7 +15,6 @@ std::string loadId = "";
 
 int main(int argc, char **argv)
 {
-
   rclcpp::init(argc, argv);
 
   rclcpp::executors::MultiThreadedExecutor exec;
@@ -33,7 +32,7 @@ int main(int argc, char **argv)
 
     if (counter == shutdownCounter)
     {
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "counter reached, unloading: " + loadId);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("counter reached, unloading: " + loadId).c_str());
       bool res = rr->unload("AgentRR", loadId);
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unload result: %d", res);
     }
@@ -54,7 +53,7 @@ int main(int argc, char **argv)
 
   loadId = res.response() -> temoto_metadata.request_id;
 
-  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), loadId);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), loadId.c_str());
 
   exec.add_node(rr);
   exec.spin();

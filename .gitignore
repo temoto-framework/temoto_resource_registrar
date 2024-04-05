@@ -1,4 +1,6 @@
 build/
+install/
+log/
 doc/
 cmake_install.cmake
 install_manifest.txt

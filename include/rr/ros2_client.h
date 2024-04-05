@@ -52,11 +52,11 @@ public:
   {
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke request in async for server:");
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id().c_str());
 
     auto result = client_->async_send_request(request);
 
-    if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
+    if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS)
     {
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "OK");
     }
@@ -78,11 +78,11 @@ public:
     //ServiceClass service_call = wrapped_request.rosQuery();
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke request in async for server:");
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id().c_str());
 
     auto result = client_->async_send_request(wrapped_request.request());
 
-    if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::executor::FutureReturnCode::SUCCESS)
+    if (rclcpp::spin_until_future_complete(node_, result) == rclcpp::FutureReturnCode::SUCCESS)
     {
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "OK");
 
@@ -103,7 +103,8 @@ public:
   {
     //ROS_INFO_STREAM("registerUserStatusCb " << " - " << id() << " request: " << request_id);
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "registerUserStatusCb - " + id() + " request: " + request_id);
+    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "registerUserStatusCb - " + id() + " request: " + request_id);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("registerUserStatusCb - " + id() + " request: " + request_id).c_str());
     status_callbacks_[request_id] = user_status_cb;
 
     //ROS_INFO_STREAM("check to see if it really registered: " << hasRegisteredCb(request_id) << " nr of callbacks: " << status_callbacks_.size());
@@ -114,7 +115,7 @@ public:
   void internalStatusCallback(const std::string &request_id, const temoto_resource_registrar::Status &status)
   {
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "internalStatusCallback - " + id() + " request: " + request_id);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("internalStatusCallback - " + id() + " request: " + request_id).c_str());
 
     //ROS_INFO_STREAM("Determinging if client cas callback for id " << request_id << " nr of callbacks: " << status_callbacks_.size());
     if (hasRegisteredCb(request_id))

@@ -164,7 +164,7 @@ public:
     else
     {
       //ROS_INFO_STREAM("evaluating uniqueness based on string comparison");
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Ser. req. " + serialized_request);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("Ser. req. " + serialized_request).c_str());
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%i", serialized_request.size());
       request_id = this->rr_catalog_->queryExists(id_, serialized_request);
     }
@@ -173,7 +173,7 @@ public:
     res->temoto_metadata.request_id = generated_id;
 
     //ROS_INFO_STREAM("Generated request id: " << generated_id);
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Generated request id: " + generated_id);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("Generated request id: " + generated_id).c_str());
     Ros2Query<ServiceClass> wrapped_query = wrap(req, res);
 
     if (request_id.size() == 0)
@@ -264,7 +264,7 @@ private:
     service_ = node_->create_service<ServiceClass>(id(), std::bind(&Ros2Server::serverCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "initialized server with ID:");
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id().c_str());
   }
 
   Ros2Query<ServiceClass> wrap(std::shared_ptr<typename ServiceClass::Request> req, std::shared_ptr<typename ServiceClass::Response> res)

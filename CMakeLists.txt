@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(temoto_rr)
+project(temoto_resource_registrar)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -15,15 +15,20 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+add_library(rr_core)
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/src)
+file(GLOB_RECURSE SOURCES ${SOURCE_DIR}/*.cpp)
+target_sources(rr_core PRIVATE ${SOURCES})
+target_include_directories(rr_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rr_core/include/temoto_resource_registrar)
 
-find_library(rr_core REQUIRED)
-
+# find_library(rr_core REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem serialization thread)
 
 set(headers
   include
   ${Boost_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/rr
 )
 set(libraries
   ${Boost_LIBRARIES}
@@ -32,7 +37,6 @@ set(libraries
 include_directories(
   ${headers}
 )
-
 
 # find dependencies
 find_package(rosidl_default_generators REQUIRED)
@@ -56,6 +60,25 @@ install(TARGETS
   consumer
   agent
   producer
-  DESTINATION lib/${PROJECT_NAME})
+  DESTINATION lib/${PROJECT_NAME}
+  INCLUDES DESTINATION include/${PROJECT_NAME})
+
+install(DIRECTORY include/rr/
+  DESTINATION include/rr
+  FILES_MATCHING PATTERN "*.h"
+)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # uncomment the line when a copyright and license is not present in all source files
+  #set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # uncomment the line when this package is not in a git repo
+  #set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_export_include_directories(include)
 
 ament_package()
