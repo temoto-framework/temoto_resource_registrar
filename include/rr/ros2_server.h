@@ -120,7 +120,7 @@ public:
 
   /**
  * @brief Executes the server message handling logic. A request and response are passed to the method. The request is checked
- * for uniqueness int he catalog. If it is unique, a new entry is created and the user load callback is executed. In case
+ * for uniqueness in the catalog. If it is unique, a new entry is created and the user load callback is executed. In case
  * it is not unique the corresponding request response is fetched from catalog storage and deserialized for the user.
  * 
  * @param req 
@@ -211,10 +211,9 @@ public:
     }
     else
     {
-      //ROS_INFO("Request found. No storage needed. Fetching it... ");
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Request found. No storage needed. Fetching it... ");
       std::shared_ptr<typename ServiceClass::Response> fetched_response = fetchResponse(request_id, wrapped_query);
-      //ROS_INFO("Fetching done...");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Fetching done...");
       fetched_response->temoto_metadata.request_id = generated_id;
       res = fetched_response;
     }
@@ -225,7 +224,9 @@ public:
 
   void triggerCallback(const temoto_resource_registrar::Status &status) const
   {
-    //ROS_INFO_STREAM("Triggering callback logic..." << id());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Triggering callback logic...");
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id().c_str());
+
     if (member_status_cb_ != NULL)
     {
       std::shared_ptr<typename ServiceClass::Request> request = temoto_resource_registrar::MessageSerializer::deSerializeMessage<typename ServiceClass::Request>(status.serialised_request_);
@@ -247,9 +248,7 @@ protected:
       member_status_cb_;
 
 private:
-  //ros::NodeHandle nh_;
-  //ros::ServiceServer service_;
-
+  
   //typename rclcpp::Client<ServiceClass>::SharedPtr client_;
   typename rclcpp::Service<ServiceClass>::SharedPtr service_;
 
@@ -257,12 +256,7 @@ private:
 
   virtual void initialize()
   {
-    //ROS_INFO_STREAM("Starting up server..." << id_);
-    //service_ = nh_.advertiseService(id_, &Ros2Server::serverCallback, this);
-    //ROS_INFO_STREAM("Starting up server done!!!");
-    //client_ = this->serverCallback<ServiceClass>(id());
     service_ = node_->create_service<ServiceClass>(id(), std::bind(&Ros2Server::serverCallback, this, std::placeholders::_1, std::placeholders::_2));
-
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "initialized server with ID:");
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id().c_str());
   }

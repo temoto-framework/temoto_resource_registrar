@@ -33,6 +33,7 @@
 #endif
 
 // Logging prefix macro definitions
+#define GET_CLASS_NAME TEMOTO_LOG_ATTR.getClassName(boost::core::demangle(typeid(*this).name()))
 #define GET_NAME_FF TEMOTO_LOG_ATTR.getNsWithSlash() + __func__
 #define GET_NAME TEMOTO_LOG_ATTR.getNsWithSlash() + boost::core::demangle(typeid(*this).name()) + "::" + __func__
 
@@ -167,6 +168,24 @@ public:
   const std::string& getSubsystemName() const
   {
     return subsystem_name_;
+  }
+
+  std::string getSubsystemNameWithSlash() const
+  {
+    if (!subsystem_name_.empty())
+    {
+      return subsystem_name_ + "/";
+    }
+    else
+    {
+      return std::string();
+    }
+  }
+
+  std::string getClassName(std::string class_name_full) const
+  {
+    std::vector<std::string> tokens;
+    return tokens.back();
   }
 
   void setSubsystemName(const std::string& subsystem_name)

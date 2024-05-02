@@ -29,6 +29,7 @@ public:
     //client_ = nh_.serviceClient<ServiceClass>(id());
 
     node_ = rclcpp::Node::make_shared(name);
+    RCLCPP_INFO_STREAM(rclcpp::get_logger("ros2_client.h"), "constructing Ros2Client: " << id());
     client_ = node_->create_client<ServiceClass>(id());
   }
 
@@ -50,6 +51,15 @@ public:
  */
   void invoke(ServiceClass &request)
   {
+
+   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke ServiceClass");
+    while (!client_->wait_for_service(std::chrono::seconds(1))) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+      }
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+    }
+
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke request in async for server:");
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id().c_str());
@@ -74,8 +84,13 @@ public:
  */
   void invoke(Ros2Query<ServiceClass> &wrapped_request)
   {
-    //ROS_INFO_STREAM("invoke for Ros2Query wrapper started");
-    //ServiceClass service_call = wrapped_request.rosQuery();
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke wrapped_request");
+    while (!client_->wait_for_service(std::chrono::seconds(1)) && rclcpp::ok()) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+      }
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+    }
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "invoke request in async for server:");
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), id().c_str());
@@ -92,18 +107,10 @@ public:
     {
       RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "NOK");
     }
-
-    //invoke(service_call);
-
-    //wrapped_request = Ros2Query<ServiceClass>(service_call);
-    //ROS_INFO_STREAM("invoke for Ros2Query wrapper completed");
   }
 
   void registerUserStatusCb(const std::string &request_id, const UserStatusCb &user_status_cb)
   {
-    //ROS_INFO_STREAM("registerUserStatusCb " << " - " << id() << " request: " << request_id);
-
-    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "registerUserStatusCb - " + id() + " request: " + request_id);
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), ("registerUserStatusCb - " + id() + " request: " + request_id).c_str());
     status_callbacks_[request_id] = user_status_cb;
 
@@ -120,8 +127,6 @@ public:
     //ROS_INFO_STREAM("Determinging if client cas callback for id " << request_id << " nr of callbacks: " << status_callbacks_.size());
     if (hasRegisteredCb(request_id))
     {
-      //ROS_INFO_STREAM("!Executing user CB!");
-
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "req size: %i", status.serialised_request_.size());
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "res size: %i", status.serialised_response_.size());
 
