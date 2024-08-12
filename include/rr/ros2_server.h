@@ -194,8 +194,7 @@ public:
                                 wrapped_query,
                                 serialized_request,
                                 sanitizeAndSerialize(res));
-
-        //ROS_INFO_STREAM("Stored!");
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "===== Stored! =====");
       }
       catch (const resource_registrar::TemotoErrorStack &e)
       {
@@ -206,7 +205,7 @@ public:
         res->temoto_metadata.metadata = Serializer::serialize<temoto_resource_registrar::ResponseMetadata>(wrapped_query.responseMetadata());
       }
 
-      //ROS_INFO("Executing query finished callback");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Executing query finished callback");
       transaction_callback_ptr_(temoto_resource_registrar::TransactionInfo(200, wrapped_query));
     }
     else
@@ -220,6 +219,7 @@ public:
 
     rr_catalog_->saveCatalog();
     //ROS_WARN_STREAM("server call end " << res.temoto_metadata.request_id << " " << id());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "server call end");
   }
 
   void triggerCallback(const temoto_resource_registrar::Status &status) const

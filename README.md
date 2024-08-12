@@ -41,7 +41,7 @@ These nodes to the following:
 
 To run the nodes following commands can be used for the producer, agend and consumer:
 ```
-ros2 run temoto_resource_registrar producer;
-ros2 run temoto_resource_registrar agent;
-ros2 run temoto_resource_registrar consumer;
+ros2 run temoto_resource_registrar producer
+ros2 run temoto_resource_registrar agent
+ros2 run temoto_resource_registrar consumer
 ```

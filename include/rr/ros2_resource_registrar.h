@@ -38,24 +38,25 @@ namespace temoto_resource_registrar
     {
     }
 
-    rclcpp::Node::SharedPtr getResourceRegistrarNode() {
+    rclcpp::Node::SharedPtr getRRNode() {
         return shared_from_this();
     }
 
     ~ResourceRegistrarRos2()
     {
-      // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Destroying RR Ros");
-      // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unloading clients");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Destroying RR Ros");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "unloading clients");
       for (const std::string &client_id : clients_.getIds())
       {
         try
         {
-          // RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "unloading client" << client_id);
+          RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "unloading client: " << client_id);
           unloadClient(client_id);
+          RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "finished unloading client: " << client_id);
         }
         catch (...)
         {
-          //ROS_WARN_STREAM("unloading error for client " << client_id);
+          RCLCPP_WARN_STREAM(rclcpp::get_logger("rclcpp"), "unloading error for client: " << client_id);
         }
       }
     }
@@ -154,13 +155,6 @@ namespace temoto_resource_registrar
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "[inner service] callback finished");
       };
 
-      while (!unload_clients_[client_name]->wait_for_service(std::chrono::seconds(1)) && rclcpp::ok()) {
-        if (!rclcpp::ok()) {
-          RCLCPP_ERROR(rclcpp::get_logger("ros2_r_r.h"), "Interrupted while waiting for the service. Exiting.");
-        }
-        RCLCPP_INFO(rclcpp::get_logger("ros2_r_r.h"), "service not available, waiting again...");
-      }
-
       auto result = unload_clients_[client_name]->async_send_request(request, inner_client_callback);
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "waiting for future");
 
@@ -197,6 +191,28 @@ namespace temoto_resource_registrar
       queryPair.second->temoto_metadata.request_id = container.q_.id();
 
       return queryPair;
+    }
+
+    template <class ClientQueryType>
+    void registerClientCallback(const std::string& rr_name,
+                                const std::string& server_name,
+                                const std::string& query_id,
+                                std::function<void(const std::shared_ptr<typename ClientQueryType::Request>&,
+                                                 std::shared_ptr<typename ClientQueryType::Response>,
+                                                 const temoto_resource_registrar::Status &)> user_callback)
+    {
+      std::string client_id = createClient<Ros2Client<ClientQueryType>>(rr_name, server_name);
+      // storeClientQueryStatusCb<Ros2Client<ClientQueryType>, std::function<void(ClientQueryType, Status)>>(client_id, query_id, user_callback);
+      storeClientQueryStatusCb<Ros2Client<ClientQueryType>>(client_id, query_id, user_callback);
+    }
+
+
+    void registerDependency(const std::string &rr_name,
+                            const std::string &query_id,
+                            const std::string &parent_query_id)
+    {
+      rr_catalog_->storeDependency(parent_query_id, rr_name, query_id);
+      autoSaveCatalog();
     }
 
     /**

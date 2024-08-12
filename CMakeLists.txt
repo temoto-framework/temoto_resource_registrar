@@ -42,19 +42,19 @@ include_directories(
 find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rr_interfaces REQUIRED)        # CHANGE
+find_package(rr_interfaces REQUIRED)
 
 add_executable(consumer src/ResourceConsumer.cpp)
 target_link_libraries(consumer rr_core)
-ament_target_dependencies(consumer rclcpp rr_interfaces Boost)     # CHANGE
+ament_target_dependencies(consumer rclcpp rr_interfaces Boost)
 
 add_executable(agent src/ResourceAgent.cpp)
 target_link_libraries(agent rr_core)
-ament_target_dependencies(agent rclcpp rr_interfaces Boost)     # CHANGE
+ament_target_dependencies(agent rclcpp rr_interfaces Boost)
 
 add_executable(producer src/ResourceProducer.cpp)
 target_link_libraries(producer rr_core)
-ament_target_dependencies(producer rclcpp rr_interfaces Boost)     # CHANGE
+ament_target_dependencies(producer rclcpp rr_interfaces Boost)
 
 install(TARGETS
   consumer
@@ -77,6 +77,12 @@ if(BUILD_TESTING)
   # uncomment the line when this package is not in a git repo
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+endif()
+
+if(NOT EXISTS "$ENV{HOME}/.temoto")
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$ENV{HOME}/.temoto"
+  )
 endif()
 
 ament_export_include_directories(include)

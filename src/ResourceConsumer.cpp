@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   exec.add_node(rr);
   exec.spin();
 
-  rclcpp::shutdown();
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "shutdown");
+  rclcpp::shutdown();
   return 0;
 }

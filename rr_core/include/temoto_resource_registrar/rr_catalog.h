@@ -138,6 +138,11 @@ namespace temoto_resource_registrar
     {
       TEMOTO_DEBUG_("saving catalog to: %s", (configuration_.location()).c_str());
       std::ofstream ofs(configuration_.location());
+      if (!ofs)
+      {
+          std::cout << "\033[1;35m [rr_catalog] Failed to open file for writing:  \033[0m" << (configuration_.location()).c_str() << std::endl;
+          return;
+      }
       boost::archive::binary_oarchive oa(ofs);
       oa << *(this);
       ofs.close();
